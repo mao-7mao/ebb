@@ -1,0 +1,92 @@
+[
+  {
+    "id": "m1",
+    "date": "2026/06/18",
+    "archive_group": "JUNE 2026",
+    "title": "Recovery of lignin from deep eutectic solvents by liquid-liquid extraction",
+    "speaker": "Tina",
+    "speaker_id": "tina",
+    "status": "completed",
+    "status_label": "✓ Completed",
+    "search": "Recovery lignin deep eutectic solvents liquid-liquid extraction Tina"
+  },
+  {
+    "id": "m2",
+    "date": "2026/06/18",
+    "archive_group": "JUNE 2026",
+    "title": "How Can Odors Be Measured? An Overview of Methods and Their Applications",
+    "speaker": "Eko",
+    "speaker_id": "eko",
+    "status": "completed",
+    "status_label": "✓ Completed",
+    "search": "Odors  Eko"
+  },
+  {
+    "id": "m3",
+    "date": "2026/06/18",
+    "archive_group": "JUNE 2026",
+    "title": "Compatibilization of Polylactide/Poly(ethylene 2,5-furanoate) (PLA/PEF) Blends for Sustainable and Bioderived Packaging",
+    "speaker": "Kalin",
+    "speaker_id": "kalin",
+    "status": "completed",
+    "status_label": "✓ Completed",
+    "search": "Compatibilization PLA PEF Sustainable Bioderived Packaging Kalin"
+  },
+
+  {
+    "id": "m4",
+    "date": "2026/06/04",
+    "archive_group": "JUNE 2026",
+    "title": "Study on engineering and thermal properties of environment-friendly lightweight brick made from Kinmen oyster shells & sorghum waste",
+    "speaker": "Kevin",
+    "speaker_id": "kevin",
+    "status": "completed",
+    "status_label": "✓ Completed",
+    "search": "Study engineering thermal properties environment-friendly lightweight brick Kinmen oyster shells sorghum waste Kevin"
+  },
+    {
+    "id": "m5",
+    "date": "2026/06/04",
+    "archive_group": "JUNE 2026",
+    "title": "Scale-Up Preparation of Biobased Poly(ethylene furanoate) Biaxial Orientation Films with Enhanced Mechanical and Barrier Properties for Packaging",
+    "speaker": "Fanny",
+    "speaker_id": "fanny",
+    "status": "completed",
+    "status_label": "✓ Completed",
+    "search": "Scale-Up Preparation Biobased Poly(ethylene furanoate) Biaxial Orientation Films Enhanced Mechanical Barrier Properties Packaging Fanny"
+  },
+    {
+    "id": "m6",
+    "date": "2026/06/04",
+    "archive_group": "JUNE 2026",
+    "title": "Collaborative Removal of NOx and Toluene in Flue Gas Driven by Aerobic Denitrifying Biotrickling Filter ",
+    "speaker": "Chris",
+    "speaker_id": "chris",
+    "status": "completed",
+    "status_label": "✓ Completed",
+    "search": "Collaborative Removal NOx Toluene Flue Gas Aerobic Denitrifying Biotrickling Filter Chris"
+  },
+
+  {
+    "id": "m7",
+    "date": "2026/04/30",
+    "archive_group": "APRIL 2026 ",
+    "title": "Insights into the Synthesis of Poly(ethylene 2,5-Furandicarboxylate) from 2,5-Furandicarboxylic Acid: Steps toward Environmental and Food Safety Excellence in Packaging Applications",
+    "speaker": "Kalin",
+    "speaker_id": "kalin",
+    "status": "completed",
+    "status_label": "✓ Completed",
+    "search": "Polymer Matrix Scaling Material kalin"
+  },
+    {
+    "id": "m8",
+    "date": "2026/04/30",
+    "archive_group": "APRIL 2026 ",
+    "title": "A sustainable solution to plastics pollution: An eco-friendly bioplastic film production from high-salt contained Spirulina sp. residues",
+    "speaker": "Eko",
+    "speaker_id": "eko",
+    "status": "completed",
+    "status_label": "✓ Completed",
+    "search": "high-salt contained Spirulina sp. residues eko"
+  }
+]
