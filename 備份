@@ -1,0 +1,618 @@
+        //日曆下方
+        <section id="gallery" class="py-24 px-6 lg:px-16 max-w-7xl mx-auto space-y-12">
+            <div class="text-center md:text-left max-w-2xl">
+                <h2 class="text-xs font-semibold text-emerald-600 tracking-widest uppercase mb-2 font-mono">Visual Archive</h2>
+                <p class="text-3xl font-bold text-emerald-950 tracking-tight sm:text-4xl">Research Gallery 成果展示藝廊</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="border border-emerald-100 bg-white/40 p-2 rounded-2xl group hover:shadow-lg transition-all duration-300">
+                    <div class="h-48 rounded-xl overflow-hidden bg-white"><img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=500&q=80" class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-all duration-500"></div>
+                    <div class="p-3"><p class="text-xs font-bold text-emerald-950">高解析氣相層析儀精密檢測</p></div>
+                </div>
+                <div class="border border-emerald-100 bg-white/40 p-2 rounded-2xl group hover:shadow-lg transition-all duration-300">
+                    <div class="h-48 rounded-xl overflow-hidden bg-white"><img src="https://images.unsplash.com/photo-1579154204601-01588f35116f?auto=format&fit=crop&w=500&q=80" class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-all duration-500"></div>
+                    <div class="p-3"><p class="text-xs font-bold text-emerald-950">PEF 生質封裝膜拉伸強度表徵</p></div>
+                </div>
+                <div class="border border-emerald-100 bg-white/40 p-2 rounded-2xl group hover:shadow-lg transition-all duration-300">
+                    <div class="h-48 rounded-xl overflow-hidden bg-white"><img src="https://images.unsplash.com/photo-1617155093730-a8bf47be792d?auto=format&fit=crop&w=500&q=80" class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-all duration-500"></div>
+                    <div class="p-3"><p class="text-xs font-bold text-emerald-950">微生物誘導碳酸鈣沉澱反應物</p></div>
+                </div>
+                <div class="border border-emerald-100 bg-white/40 p-2 rounded-2xl group hover:shadow-lg transition-all duration-300">
+                    <div class="h-48 rounded-xl overflow-hidden bg-white"><img src="https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?auto=format&fit=crop&w=500&q=80" class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-all duration-500"></div>
+                    <div class="p-3"><p class="text-xs font-bold text-emerald-950">50L 自動化生物反應槽擴大培育</p></div>
+                </div>
+            </div>
+        </section>
+
+        ---
+         <aside class="fixed top-16 left-0 bottom-0 w-64 hidden xl:flex flex-col justify-between p-6 z-40 border-r border-emerald-100 bg-emerald-50/20 backdrop-blur-md">
+        <nav class="space-y-1.5">
+            <p class="text-[11px] font-semibold text-emerald-700 tracking-wider uppercase pl-3 mb-3">快易導覽</p>
+            <a href="#hero" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-800 hover:text-emerald-950 hover:bg-emerald-100/50 transition-all duration-200 group">
+                <i data-lucide="home" class="w-4 h-4 text-emerald-600 group-hover:text-emerald-800"></i> 首頁首版
+            </a>
+            <a href="#themes" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-800 hover:text-emerald-950 hover:bg-emerald-100/50 transition-all duration-200 group">
+                <i data-lucide="layers" class="w-4 h-4 text-emerald-600 group-hover:text-emerald-800"></i> 研究四大方向
+            </a>
+            <a href="#members" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-800 hover:text-emerald-950 hover:bg-emerald-100/50 transition-all duration-200 group">
+                <i data-lucide="users" class="w-4 h-4 text-emerald-600 group-hover:text-emerald-800"></i> 實驗室成員
+            </a>
+            <a href="#schedule" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-800 hover:text-emerald-950 hover:bg-emerald-100/50 transition-all duration-200 group">
+                <i data-lucide="calendar" class="w-4 h-4 text-emerald-600 group-hover:text-emerald-800"></i> 排程與會議歸檔
+            </a>
+            <a href="#gallery" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-800 hover:text-emerald-950 hover:bg-emerald-100/50 transition-all duration-200 group">
+                <i data-lucide="image" class="w-4 h-4 text-emerald-600 group-hover:text-emerald-800"></i> 成果藝廊
+            </a>
+            <a href="#contact" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-800 hover:text-emerald-950 hover:bg-emerald-100/50 transition-all duration-200 group">
+                <i data-lucide="map-pin" class="w-4 h-4 text-emerald-600 group-hover:text-emerald-800"></i> 聯絡資訊
+            </a>
+        </nav>
+        <div class="border border-emerald-200/60 bg-white/40 p-4 rounded-xl backdrop-blur-sm">
+            <p class="text-xs text-emerald-700 leading-relaxed font-mono">System Active: 2026</p>
+        </div>
+    </aside>
+    ---//members上方
+
+
+        <section id="themes" class="py-24 px-6 lg:px-16 max-w-7xl mx-auto space-y-16">
+            <div class="text-center md:text-left max-w-2xl">
+                <h2 class="text-xs font-semibold text-emerald-600 tracking-widest uppercase mb-2 font-mono">Research Focus</h2>
+                <p class="text-3xl font-bold text-emerald-950 tracking-tight sm:text-4xl">四大核心研究方向</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="border border-emerald-100 bg-white/40 p-8 rounded-2xl search-target" data-search="Zero-Carbon Construction Materials 零碳建材">
+                    <h3 class="text-xl font-bold text-emerald-950 mb-2">🏗 Zero-Carbon Construction Materials</h3>
+                    <p class="text-emerald-700 text-xs font-mono mb-4">零碳建築材料</p>
+                    <p class="text-emerald-900 text-sm font-light">利用微生物礦化技術與生物基副產物，開發能有效固碳之新型營建綠色材料。</p>
+                </div>
+                <div class="border border-emerald-100 bg-white/40 p-8 rounded-2xl search-target" data-search="Bio-based Chemicals 生物質化學品">
+                    <h3 class="text-xl font-bold text-emerald-950 mb-2">🧪 Bio-based Chemicals</h3>
+                    <p class="text-emerald-700 text-xs font-mono mb-4">生物質化學品</p>
+                    <p class="text-emerald-900 text-sm font-light">以永續生物質為核心原料，透過高效催化與綠色化學轉換技術，將有機廢棄物轉化為高附加值的綠色平台化學品。</p>
+                </div>
+                <div class="border border-emerald-100 bg-white/40 p-8 rounded-2xl search-target" data-search="Sustainable Polymer Materials 永續高分子材料">
+                    <h3 class="text-xl font-bold text-emerald-950 mb-2">♻ Sustainable Polymer Materials</h3>
+                    <p class="text-emerald-700 text-xs font-mono mb-4">永續高分子材料</p>
+                    <p class="text-emerald-900 text-sm font-light">研發可完全生物分解、具備高熱穩定性及高阻隔性能的環境友善綠色高分子塑膠替代材料。</p>
+                </div>
+                <div class="border border-emerald-100 bg-white/40 p-8 rounded-2xl search-target" data-search="Bio-based Membrane Materials PEF 生質膜材料">
+                    <h3 class="text-xl font-bold text-emerald-950 mb-2">🧬 Bio-based Membrane Materials (PEF)</h3>
+                    <p class="text-emerald-700 text-xs font-mono mb-4">生質膜材料</p>
+                    <p class="text-emerald-900 text-sm font-light">聚焦 100% 來自植物性原料的聚乙烯呋喃酸酯 (PEF) 精尖薄膜技術。</p>
+                </div>
+            </div>
+        </section>
+        ---
+            <main class="pt-16 xl:pl-64 min-h-screen">
+
+        <section id="hero" class="relative min-h-[70vh] flex items-center justify-center px-6 lg:px-16 overflow-hidden border-b border-emerald-100">
+            <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-200/30 rounded-full blur-[120px] pointer-events-none"></div>
+            <div class="max-w-4xl text-center z-10 space-y-6">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-emerald-200 bg-white/40 text-xs font-medium text-emerald-800 shadow-inner">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> 前沿環境生物技術與生物精煉實驗室
+                </div>
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-emerald-950">
+                    Environmental Biotechnology & <br>
+                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-green-600">Biorefinery Laboratory</span>
+                </h1>
+                <p class="text-base sm:text-lg text-emerald-800 max-w-2xl mx-auto font-light">致力於透過永續生物技術，打造零碳建材、生質高分子材料與先進生質膜。</p>
+            </div>
+        </section>首頁
+
+
+
+        <div class="space-y-6 pt-12 border-t border-emerald-100/50">
+                <div class="flex items-center gap-2 text-xs font-semibold text-emerald-800 tracking-wider uppercase font-mono">
+                    <i data-lucide="network" class="w-4 h-4 text-emerald-600"></i> 研究課題氣泡思維導圖
+                </div>
+                
+                <div class="relative w-full min-h-[750px] rounded-3xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/10 via-white to-emerald-50/30 p-6 md:p-8 overflow-hidden shadow-inner flex flex-col justify-center items-center">
+                    
+                    <div class="absolute w-72 h-72 bg-emerald-200/20 rounded-full blur-3xl -top-10 -left-10 pointer-events-none"></div>
+                    <div class="absolute w-72 h-72 bg-green-200/15 rounded-full blur-3xl -bottom-10 -right-10 pointer-events-none"></div>
+
+                    <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-4 items-center relative z-10">
+                        
+                        <div class="md:col-span-2 space-y-6 flex flex-col items-center md:items-end">
+                            
+                            <div class="group relative bg-white/80 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-sm flex flex-col sm:flex-row gap-4 items-center sm:items-start text-center sm:text-left md:text-right md:flex-col lg:flex-row">
+                                <div class="w-20 h-20 rounded-xl bg-emerald-50 border border-emerald-100 overflow-hidden shrink-0 shadow-inner">
+                                    <img src="YOUR_IMAGE_URL_A" alt="CORE A" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/150?text=CORE+A'">
+                                </div>
+                                <div class="flex-1 space-y-1">
+                                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE A</span>
+                                    <h4 class="text-sm font-bold text-emerald-950">低碳海岸修復材料</h4>
+                                    <p class="text-xs text-emerald-700 font-light">農業剩餘物與貝殼廢棄物、零水泥</p>
+                                    <div class="mt-2 flex flex-wrap gap-1 justify-center sm:justify-start md:justify-end lg:justify-start">
+                                        <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">游家御 (Kevin)</span>
+                                        <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">花翊軒 (Peter)</span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -right-4 w-4 h-[1px] bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+
+                            <div class="group relative bg-white/80 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-sm flex flex-col sm:flex-row gap-4 items-center sm:items-start text-center sm:text-left md:text-right md:flex-col lg:flex-row">
+                                <div class="w-20 h-20 rounded-xl bg-emerald-50 border border-emerald-100 overflow-hidden shrink-0 shadow-inner">
+                                    <img src="YOUR_IMAGE_URL_B" alt="CORE B" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/150?text=CORE+B'">
+                                </div>
+                                <div class="flex-1 space-y-1">
+                                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE B</span>
+                                    <h4 class="text-sm font-bold text-emerald-950">生物基聚酯材料 (PEF)</h4>
+                                    <p class="text-xs text-emerald-700 font-light">次世代高阻隔生物基聚酯製備與應用</p>
+                                    <div class="mt-2 flex flex-wrap gap-1 justify-center sm:justify-start md:justify-end lg:justify-start">
+                                        <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">陳采翎 (Kalin)</span>
+                                        <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">Safira</span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -right-4 w-4 h-[1px] bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+
+                            <div class="group relative bg-white/80 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-sm flex flex-col sm:flex-row gap-4 items-center sm:items-start text-center sm:text-left md:text-right md:flex-col lg:flex-row">
+                                <div class="w-20 h-20 rounded-xl bg-emerald-50 border border-emerald-100 overflow-hidden shrink-0 shadow-inner">
+                                    <img src="YOUR_IMAGE_URL_E" alt="CORE E" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/150?text=CORE+E'">
+                                </div>
+                                <div class="flex-1 space-y-1">
+                                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE E</span>
+                                    <h4 class="text-sm font-bold text-emerald-950">綠能電漿減碳</h4>
+                                    <p class="text-xs text-emerald-700 font-light">前沿電漿技術與綠能減碳應用</p>
+                                    <div class="mt-2 flex flex-wrap gap-1 justify-center sm:justify-start md:justify-end lg:justify-start">
+                                        <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">林郁芳 (Fanny)</span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -right-4 w-4 h-[1px] bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-1 flex justify-center py-4 md:py-0">
+                            <div class="w-36 h-36 md:w-40 md:h-40 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white flex flex-col items-center justify-center text-center p-4 shadow-xl shadow-emerald-900/10 ring-4 ring-emerald-100 animate-pulse animate-duration-[4000ms]">
+                                <i data-lucide="biohazard" class="w-6 h-6 mb-1 opacity-90"></i>
+                                <span class="font-bold text-sm tracking-tight">EBB Lab</span>
+                                <span class="text-[9px] opacity-80 mt-0.5 uppercase tracking-wider font-mono">Research Nodes</span>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 space-y-6 flex flex-col items-center md:items-start">
+                            
+                            <div class="group relative bg-white/80 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-sm flex flex-col sm:flex-row gap-4 items-center sm:items-start text-center sm:text-left">
+                                <div class="w-20 h-20 rounded-xl bg-emerald-50 border border-emerald-100 overflow-hidden shrink-0 shadow-inner">
+                                    <img src="YOUR_IMAGE_URL_C" alt="CORE C" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/150?text=CORE+C'">
+                                </div>
+                                <div class="flex-1 space-y-1">
+                                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE C</span>
+                                    <h4 class="text-sm font-bold text-emerald-950">生物質液體地膜</h4>
+                                    <p class="text-xs text-emerald-700 font-light">臺灣生物質液體地膜創新技術開發</p>
+                                    <div class="mt-2 flex flex-wrap gap-1 justify-center sm:justify-start">
+                                        <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">Sonali</span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -left-4 w-4 h-[1px] bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+
+                            <div class="group relative bg-white/80 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-sm flex flex-col sm:flex-row gap-4 items-center sm:items-start text-center sm:text-left">
+                                <div class="w-20 h-20 rounded-xl bg-emerald-50 border border-emerald-100 overflow-hidden shrink-0 shadow-inner">
+                                    <img src="YOUR_IMAGE_URL_D" alt="CORE D" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/150?text=CORE+D'">
+                                </div>
+                                <div class="flex-1 space-y-1">
+                                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE D</span>
+                                    <h4 class="text-sm font-bold text-emerald-950">綠色複合與生質材料</h4>
+                                    <p class="text-xs text-emerald-700 font-light">藻類生質塑膠、快速竹材液化、種子名片</p>
+                                    <div class="mt-2 flex flex-wrap gap-1 justify-center sm:justify-start">
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">吳羿葶 (Tina)</span>
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">陳混熏 (Martin)</span>
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">陳采蘋 (Nina)</span>
+                                        <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">唐瑜陽 (Eko)</span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -left-4 w-4 h-[1px] bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+
+                            <div class="group relative bg-white/80 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-sm flex flex-col sm:flex-row gap-4 items-center sm:items-start text-center sm:text-left">
+                                <div class="w-20 h-20 rounded-xl bg-emerald-50 border border-emerald-100 overflow-hidden shrink-0 shadow-inner">
+                                    <img src="YOUR_IMAGE_URL_F" alt="CORE F" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/150?text=CORE+F'">
+                                </div>
+                                <div class="flex-1 space-y-1">
+                                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE F</span>
+                                    <h4 class="text-sm font-bold text-emerald-950">VOC 生物處理技術</h4>
+                                    <p class="text-xs text-emerald-700 font-light">揮發性有機物之生物降解與淨化技術</p>
+                                    <div class="mt-2 flex flex-wrap gap-1 justify-center sm:justify-start">
+                                        <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">黃科錡（Chris）</span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -left-4 w-4 h-[1px] bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+
+<div class="space-y-6 pt-12 border-t border-emerald-100/50">
+                <div class="flex items-center gap-2 text-xs font-semibold text-emerald-800 tracking-wider uppercase font-mono">
+                    <i data-lucide="network" class="w-4 h-4 text-emerald-600"></i> 研究課題氣泡思維導圖
+                </div>
+                
+                <div class="relative w-full min-h-[700px] rounded-3xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/10 via-white to-emerald-50/30 p-6 md:p-8 overflow-hidden shadow-inner flex flex-col justify-center items-center">
+                    
+                    <div class="absolute w-72 h-72 bg-emerald-200/20 rounded-full blur-3xl -top-10 -left-10 pointer-events-none"></div>
+                    <div class="absolute w-72 h-72 bg-green-200/15 rounded-full blur-3xl -bottom-10 -right-10 pointer-events-none"></div>
+
+                    <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-4 items-center relative z-10">
+                        
+                        <div class="md:col-span-2 space-y-6 flex flex-col items-center">
+                            
+                            <div class="group relative bg-white/90 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-xs flex flex-col gap-3">
+                                <div class="w-full h-24 rounded-xl bg-emerald-50 border border-emerald-100/50 overflow-hidden shrink-0 shadow-inner">
+                                    <img src="YOUR_IMAGE_URL_A" alt="CORE A" class="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/300x120?text=CORE+A'">
+                                </div>
+                                <div class="space-y-1 flex-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE A</span>
+                                    </div>
+                                    <h4 class="text-sm font-bold text-emerald-950 mt-1">低碳海岸修復材料</h4>
+                                    <p class="text-[11px] text-emerald-700 font-light line-clamp-2">農業剩餘物與貝殼廢棄物、零水泥之開發</p>
+                                    <div class="pt-1 flex flex-wrap gap-1">
+                                        <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">游家御</span>
+                                        <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">花翊軒</span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -right-4 w-4 h-[1px] bg-emerald-200/80 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+
+                            <div class="group relative bg-white/90 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-xs flex flex-col gap-3">
+                                <div class="w-full h-24 rounded-xl bg-emerald-50 border border-emerald-100/50 overflow-hidden shrink-0 shadow-inner">
+                                    <img src="YOUR_IMAGE_URL_B" alt="CORE B" class="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/300x120?text=CORE+B'">
+                                </div>
+                                <div class="space-y-1 flex-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE B</span>
+                                    </div>
+                                    <h4 class="text-sm font-bold text-emerald-950 mt-1">生物基聚酯材料 (PEF)</h4>
+                                    <p class="text-[11px] text-emerald-700 font-light line-clamp-2">次世代高阻隔生物基聚酯製備與應用</p>
+                                    <div class="pt-1 flex flex-wrap gap-1">
+                                        <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">陳采翎</span>
+                                        <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">Safira</span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -right-4 w-4 h-[1px] bg-emerald-200/80 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+
+                            <div class="group relative bg-white/90 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-xs flex flex-col gap-3">
+                                <div class="w-full h-24 rounded-xl bg-emerald-50 border border-emerald-100/50 overflow-hidden shrink-0 shadow-inner">
+                                    <img src="YOUR_IMAGE_URL_E" alt="CORE E" class="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/300x120?text=CORE+E'">
+                                </div>
+                                <div class="space-y-1 flex-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE E</span>
+                                    </div>
+                                    <h4 class="text-sm font-bold text-emerald-950 mt-1">綠能電漿減碳</h4>
+                                    <p class="text-[11px] text-emerald-700 font-light line-clamp-2">前沿電漿技術與綠能減碳應用</p>
+                                    <div class="pt-1 flex flex-wrap gap-1">
+                                        <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">林郁芳</span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -right-4 w-4 h-[1px] bg-emerald-200/80 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-1 flex justify-center py-6 md:py-0">
+                            <div class="w-36 h-36 md:w-40 md:h-40 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white flex flex-col items-center justify-center text-center p-4 shadow-xl shadow-emerald-900/10 ring-4 ring-emerald-100 animate-pulse animate-duration-[4000ms]">
+                                <i data-lucide="biohazard" class="w-6 h-6 mb-1 opacity-90"></i>
+                                <span class="font-bold text-sm tracking-tight">EBB Lab</span>
+                                <span class="text-[9px] opacity-80 mt-0.5 uppercase tracking-wider font-mono">Research Nodes</span>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 space-y-6 flex flex-col items-center">
+                            
+                            <div class="group relative bg-white/90 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-xs flex flex-col gap-3">
+                                <div class="w-full h-24 rounded-xl bg-emerald-50 border border-emerald-100/50 overflow-hidden shrink-0 shadow-inner">
+                                    <img src="YOUR_IMAGE_URL_C" alt="CORE C" class="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/300x120?text=CORE+C'">
+                                </div>
+                                <div class="space-y-1 flex-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE C</span>
+                                    </div>
+                                    <h4 class="text-sm font-bold text-emerald-950 mt-1">生物質液體地膜</h4>
+                                    <p class="text-[11px] text-emerald-700 font-light line-clamp-2">臺灣生物質液體地膜創新技術開發</p>
+                                    <div class="pt-1 flex flex-wrap gap-1">
+                                        <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">Sonali</span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -left-4 w-4 h-[1px] bg-emerald-200/80 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+
+                            <div class="group relative bg-white/90 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-xs flex flex-col gap-3">
+                                <div class="w-full h-24 rounded-xl bg-emerald-50 border border-emerald-100/50 overflow-hidden shrink-0 shadow-inner">
+                                    <img src="YOUR_IMAGE_URL_D" alt="CORE D" class="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/300x120?text=CORE+D'">
+                                </div>
+                                <div class="space-y-1 flex-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE D</span>
+                                    </div>
+                                    <h4 class="text-sm font-bold text-emerald-950 mt-1">綠色複合與生質材料</h4>
+                                    <p class="text-[11px] text-emerald-700 font-light line-clamp-2">藻類生質塑膠、快速竹材液化技術</p>
+                                    <div class="pt-1 flex flex-wrap gap-1">
+                                        <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">唐瑜陽</span>
+                                        <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">陳混熏</span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -left-4 w-4 h-[1px] bg-emerald-200/80 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+
+                            <div class="group relative bg-white/90 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-xs flex flex-col gap-3">
+                                <div class="w-full h-24 rounded-xl bg-emerald-50 border border-emerald-100/50 overflow-hidden shrink-0 shadow-inner">
+                                    <img src="YOUR_IMAGE_URL_F" alt="CORE F" class="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/300x120?text=CORE+F'">
+                                </div>
+                                <div class="space-y-1 flex-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE F</span>
+                                    </div>
+                                    <h4 class="text-sm font-bold text-emerald-950 mt-1">VOC 生物處理技術</h4>
+                                    <p class="text-[11px] text-emerald-700 font-light line-clamp-2">揮發性有機物之生物降解與淨化技術</p>
+                                    <div class="pt-1 flex flex-wrap gap-1">
+                                        <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">黃科錡</span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -left-4 w-4 h-[1px] bg-emerald-200/80 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+
+<div class="space-y-6 pt-12 border-t border-emerald-100/50">
+                <div class="flex items-center gap-2 text-xs font-semibold text-emerald-800 tracking-wider uppercase font-mono">
+                    <i data-lucide="network" class="w-4 h-4 text-emerald-600"></i> 研究課題
+                </div>
+                
+                <div class="relative w-full min-h-[650px] rounded-3xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/10 via-white to-emerald-50/30 p-6 md:p-8 overflow-hidden shadow-inner flex flex-col justify-center items-center">
+                    
+                    <div class="absolute w-72 h-72 bg-emerald-200/20 rounded-full blur-3xl -top-10 -left-10 pointer-events-none"></div>
+                    <div class="absolute w-72 h-72 bg-green-200/15 rounded-full blur-3xl -bottom-10 -right-10 pointer-events-none"></div>
+
+                    <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-4 items-center relative z-10">
+                        
+                        <div class="md:col-span-2 space-y-6 flex flex-col items-center md:items-end">
+                            <div class="group relative bg-white/80 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-sm text-center md:text-right">
+                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE A</span>
+                                <h4 class="text-sm font-bold text-emerald-950 mt-1">低碳海岸修復材料</h4>
+                                <p class="text-xs text-emerald-700 font-light mt-1">農業剩餘物與貝殼廢棄物、零水泥</p>
+                                <div class="mt-2 flex flex-wrap gap-1 justify-center md:justify-end">
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">游家御 (Kevin)</span>
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">花翊軒 (Peter)</span>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -right-4 w-4 h-[1px] bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+
+                            <div class="group relative bg-white/80 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-sm text-center md:text-right">
+                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE B</span>
+                                <h4 class="text-sm font-bold text-emerald-950 mt-1">生物基聚酯材料 (PEF)</h4>
+                                <p class="text-xs text-emerald-700 font-light mt-1">次世代高阻隔生物基聚酯製備與應用</p>
+                                <div class="mt-2 flex flex-wrap gap-1 justify-center md:justify-end">
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">陳采翎 (Kalin)</span>
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">Safira</span>
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">Indri</span>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -right-4 w-4 h-[1px] bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+
+                            <div class="group relative bg-white/80 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-sm text-center md:text-right">
+                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE E</span>
+                                <h4 class="text-sm font-bold text-emerald-950 mt-1">綠能電漿減碳</h4>
+                                <p class="text-xs text-emerald-700 font-light mt-1">前沿電漿技術與綠能減碳應用</p>
+                                <div class="mt-2 flex flex-wrap gap-1 justify-center md:justify-end">
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">林郁芳 (Fanny)</span>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -right-4 w-4 h-[1px] bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-1 flex justify-center py-4 md:py-0">
+                            <div class="w-36 h-36 md:w-40 md:h-40 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white flex flex-col items-center justify-center text-center p-4 shadow-xl shadow-emerald-900/10 ring-4 ring-emerald-100 animate-pulse animate-duration-[4000ms]">
+                                <i data-lucide="biohazard" class="w-6 h-6 mb-1 opacity-90"></i>
+                                <span class="font-bold text-sm tracking-tight">EBB Lab</span>
+                                <span class="text-[9px] opacity-80 mt-0.5 uppercase tracking-wider font-mono">Research Nodes</span>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 space-y-6 flex flex-col items-center md:items-start">
+                            <div class="group relative bg-white/80 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-sm text-center md:text-left">
+                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE C</span>
+                                <h4 class="text-sm font-bold text-emerald-950 mt-1">生物質液體地膜</h4>
+                                <p class="text-xs text-emerald-700 font-light mt-1">臺灣生物質液體地膜創新技術開發</p>
+                                <div class="mt-2 flex flex-wrap gap-1 justify-center md:justify-start">
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">Sonali</span>
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">林郁芳 (Fanny)</span>
+
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -left-4 w-4 h-[1px] bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+
+                            <div class="group relative bg-white/80 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-sm text-center md:text-left">
+                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE D</span>
+                                <h4 class="text-sm font-bold text-emerald-950 mt-1">綠色複合與生質材料</h4>
+                                <p class="text-xs text-emerald-700 font-light mt-1">藻類生質塑膠、快速竹材液化、種子名片</p>
+                                <div class="mt-2 flex flex-wrap gap-1 justify-center md:justify-start">
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">吳羿葶 (Tina)</span>
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">陳混熏 (Martin)</span>
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">陳采蘋 (Nina)</span>
+                                   <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">唐瑜陽 (Eko)</span>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -left-4 w-4 h-[1px] bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+
+                            <div class="group relative bg-white/80 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full max-w-sm text-center md:text-left">
+                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md font-mono">CORE F</span>
+                                <h4 class="text-sm font-bold text-emerald-950 mt-1">VOC 生物處理技術</h4>
+                                <p class="text-xs text-emerald-700 font-light mt-1">揮發性有機物之生物降解與淨化技術</p>
+                                <div class="mt-2 flex flex-wrap gap-1 justify-center md:justify-start">
+                                    <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">黃科錡（Chris）</span>
+                                </div>
+                                <div class="hidden md:block absolute top-1/2 -left-4 w-4 h-[1px] bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+
+    function renderMembers() {
+            const container = document.getElementById('membersContainer');
+            if (!membersData.length) return;
+
+            container.innerHTML = membersData.map(m => {
+                // 動態生成課題關鍵字標籤
+                const keywordBadges = m.research_topic.keywords
+                    ? m.research_topic.keywords.map(k => `<span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md border border-emerald-100/40">${k}</span>`).join('')
+                    : '';
+                    
+
+                // 處理部分成員沒有中文名的顯示邏輯
+                const displayName = m.name_zh 
+                    ? `${m.name_zh} <span class="text-xs font-normal text-emerald-600 font-mono ml-1">${m.name_en}</span>` 
+                    : m.name_en;
+
+                // 讀取新增的文字介紹欄位（防呆：若 JSON 裡忘記寫就顯示預設字）
+                const descriptionText = m.description ? m.description : "目前尚無該課題之詳細文字介紹。";
+
+                return `
+                    <div id="${m.id}" class="border border-emerald-100/70 bg-white/60 backdrop-blur-sm rounded-2xl p-5 flex flex-col justify-between hover:border-emerald-400 hover:shadow-md hover:bg-white transition-all duration-300 search-target" 
+                         data-search="${m.name_zh} ${m.name_en} ${m.role} ${m.research_topic.keywords.join(' ')}">
+                        
+                        <div class="space-y-3.5">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <h4 class="text-base font-bold text-emerald-950 truncate">${displayName}</h4>
+                                    <p class="text-[11px] text-emerald-600 font-mono mt-0.5">${m.role}</p>
+                                </div>
+                                <span class="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 shrink-0">
+                                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                                </span>
+                            </div>
+                            
+                            <div class="bg-emerald-50/20 border border-emerald-100/30 rounded-xl p-3 space-y-2.5">
+                                <div class="text-xs text-emerald-900 leading-relaxed font-semibold">
+                                    <span class="text-emerald-600 font-bold text-[10px] tracking-wide uppercase block mb-0.5">核心課題</span>
+                                    ${m.research_topic.title_zh}
+                                </div>
+                                <div class="flex flex-wrap gap-1 pt-0.5">
+                                    ${keywordBadges}
+                                </div>
+                                
+                                <div class="pt-2 border-t border-dashed border-emerald-200/60 text-[11px] text-emerald-800/80 leading-relaxed font-light">
+                                    ${descriptionText}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-emerald-100/40 flex justify-between items-center text-xs text-emerald-700">
+                            <a href="mailto:${m.links.email}" class="flex items-center gap-1 hover:text-emerald-950 transition-colors">
+                                <i data-lucide="mail" class="w-3.5 h-3.5"></i> Email
+                            </a>
+                            <div>
+                                ${m.links.scholar ? `
+                                <a href="${m.links.scholar}" class="flex items-center gap-1 hover:text-emerald-950 transition-colors">
+                                    <i data-lucide="graduation-cap" class="w-3.5 h-3.5"></i> Scholar
+                                </a>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        }       
+
+
+
+            "id": "m7",
+    "date": "2026/04/30",
+    "archive_group": "▶ APRIL 2026 ",
+    "title": "Insights into the Synthesis of Poly(ethylene 2,5-Furandicarboxylate) from 2,5-Furandicarboxylic Acid: Steps toward Environmental and Food Safety Excellence in Packaging Applications",
+    "speaker": "Kalin",
+    "speaker_id": "kalin",
+    "status": "archived",
+    "status_label": "✓ Archived",
+    "search": "Polymer Matrix Scaling Material kalin"
+
+
+                <a href="#contact" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-800 hover:text-emerald-950 hover:bg-emerald-100/50 transition-all duration-200 group">
+                <i data-lucide="map-pin" class="w-4 h-4 text-emerald-600 group-hover:text-emerald-800"></i> 聯絡資訊
+            </a>
+
+
+
+,
+  {
+    "id": "sonali",
+    "name_zh": "",
+    "name_en": "Sonali Mazumdar",
+    "role": "交換生-博士",
+    "research_topic": { 
+      "title_zh": "農業創新覆蓋膜", 
+      "title_en": "Innovative Agricultural Mulch Films",
+      "keywords": ["生物質", "液體地膜"] 
+    },
+    "description": "研發創新的液態生物質地膜技術，旨在提升農作效益並減少傳統塑膠地膜污染。 / Devoted to developing innovative liquid biomass mulch film technology, aiming to enhance agricultural efficiency and mitigate conventional plastic film pollution.",
+    "links": { "email": "", "scholar": "#" }
+  },
+  {
+    "id": "safira",
+    "name_zh": "",
+    "name_en": "Safira Prameshwari Ananta Haryanto",
+    "role": "交換生-碩士",
+    "research_topic": { 
+      "title_zh": "新一代生物基聚酯材料", 
+      "title_en": "Next-Generation Bio-Based Polyester Materials",
+      "keywords": ["PEF", "生物基聚酯"] 
+    },
+    "description": "專注於開發具有高阻隔性能的新一代生物基聚酯材料（PEF），探索其製程優化與未來應用。 / Focusing on the development of next-generation bio-based polyester materials (PEF) with high-barrier properties, exploring process optimization and prospective applications.",
+    "links": { "email": "", "scholar": "#" }
+  },
+  {
+    "id": "indri",
+    "name_zh": "",
+    "name_en": "INDRI RAHMAWATI",
+    "role": "交換生-碩士",
+    "research_topic": { 
+      "title_zh": "新一代生物基聚酯材料", 
+      "title_en": "Next-Generation Bio-Based Polyester Materials",
+      "keywords": ["PEF", "生物基聚酯"] 
+    },
+    "description": "專注於開發具有高阻隔性能的新一代生物基聚酯材料（PEF），探索其製程優化與未來應用。 / Focusing on the development of next-generation bio-based polyester materials (PEF) with high-barrier properties, exploring process optimization and prospective applications.",
+    "links": { "email": "", "scholar": "#" }
+  }
+
+
+
+
+
+        <section id="schedule" class="py-24 px-6 lg:px-16 max-w-7xl mx-auto space-y-12">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div class="max-w-xl">
+                    <h2 class="text-xs font-semibold text-emerald-600 tracking-widest uppercase mb-2 font-mono">Lab Calendar</h2>
+                    <p class="text-3xl font-bold text-emerald-950 tracking-tight sm:text-4xl">排程與會議管理</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 text-xs font-semibold text-emerald-800 tracking-wider uppercase font-mono">
+                    <i data-lucide="calendar" class="w-4 h-4 text-emerald-600"></i> 實驗室會議排程
+                </div>
+                <div class="grid gap-6 xl:grid-cols-2">
+                    <div class="relative w-full h-[620px] rounded-3xl overflow-hidden border border-emerald-200/80 bg-emerald-50/70 shadow-inner backdrop-blur-sm">
+                        <div class="absolute inset-x-0 top-0 h-12 bg-emerald-600 text-white text-xs font-bold uppercase tracking-[0.2em] flex items-center justify-center">Journal Club</div>
+                        <iframe src="https://calendar.google.com/calendar/embed?src=4576ed913eb7922183266a6a8b02606c412a539451ccc8ac5bbd427701d6fe97%40group.calendar.google.com&ctz=Asia%2FTaipei" 
+                                style="border: 0" class="absolute inset-x-0 bottom-0 top-12 w-full h-[calc(100%-3rem)] rounded-none" frameborder="0" scrolling="no"></iframe>
+                    </div>
+                    <div class="relative w-full h-[620px] rounded-3xl overflow-hidden border border-amber-200/80 bg-amber-50/70 shadow-inner backdrop-blur-sm">
+                        <div class="absolute inset-x-0 top-0 h-12 bg-amber-500 text-white text-xs font-bold uppercase tracking-[0.2em] flex items-center justify-center">Work Progress Report</div>
+                        <iframe src="https://calendar.google.com/calendar/embed?src=ebblab115%40gmail.com&ctz=Asia%2FTaipei" 
+                                style="border: 0" class="absolute inset-x-0 bottom-0 top-12 w-full h-[calc(100%-3rem)] rounded-none" frameborder="0" scrolling="no"></iframe>
+                    </div>
+                </div>
+            </div>
