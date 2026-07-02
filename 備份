@@ -633,3 +633,18 @@
                     </div>
                 </div>
             </div>
+
+
+
+
+
+                    <div class="group relative bg-white/90 backdrop-blur-sm border border-emerald-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-400 transition-all duration-300 w-full flex gap-4 items-start md:flex-row-reverse md:text-right">
+                        <div class="w-24 sm:w-28 aspect-[4/3] rounded-xl bg-emerald-50 border border-emerald-100/50 overflow-hidden shrink-0 shadow-inner mt-1 flex items-center justify-center text-emerald-500/80 bg-emerald-50/50">
+                            <i data-lucide="wind" class="w-6 h-6"></i>
+                            <img src="https://pub-d24fef14c0074c2db6319d6319645f22.r2.dev/0702/07021.webp" alt="Swine Farm Odor Control Technology" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/200x150?text=4:3+Image'">
+
+                        </div>
+                        <div class="space-y-1.5 flex-1 min-w-0">
+                            <h4 class="text-sm font-bold text-emerald-950 break-words">養豬場異味處理技術</h4>
+                            <span class="block text-[10.5px] text-emerald-800/70 font-medium break-words -mt-0.5 md:text-right">Swine Farm Odor Control Technology</span>
+                            <p class="text-[11px] text-emerald-700 font-light leading-relaxed mt-1 md:text-right">
