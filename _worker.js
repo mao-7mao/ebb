@@ -1,7 +1,7 @@
 export default {
   async fetch(request, env, ctx) {
-    const USERNAME = env.AUTH_USERNAME || "admin";
-    const PASSWORD = env.AUTH_PASSWORD || "changeme";
+    const USERNAME = env.AUTH_USERNAME || "ebb";
+    const PASSWORD = env.AUTH_PASSWORD || "ebb2026";
 
     const authHeader = request.headers.get("Authorization");
 
