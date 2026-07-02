@@ -88,5 +88,29 @@
     "status": "completed",
     "status_label": "✓ Completed",
     "search": "high-salt contained Spirulina sp. residues eko"
-  }
+  },
+{
+    "id": "m9",
+    "date": "2026/04/16",
+    "archive_group": "APRIL 2026 ",
+    "title": "Catalytic Synthesis of Lactic Acid from Cellulose over Easily-prepared Niobium-doped Titania by Solution Combustion Synthesis",
+    "speaker": "Kevin",
+    "speaker_id": "kevin",
+    "status": "completed",
+    "status_label": "✓ Completed",
+    "search": "Lactic Acid kevin"
+
+},
+{
+    "id": "m10",
+    "date": "2026/04/16",
+    "archive_group": "APRIL 2026 ",
+    "title": "Valorization of Spruce Bark to Environmentally Sustainable Packaging Materials",
+    "speaker": "Fanny",
+    "speaker_id": "fanny",
+    "status": "completed",
+    "status_label": "✓ Completed",
+    "search": "Sustainable Packaging Materials fanny"
+
+}
 ]
