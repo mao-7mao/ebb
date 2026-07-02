@@ -1,0 +1,9 @@
+{
+  "name": "ebb",
+  "compatibility_date": "2026-07-02",
+  "main": "_worker.js",
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS"
+  }
+}
