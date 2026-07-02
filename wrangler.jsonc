@@ -2,6 +2,9 @@
   "name": "ebb",
   "compatibility_date": "2026-07-02",
   "main": "_worker.js",
+  "vars": {
+    "AUTH_USERNAME": "ebb"
+  },
   "assets": {
     "directory": "./",
     "binding": "ASSETS",
