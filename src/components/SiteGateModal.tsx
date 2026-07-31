@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Lock, KeyRound, ShieldCheck, Eye, EyeOff, AlertCircle, CheckCircle, Sparkles } from "lucide-react";
-
-export const DEFAULT_SITE_PASS = (import.meta as any).env?.VITE_SITE_PASS || "ebb2026";
+import React, { useState } from "react";
+import { Lock, KeyRound, Eye, EyeOff, AlertCircle, CheckCircle, Sparkles } from "lucide-react";
 
 export function checkIsSiteUnlocked(): boolean {
   if (typeof window === "undefined") return false;
@@ -24,10 +22,11 @@ interface SiteGateModalProps {
 export default function SiteGateModal({ onUnlocked }: SiteGateModalProps) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  const handleUnlock = (e: React.FormEvent) => {
+  const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
@@ -39,14 +38,30 @@ export default function SiteGateModal({ onUnlocked }: SiteGateModalProps) {
       return;
     }
 
-    if (trimmedPass === DEFAULT_SITE_PASS || trimmedPass === "ebblab2026") {
-      setSuccessMsg("驗證成功！正在進入 EBB Lab 系統...");
-      setSiteUnlockedState(true);
-      setTimeout(() => {
-        onUnlocked();
-      }, 400);
-    } else {
-      setErrorMsg("全站存取密碼錯誤，請重新輸入。");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/verify-site-pass", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: trimmedPass }),
+      });
+
+      const data = await res.json().catch(() => ({ success: false, message: "解析回應失敗" }));
+
+      if (res.ok && data.success) {
+        setSuccessMsg("驗證成功！正在進入 EBB Lab 系統...");
+        setSiteUnlockedState(true);
+        setTimeout(() => {
+          onUnlocked();
+        }, 400);
+      } else {
+        setErrorMsg(data.message || "全站存取密碼錯誤，請重新輸入。");
+      }
+    } catch {
+      setErrorMsg("伺服器連線失敗，請檢查網路或稍後再試。");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -88,8 +103,9 @@ export default function SiteGateModal({ onUnlocked }: SiteGateModalProps) {
                 type={showPassword ? "text" : "password"} 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="請輸入全站存取密碼 (預設: ebb2026)"
-                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2.5 pl-9 pr-10 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a] font-mono font-medium"
+                placeholder="請輸入全站存取密碼"
+                disabled={isLoading}
+                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2.5 pl-9 pr-10 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a] font-mono font-medium disabled:opacity-50"
                 autoFocus
               />
               <button
@@ -121,10 +137,11 @@ export default function SiteGateModal({ onUnlocked }: SiteGateModalProps) {
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full py-3 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition active:scale-95 flex items-center justify-center gap-2"
+              disabled={isLoading}
+              className="w-full py-3 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Lock className="w-4 h-4 text-amber-300" />
-              <span>進入 EBB Lab 系統</span>
+              <span>{isLoading ? "驗證中..." : "進入 EBB Lab 系統"}</span>
             </button>
           </div>
         </form>

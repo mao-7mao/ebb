@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Lock, KeyRound, ShieldCheck, LogOut, Eye, EyeOff, AlertCircle, CheckCircle, UserCheck } from "lucide-react";
+import { Lock, KeyRound, Eye, EyeOff, AlertCircle, CheckCircle, UserCheck } from "lucide-react";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -8,9 +8,6 @@ interface AuthModalProps {
   title?: string;
   description?: string;
 }
-
-export const DEFAULT_ADMIN_USER = (import.meta as any).env?.VITE_ADMIN_USER || "ebb";
-export const DEFAULT_ADMIN_PASS = (import.meta as any).env?.VITE_ADMIN_PASS || "ebblab2026";
 
 export function checkIsAuthenticated(): boolean {
   if (typeof window === "undefined") return false;
@@ -36,6 +33,7 @@ export default function AuthModal({
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -48,7 +46,7 @@ export default function AuthModal({
 
   if (!isOpen) return null;
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
@@ -61,15 +59,31 @@ export default function AuthModal({
       return;
     }
 
-    if (trimmedUser === DEFAULT_ADMIN_USER && trimmedPass === DEFAULT_ADMIN_PASS) {
-      setSuccessMsg("驗證成功！正在登入...");
-      setAuthenticatedState(true);
-      setTimeout(() => {
-        onAuthenticated();
-        onClose();
-      }, 500);
-    } else {
-      setErrorMsg("帳號或密碼錯誤，請重新輸入。");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/verify-admin-pass", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: trimmedUser, password: trimmedPass }),
+      });
+
+      const data = await res.json().catch(() => ({ success: false, message: "解析回應失敗" }));
+
+      if (res.ok && data.success) {
+        setSuccessMsg("驗證成功！正在登入...");
+        setAuthenticatedState(true);
+        setTimeout(() => {
+          onAuthenticated();
+          onClose();
+        }, 500);
+      } else {
+        setErrorMsg(data.message || "帳號或密碼錯誤，請重新輸入。");
+      }
+    } catch {
+      setErrorMsg("伺服器連線失敗，請檢查網路或稍後再試。");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -114,8 +128,9 @@ export default function AuthModal({
                 type="text" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="請輸入帳號"
-                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a] font-mono font-medium"
+                placeholder="請輸入管理者帳號"
+                disabled={isLoading}
+                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a] font-mono font-medium disabled:opacity-50"
                 autoFocus
               />
             </div>
@@ -133,8 +148,9 @@ export default function AuthModal({
                 type={showPassword ? "text" : "password"} 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="請輸入密碼"
-                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2 pl-9 pr-10 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a] font-mono font-medium"
+                placeholder="請輸入管理者密碼"
+                disabled={isLoading}
+                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2 pl-9 pr-10 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a] font-mono font-medium disabled:opacity-50"
               />
               <button
                 type="button"
@@ -166,16 +182,18 @@ export default function AuthModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-1/3 py-2.5 bg-white hover:bg-slate-50 border border-[#e5e5e0] text-slate-700 rounded-sm text-xs font-bold transition"
+              disabled={isLoading}
+              className="w-1/3 py-2.5 bg-white hover:bg-slate-50 border border-[#e5e5e0] text-slate-700 rounded-sm text-xs font-bold transition disabled:opacity-50"
             >
               取消
             </button>
             <button
               type="submit"
-              className="w-2/3 py-2.5 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition active:scale-95 flex items-center justify-center gap-2"
+              disabled={isLoading}
+              className="w-2/3 py-2.5 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Lock className="w-3.5 h-3.5" />
-              <span>登入存取</span>
+              <span>{isLoading ? "驗證中..." : "登入存取"}</span>
             </button>
           </div>
         </form>

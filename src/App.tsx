@@ -8,6 +8,7 @@ import {
 import BusinessCardGenerator from "./components/BusinessCardGenerator";
 import LabDataGenerator from "./components/LabDataGenerator";
 import AuthModal, { checkIsAuthenticated, setAuthenticatedState } from "./components/AuthModal";
+import SiteGateModal, { checkIsSiteUnlocked } from "./components/SiteGateModal";
 import { 
   Users, 
   Network, 
@@ -45,12 +46,14 @@ export default function App() {
   const [activeMembers, setActiveMembers] = useState<Member[]>(initialMembersData);
   const [activeMeetings, setActiveMeetings] = useState<Meeting[]>(initialMeetingsData);
 
-  // Admin Auth Modal & Generator States
+  // Site Access Gate & Admin Auth Modal States
+  const [isSiteUnlocked, setIsSiteUnlocked] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLabDataGeneratorExpanded, setIsLabDataGeneratorExpanded] = useState(false);
 
   useEffect(() => {
+    setIsSiteUnlocked(checkIsSiteUnlocked());
     setIsAuthenticated(checkIsAuthenticated());
   }, []);
 
@@ -476,18 +479,18 @@ export default function App() {
 
               <button 
                 onClick={handleOpenCardGenerator}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#004b3a] text-white rounded-sm text-xs sm:text-sm font-bold uppercase tracking-widest shadow-sm hover:bg-[#003328] active:scale-95 transition-all group"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-widest shadow-sm hover:bg-[#f8f8f5] active:scale-95 transition-all group"
               >
-                <IdCard className="w-4 h-4 text-white/90" />
+                <IdCard className="w-4 h-4 text-[#004b3a]" />
                 <span>IdCard Generator</span>
               </button>
 
 
               <button 
                 onClick={() => scrollToId("schedule")}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-widest shadow-sm hover:bg-[#f8f8f5] active:scale-95 transition-all group"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#004b3a] text-white rounded-sm text-xs sm:text-sm font-bold uppercase tracking-widest shadow-sm hover:bg-[#003328] active:scale-95 transition-all group"
               >
-                <Calendar className="w-4 h-4 text-[#004b3a]" />
+                <Calendar className="w-4 h-4 text-white/90" />
                 <span>Meeting</span>
               </button>
             </div>
@@ -1093,7 +1096,12 @@ export default function App() {
 
       </main>
 
-      {/* AUTHENTICATION MODAL */}
+      {/* SITE ACCESS GATE MODAL (Layer 1 Security) */}
+      {!isSiteUnlocked && (
+        <SiteGateModal onUnlocked={() => setIsSiteUnlocked(true)} />
+      )}
+
+      {/* AUTHENTICATION MODAL (Layer 2 Admin Security) */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
