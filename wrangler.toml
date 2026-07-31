@@ -1,0 +1,13 @@
+name = "ebb-lab-portal"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "./dist"
+
+[vars]
+BASIC_AUTH_USER = "ebblab"
+BASIC_AUTH_PASS = "ebblab2026"
+VITE_ADMIN_USER = "ebblab"
+VITE_ADMIN_PASS = "ebblab2026"
+
+# Cloudflare Pages Build Settings:
+# Build Command: npm run build
+# Build Output Directory: dist

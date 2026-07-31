@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-brand-light: #fdfdfc;
+  --color-brand-card: #ffffff;
+  --color-brand-border: #e5e5e0;
+  --color-brand-accent: #004b3a;
+  --color-brand-muted: #8d734a;
+  
+  --font-sans: "Inter", "Noto Sans TC", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-display: "Playfair Display", serif;
+}
+
+body {
+  background-color: #f4f1ea; /* warm ivory paper */
+  color: #1a1a1a; /* deep charcoal */
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+::selection {
+  background-color: rgba(0, 75, 58, 0.15);
+  color: #004b3a;
+}
+
+/* Glassmorphism utilities tailored to Editorial theme */
+.glass-panel {
+  background: rgba(253, 253, 252, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #e5e5e0;
+}
+
+.glass-nav {
+  background: rgba(253, 253, 252, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid #e5e5e0;
+}
+
+/* Custom scrollbars matching deep academic green */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #fdfdfc;
+}
+::-webkit-scrollbar-thumb {
+  background: #004b3a;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #003328;
+}
+
+/* Business card specific styling to guarantee perfect 3D flipping */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
