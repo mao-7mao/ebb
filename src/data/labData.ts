@@ -73,7 +73,7 @@ export const members: Member[] = [
     "role": "113碩班",
     "role_en": "Master's Student",
     "research_topic": { 
-      "title_zh": "藻類生質塑膠與異味控制", 
+      "title_zh": "藻類生質塑膠、養豬場異味控制", 
       "title_en": "Algae-Based Bioplastics & Swine Farm Odor Control",
       "keywords": ["藻類", "生質塑膠", "異味處理"] 
     },
