@@ -2,5 +2,5 @@
   "name": "EBB Lab ",
   "description": "國立中山大學環境工程研究所，環境生物技術與生物精煉實驗室 (EBB Lab)",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": ["environmental engineering", "biotechnology", "biorefinery"]
 }

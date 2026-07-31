@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
+import { toPng } from "html-to-image";
+import QRCode from "qrcode";
 import { members, Member } from "../data/labData";
 import { 
   Check, 
@@ -11,7 +11,6 @@ import {
   Mail, 
   Phone, 
   Layers, 
-  FileText, 
   MapPin, 
   QrCode, 
   Globe, 
@@ -65,70 +64,70 @@ const GREEN_SHADES: Record<GreenShade, GreenShadeColors> = {
 
 const TextureOverlay = ({ color = "#8d734a" }: { color?: string }) => {
   return (
-    <div className="absolute inset-0 pointer-events-none opacity-[0.14] select-none rounded-sm overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none opacity-[0.20] select-none rounded-sm overflow-hidden">
       <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 550 330" fill="none">
         {/* Organic Leaf Veins Background */}
         <g opacity="0.85">
-          <path d="M-20,350 Q150,200 300,280 T580,240" stroke={color} strokeWidth="1.5" />
-          <path d="M120,240 Q180,160 140,110" stroke={color} strokeWidth="1" />
-          <path d="M180,215 Q240,140 220,90" stroke={color} strokeWidth="1" />
-          <path d="M240,248 Q320,180 340,130" stroke={color} strokeWidth="1" />
-          <path d="M380,265 Q450,210 430,150" stroke={color} strokeWidth="1" />
-          <path d="M140,110 Q110,80 80,90" stroke={color} strokeWidth="0.8" />
-          <path d="M180,215 Q150,190 120,200" stroke={color} strokeWidth="0.8" />
-          <path d="M220,90 Q190,60 160,70" stroke={color} strokeWidth="0.8" />
-          <path d="M340,130 Q300,100 270,110" stroke={color} strokeWidth="0.8" />
-          <path d="M400,50 C480,120 420,220 500,290" stroke={color} strokeWidth="1.2" />
-          <path d="M440,110 Q410,130 380,120" stroke={color} strokeWidth="0.8" />
-          <path d="M460,180 Q430,200 400,190" stroke={color} strokeWidth="0.8" />
+          <path d="M-20,350 Q150,200 300,280 T580,240" stroke={color} strokeWidth="3" />
+          <path d="M120,240 Q180,160 140,110" stroke={color} strokeWidth="2" />
+          <path d="M180,215 Q240,140 220,90" stroke={color} strokeWidth="2" />
+          <path d="M240,248 Q320,180 340,130" stroke={color} strokeWidth="2" />
+          <path d="M380,265 Q450,210 430,150" stroke={color} strokeWidth="2" />
+          <path d="M140,110 Q110,80 80,90" stroke={color} strokeWidth="1.6" />
+          <path d="M180,215 Q150,190 120,200" stroke={color} strokeWidth="1.6" />
+          <path d="M220,90 Q190,60 160,70" stroke={color} strokeWidth="1.6" />
+          <path d="M340,130 Q300,100 270,110" stroke={color} strokeWidth="1.6" />
+          <path d="M400,50 C480,120 420,220 500,290" stroke={color} strokeWidth="2.4" />
+          <path d="M440,110 Q410,130 380,120" stroke={color} strokeWidth="1.6" />
+          <path d="M460,180 Q430,200 400,190" stroke={color} strokeWidth="1.6" />
         </g>
 
         {/* DNA Double Helix - Top Right */}
         <g transform="translate(425, 12) scale(0.65)" opacity="0.9">
-          <path d="M10,10 Q30,50 50,90 T90,170" stroke={color} strokeWidth="1.8" strokeDasharray="4 4" />
-          <path d="M50,10 Q30,50 10,90 T-30,170" stroke={color} strokeWidth="1.8" />
-          <line x1="28" y1="40" x2="32" y2="40" stroke={color} strokeWidth="1.5" />
-          <line x1="18" y1="65" x2="42" y2="65" stroke={color} strokeWidth="1.5" />
-          <line x1="12" y1="90" x2="48" y2="90" stroke={color} strokeWidth="1.5" />
-          <line x1="16" y1="115" x2="44" y2="115" stroke={color} strokeWidth="1.5" />
-          <line x1="26" y1="140" x2="34" y2="140" stroke={color} strokeWidth="1.5" />
+          <path d="M10,10 Q30,50 50,90 T90,170" stroke={color} strokeWidth="3.6" strokeDasharray="4 4" />
+          <path d="M50,10 Q30,50 10,90 T-30,170" stroke={color} strokeWidth="3.6" />
+          <line x1="28" y1="40" x2="32" y2="40" stroke={color} strokeWidth="3" />
+          <line x1="18" y1="65" x2="42" y2="65" stroke={color} strokeWidth="3" />
+          <line x1="12" y1="90" x2="48" y2="90" stroke={color} strokeWidth="3" />
+          <line x1="16" y1="115" x2="44" y2="115" stroke={color} strokeWidth="3" />
+          <line x1="26" y1="140" x2="34" y2="140" stroke={color} strokeWidth="3" />
         </g>
 
         {/* Molecular Structure / Benzene/Glucose Ring - Bottom Left */}
         <g transform="translate(25, 195) scale(0.72)" opacity="0.95">
-          <polygon points="50,30 90,10 130,30 130,70 90,90 50,70" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
-          <line x1="88" y1="18" x2="122" y2="35" stroke={color} strokeWidth="1" />
-          <line x1="58" y1="65" x2="58" y2="35" stroke={color} strokeWidth="1" />
-          <line x1="122" y1="65" x2="94" y2="81" stroke={color} strokeWidth="1" />
-          <line x1="130" y1="30" x2="155" y2="15" stroke={color} strokeWidth="1.5" />
+          <polygon points="50,30 90,10 130,30 130,70 90,90 50,70" stroke={color} strokeWidth="3.6" strokeLinejoin="round" />
+          <line x1="88" y1="18" x2="122" y2="35" stroke={color} strokeWidth="2" />
+          <line x1="58" y1="65" x2="58" y2="35" stroke={color} strokeWidth="2" />
+          <line x1="122" y1="65" x2="94" y2="81" stroke={color} strokeWidth="2" />
+          <line x1="130" y1="30" x2="155" y2="15" stroke={color} strokeWidth="3" />
           <text x="160" y="18" fill={color} fontSize="11" fontFamily="monospace" fontWeight="bold">OH</text>
-          <line x1="50" y1="30" x2="25" y2="15" stroke={color} strokeWidth="1.5" />
+          <line x1="50" y1="30" x2="25" y2="15" stroke={color} strokeWidth="3" />
           <text x="2" y="18" fill={color} fontSize="11" fontFamily="monospace" fontWeight="bold">HO</text>
-          <line x1="90" y1="90" x2="90" y2="115" stroke={color} strokeWidth="1.5" />
+          <line x1="90" y1="90" x2="90" y2="115" stroke={color} strokeWidth="3" />
           <text x="84" y="128" fill={color} fontSize="11" fontFamily="monospace" fontWeight="bold">O</text>
-          <polygon points="130,70 170,90 210,70 210,30 170,10 130,30" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeDasharray="3 3" />
+          <polygon points="130,70 170,90 210,70 210,30 170,10 130,30" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeDasharray="3 3" />
         </g>
 
         {/* Erlenmeyer Flask & Sprout Leaf - Center Right / Back Center */}
         <g transform="translate(345, 140) scale(0.78)" opacity="0.9">
-          <path d="M40,20 L60,20 M50,20 L50,45 L15,95 C10,103 16,110 25,110 L105,110 C114,110 120,103 115,95 L80,45 L80,20 M70,20 L90,20" stroke={color} strokeWidth="2" strokeLinejoin="round" />
+          <path d="M40,20 L60,20 M50,20 L50,45 L15,95 C10,103 16,110 25,110 L105,110 C114,110 120,103 115,95 L80,45 L80,20 M70,20 L90,20" stroke={color} strokeWidth="4" strokeLinejoin="round" />
           <path d="M22,85 C45,88 75,82 108,85 L105,100 C103,105 98,105 95,105 L35,105 C32,105 27,105 25,100 Z" fill={color} opacity="0.2" />
-          <circle cx="55" cy="70" r="3.5" stroke={color} strokeWidth="1" />
-          <circle cx="75" cy="60" r="2" stroke={color} strokeWidth="1" />
+          <circle cx="55" cy="70" r="3.5" stroke={color} strokeWidth="2" />
+          <circle cx="75" cy="60" r="2" stroke={color} strokeWidth="2" />
           <circle cx="48" cy="45" r="1.5" fill={color} />
-          <circle cx="68" cy="38" r="2.5" stroke={color} strokeWidth="0.8" />
+          <circle cx="68" cy="38" r="2.5" stroke={color} strokeWidth="1.6" />
           <path d="M65,30 Q78,5 105,10 Q88,35 65,30 Z" fill={color} opacity="0.45" />
-          <path d="M65,30 C75,20 90,15 105,10" stroke={color} strokeWidth="1.2" />
+          <path d="M65,30 C75,20 90,15 105,10" stroke={color} strokeWidth="2.4" />
         </g>
 
         {/* Microbes / Cell Cultures / Concentric rings - Scattered */}
-        <circle cx="150" cy="50" r="6" stroke={color} strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
+        <circle cx="150" cy="50" r="6" stroke={color} strokeWidth="2" strokeDasharray="2 2" opacity="0.5" />
         <circle cx="150" cy="50" r="2" fill={color} opacity="0.5" />
-        <circle cx="280" cy="40" r="4" stroke={color} strokeWidth="1.2" opacity="0.6" />
+        <circle cx="280" cy="40" r="4" stroke={color} strokeWidth="2.4" opacity="0.6" />
         <circle cx="283" cy="37" r="1" fill={color} opacity="0.6" />
 
         {/* Plant Stem / Curving Bio-Energy stream connecting it all */}
-        <path d="M120,130 C190,140 250,70 330,85 C390,95 440,50 490,65" stroke={color} strokeWidth="1" strokeDasharray="5 5" opacity="0.5" />
+        <path d="M120,130 C190,140 250,70 330,85 C390,95 440,50 490,65" stroke={color} strokeWidth="2" strokeDasharray="5 5" opacity="0.5" />
       </svg>
     </div>
   );
@@ -161,11 +160,39 @@ export default function BusinessCardGenerator() {
   // Card layout mode: double-sided or single-sided (optimized for translucent biomass cards)
   const [layoutMode, setLayoutMode] = useState<"double" | "single">("double");
 
-  // NSYSU default logo (loads from public SVG url)
-  const defaultNsysuLogo = "https://www.nsysu.edu.tw/var/file/0/1000/img/80/213315840.svg";
-  
-  // Default dynamic QR Code API placeholder
-  const defaultQrCodePlaceholder = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://ebblab-nsysu.github.io";
+  // Official Logo URLs stored locally in /public (prevents CORS blocking & blank images)
+  const DEFAULT_PLUM_LOGO = "/logo.svg";
+  const DEFAULT_NSYSU_LOGO = "/logo.svg";
+
+  // Pre-converted Data URLs for html2canvas compatibility (prevents canvas tainting & CORS download failures)
+  const [plumLogoDataUrl, setPlumLogoDataUrl] = useState<string>(DEFAULT_PLUM_LOGO);
+  const [nsysuLogoDataUrl, setNsysuLogoDataUrl] = useState<string>(DEFAULT_NSYSU_LOGO);
+
+  useEffect(() => {
+    // Preload & convert Plum Blossom mini logo to Data URL
+    fetch(DEFAULT_PLUM_LOGO)
+      .then(res => res.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (reader.result) setPlumLogoDataUrl(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(err => console.warn("Could not convert plum logo to data URL, fallback to raw URL:", err));
+
+    // Preload & convert NSYSU full logo to Data URL
+    fetch(DEFAULT_NSYSU_LOGO)
+      .then(res => res.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (reader.result) setNsysuLogoDataUrl(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(err => console.warn("Could not convert NSYSU logo to data URL, fallback to raw URL:", err));
+  }, []);
 
   // Card form fields
   const [formData, setFormData] = useState<CardData>({
@@ -176,10 +203,35 @@ export default function BusinessCardGenerator() {
     email: "ebblab115@gmail.com",
     tel: "+886-7-525-2000 ext. 4408",
     line: "ebb_lab_nsysu",
-    qrCodeUrl: "", // Defaults to API if empty
-    logoUrl: "",   // Defaults to Wikimedia NSYSU logo if empty
+    qrCodeUrl: "", 
+    logoUrl: "",   
     addressEn: "No. 70, Lianhai Rd., Gushan Dist., Kaohsiung City 80424, Taiwan "
   });
+
+  // Generated QR Code Data URL state (generated locally via qrcode package)
+  const [generatedQrCodeUrl, setGeneratedQrCodeUrl] = useState<string>("");
+
+  useEffect(() => {
+    if (formData.qrCodeUrl) {
+      setGeneratedQrCodeUrl(formData.qrCodeUrl);
+    } else {
+      const qrData = formData.email ? `mailto:${formData.email}` : "https://ebblab-nsysu.github.io";
+      QRCode.toDataURL(qrData, {
+        width: 300,
+        margin: 1,
+        color: {
+          dark: "#000000",
+          light: "#ffffff",
+        },
+      })
+        .then((url) => {
+          setGeneratedQrCodeUrl(url);
+        })
+        .catch((err) => {
+          console.error("QR Code Generation Error:", err);
+        });
+    }
+  }, [formData.qrCodeUrl, formData.email]);
 
   // Reference hooks to DOM elements for canvas export
   const frontCardRef = useRef<HTMLDivElement>(null);
@@ -281,104 +333,59 @@ export default function BusinessCardGenerator() {
          m.name_en.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Render dynamic QR URL based on email/contact or custom upload
-  const getQrCodeSource = () => {
-    if (formData.qrCodeUrl) return formData.qrCodeUrl;
-    // Generate functional QR leading to mailto
-    const qrData = formData.email ? `mailto:${formData.email}` : "https://ebblab-nsysu.github.io";
-    return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}`;
+  // Render dynamic QR URL
+  const getQrCodeSource = (): string | undefined => {
+    return formData.qrCodeUrl || generatedQrCodeUrl || undefined;
   };
 
-  // Helper to obtain sanitized html2canvas capture options (converting oklch/oklab to rgb)
-  const getCaptureOptions = () => {
-    return {
-      scale: 4,               // Scale factor of 4 produces razor sharp outputs
-      useCORS: true,          // Allow fetching external images like Wikimedia logos
-      allowTaint: true,       // Prevent cross-origin security issues from spoiling render
-      backgroundColor: null,  // Render background colors accurately
-      logging: false,
-      onclone: (clonedDoc: Document) => {
-        try {
-          // Ensure that both cards are fully visible in the cloned document for html2canvas to render them properly
-          const clonedFront = clonedDoc.getElementById("card-front");
-          const clonedBack = clonedDoc.getElementById("card-back");
-          if (clonedFront) {
-            clonedFront.style.opacity = "1";
-            clonedFront.style.visibility = "visible";
-            clonedFront.classList.remove("opacity-0", "pointer-events-none");
-          }
-          if (clonedBack) {
-            clonedBack.style.opacity = "1";
-            clonedBack.style.visibility = "visible";
-            clonedBack.classList.remove("opacity-0", "pointer-events-none");
-          }
+  // Render dynamic Plum Blossom Logo URL (Mini logo)
+  const getPlumLogoSource = (): string | undefined => {
+    return formData.logoUrl || plumLogoDataUrl || undefined;
+  };
 
-          // 1. Create a helper to resolve oklch/oklab colors using the browser's built-in CSS parsing engine
-          const tempElement = clonedDoc.createElement("div");
-          clonedDoc.body.appendChild(tempElement);
-          
-          const resolveColorToRgb = (colorStr: string): string => {
-            try {
-              tempElement.style.color = colorStr;
-              return clonedDoc.defaultView?.getComputedStyle(tempElement).color || colorStr;
-            } catch (e) {
-              return colorStr;
-            }
-          };
+  // Render dynamic NSYSU Main Logo URL (Full logo / Seal)
+  const getNsysuLogoSource = (): string | undefined => {
+    return formData.logoUrl || nsysuLogoDataUrl || undefined;
+  };
 
-          // 2. Read all CSS rules from the original document's stylesheets
-          let combinedCss = "";
-          const styleSheets = Array.from(document.styleSheets);
-          
-          for (const sheet of styleSheets) {
-            try {
-              // Skip cross-origin sheets to avoid security exceptions
-              if (sheet.href && !sheet.href.startsWith(window.location.origin)) {
-                continue;
-              }
-              
-              const rules = Array.from(sheet.cssRules || sheet.rules || []);
-              for (const rule of rules) {
-                combinedCss += rule.cssText + "\n";
-              }
-            } catch (e) {
-              // Ignore errors reading stylesheet rules (e.g. cross-origin sheets)
-            }
-          }
+  // Default fallback Logo URL
+  const getLogoSource = (): string | undefined => {
+    return getNsysuLogoSource();
+  };
 
-          // 3. If we successfully gathered local styles, sanitize them and replace local style nodes
-          if (combinedCss) {
-            // Replace oklch/oklab color functions with their equivalent rgb/rgba values
-            const sanitizedCss = combinedCss.replace(/(oklch|oklab)\([^)]+\)/g, (match) => {
-              return resolveColorToRgb(match);
-            });
+  // Helper to capture a card element cleanly as a high-resolution PNG data URL using native SVG foreignObject rendering
+  const captureCard = async (element: HTMLElement): Promise<string> => {
+    const hadOpacity0 = element.classList.contains("opacity-0");
+    const hadPointerEvents = element.classList.contains("pointer-events-none");
+    const hadRotate = element.classList.contains("rotate-y-180");
 
-            // Remove original same-origin style elements from the cloned iframe document
-            const existingStyles = clonedDoc.querySelectorAll("style, link[rel='stylesheet']");
-            existingStyles.forEach(el => {
-              if (el.tagName === "STYLE") {
-                el.remove();
-              } else if (el.tagName === "LINK") {
-                const href = el.getAttribute("href");
-                if (!href || href.startsWith(window.location.origin) || href.startsWith("/")) {
-                  el.remove();
-                }
-              }
-            });
+    if (hadOpacity0) element.classList.remove("opacity-0");
+    if (hadPointerEvents) element.classList.remove("pointer-events-none");
+    if (hadRotate) element.classList.remove("rotate-y-180");
 
-            // Inject the sanitized styles
-            const newStyle = clonedDoc.createElement("style");
-            newStyle.textContent = sanitizedCss;
-            clonedDoc.head.appendChild(newStyle);
-          }
-          
-          // Clean up temporary element
-          tempElement.remove();
-        } catch (err) {
-          console.error("onclone CSS sanitization failed:", err);
-        }
-      }
-    };
+    const prevOpacity = element.style.opacity;
+    const prevVisibility = element.style.visibility;
+    const prevTransform = element.style.transform;
+
+    element.style.opacity = "1";
+    element.style.visibility = "visible";
+    element.style.transform = "none";
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      return await toPng(element, {
+        pixelRatio: 4,
+        cacheBust: true,
+        backgroundColor: exportTransparent ? undefined : "#fdfdfc",
+      });
+    } finally {
+      if (hadOpacity0) element.classList.add("opacity-0");
+      if (hadPointerEvents) element.classList.add("pointer-events-none");
+      if (hadRotate) element.classList.add("rotate-y-180");
+      element.style.opacity = prevOpacity;
+      element.style.visibility = prevVisibility;
+      element.style.transform = prevTransform;
+    }
   };
 
   // Export Front & Back as separate High-Res PNG images
@@ -387,22 +394,16 @@ export default function BusinessCardGenerator() {
       setIsPngExporting(true);
       setIsExporting(true);
       
-      // Allow React state to flush and render transparency classes before capturing
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      
       const cardFront = frontCardRef.current;
       const cardBack = backCardRef.current;
       
       if (!cardFront || (layoutMode === "double" && !cardBack)) {
         alert("名片預覽載入失敗，無法生成。");
-        setIsPngExporting(false);
-        setIsExporting(false);
         return;
       }
 
       // Front Export (or Single side)
-      const frontCanvas = await html2canvas(cardFront, getCaptureOptions());
-      const frontDataUrl = frontCanvas.toDataURL("image/png");
+      const frontDataUrl = await captureCard(cardFront);
       const frontLink = document.createElement("a");
       const filenameSuffix = layoutMode === "single" ? "Single_Side" : "Front";
       frontLink.download = `${formData.nameEn.replace(/\s+/g, "_")}_Academic_Card_${filenameSuffix}.png`;
@@ -411,8 +412,7 @@ export default function BusinessCardGenerator() {
 
       // Back Export (Only if layoutMode is double)
       if (layoutMode === "double" && cardBack) {
-        const backCanvas = await html2canvas(cardBack, getCaptureOptions());
-        const backDataUrl = backCanvas.toDataURL("image/png");
+        const backDataUrl = await captureCard(cardBack);
         const backLink = document.createElement("a");
         backLink.download = `${formData.nameEn.replace(/\s+/g, "_")}_Academic_Card_Back.png`;
         backLink.href = backDataUrl;
@@ -428,51 +428,6 @@ export default function BusinessCardGenerator() {
     }
   };
 
-  // Export Double-Sided card as a single print-ready PDF (Landscape, exact 90mm x 54mm dimensions)
-  const exportAsPdf = async () => {
-    try {
-      setIsExporting(true);
-      
-      const cardFront = frontCardRef.current;
-      const cardBack = backCardRef.current;
-      
-      if (!cardFront || (layoutMode === "double" && !cardBack)) {
-        alert("名片預覽載入失敗，無法生成。");
-        return;
-      }
-
-      // Render Front/Single canvas
-      const frontCanvas = await html2canvas(cardFront, getCaptureOptions());
-      const frontDataUrl = frontCanvas.toDataURL("image/png");
-
-      // Initialize jsPDF with standard landscape business card dimensions (90mm x 54mm)
-      const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "mm",
-        format: [90, 54]
-      });
-
-      // Page 1: Card Front or Single side
-      pdf.addImage(frontDataUrl, "PNG", 0, 0, 90, 54);
-      
-      // Page 2: Card Back (Only if layoutMode is double)
-      if (layoutMode === "double" && cardBack) {
-        const backCanvas = await html2canvas(cardBack, getCaptureOptions());
-        const backDataUrl = backCanvas.toDataURL("image/png");
-        pdf.addPage([90, 54], "landscape");
-        pdf.addImage(backDataUrl, "PNG", 0, 0, 90, 54);
-      }
-
-      const filenameSuffix = layoutMode === "single" ? "_SingleSide" : "";
-      pdf.save(`${formData.nameEn.replace(/\s+/g, "_")}_Academic_Card${filenameSuffix}.pdf`);
-
-    } catch (error) {
-      console.error("Export PDF Failed:", error);
-      alert("PDF 檔案生成失敗，請稍後再試。");
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   return (
     <section id="card-generator" className="py-24 px-4 md:px-8 max-w-7xl mx-auto border-t border-[#e5e5e0]">
@@ -842,17 +797,16 @@ export default function BusinessCardGenerator() {
 
                     {/* Header section (Logo and University titles) */}
                     <div className="flex items-center gap-3.5 z-10 border-b border-[#e5e5e0]/60 pb-2.5">
-                      <div className="flex items-center justify-center max-w-[100px] h-9 shrink-0">
-                        <img
-                          src="https://www.nsysu.edu.tw/var/file/0/1000/img/80/logo03.jpg"
-                          onError={(e) => {
-                            e.currentTarget.src = "https://upload.wikimedia.org/wikipedia/commons/e/e5/National_Sun_Yat-sen_University_logo.svg";
-                          }}
-                          alt="NSYSU Plum Blossom Logo"
-                          referrerPolicy="no-referrer"
-                          className="max-h-9 w-auto object-contain mix-blend-multiply"
-                          style={{ filter: "url(#remove-white)" }}
-                        />
+                      <div className="flex items-center justify-center max-w-[130px] h-9 shrink-0">
+                        {getNsysuLogoSource() && (
+                          <img
+                            src={getNsysuLogoSource()}
+                            alt="NSYSU Full Logo"
+                            crossOrigin="anonymous"
+                            className="max-h-9 w-auto object-contain mix-blend-multiply"
+                            style={{ filter: "url(#remove-white)" }}
+                          />
+                        )}
                       </div>
                       <div>
                         <h4 className="text-[11px] tracking-wide font-bold uppercase font-serif leading-none" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
@@ -944,16 +898,31 @@ export default function BusinessCardGenerator() {
                           )}
                         </div>
 
-                        {/* QR Code and Scan hint */}
-                        <div className="flex items-center gap-2.5 mt-1 border-t border-[#e5e5e0]/60 pt-2">
-                          <img
-                            src={getQrCodeSource()}
-                            alt="Contact QR Code"
-                            className="w-[45px] h-[45px] object-contain rounded-sm border border-[#8d734a]/25 bg-white p-0.5 shadow-xs shrink-0"
-                          />
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-bold font-serif leading-none" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>EBB Lab</span>
-                            <span className="text-[6.5px] font-mono text-slate-400 font-bold tracking-wide uppercase leading-tight mt-0.5">SCAN<br/>CONTACT</span>
+                        {/* QR Code, Logo and Scan hint */}
+                        <div className="flex items-center gap-2 mt-1 border-t border-[#e5e5e0]/60 pt-2">
+                          {getQrCodeSource() ? (
+                            <img
+                              src={getQrCodeSource()}
+                              alt="Contact QR Code"
+                              className="w-[42px] h-[42px] object-contain rounded-sm border border-[#8d734a]/25 bg-white p-0.5 shadow-xs shrink-0"
+                            />
+                          ) : (
+                            <div className="w-[42px] h-[42px] rounded-sm border border-[#8d734a]/25 bg-[#fafaf9] animate-pulse shrink-0" />
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            {getNsysuLogoSource() && (
+                              <img
+                                src={getNsysuLogoSource()}
+                                alt="NSYSU Logo"
+                                crossOrigin="anonymous"
+                                className="h-6 w-auto object-contain mix-blend-multiply shrink-0"
+                                style={{ filter: "url(#remove-white)" }}
+                              />
+                            )}
+                            <div className="flex flex-col">
+                              <span className="text-[9px] font-bold font-serif leading-none" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>EBB Lab</span>
+                              <span className="text-[6.5px] font-mono text-slate-400 font-bold tracking-wide uppercase leading-tight mt-0.5">SCAN<br/>CONTACT</span>
+                            </div>
                           </div>
                         </div>
 
@@ -986,16 +955,15 @@ export default function BusinessCardGenerator() {
                       {/* Header: University seal and departments (Clean layout optimized for UV printing on biomass plastic) */}
                       <div className="flex items-start gap-4 z-10">
                         <div className="flex items-center justify-center max-w-[150px] h-12 shrink-0">
-                          <img
-                            src="https://www.nsysu.edu.tw/var/file/0/1000/img/80/logo03.jpg"
-                            onError={(e) => {
-                              e.currentTarget.src = "https://upload.wikimedia.org/wikipedia/commons/e/e5/National_Sun_Yat-sen_University_logo.svg";
-                            }}
-                            alt="NSYSU Plum Blossom Logo"
-                            referrerPolicy="no-referrer"
-                            className="max-h-12 w-auto object-contain mix-blend-multiply"
-                            style={{ filter: "url(#remove-white)" }}
-                          />
+                          {getNsysuLogoSource() && (
+                            <img
+                              src={getNsysuLogoSource()}
+                              alt="NSYSU Full Logo"
+                              crossOrigin="anonymous"
+                              className="max-h-12 w-auto object-contain mix-blend-multiply"
+                              style={{ filter: "url(#remove-white)" }}
+                            />
+                          )}
                         </div>
                         <div>
                           <h4 className="text-sm tracking-wide font-bold uppercase font-serif" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
@@ -1069,25 +1037,28 @@ export default function BusinessCardGenerator() {
                         <TextureOverlay color={GREEN_SHADES[greenShade].primaryHex} />
 
                         <div className="w-[95%] h-11 flex items-center justify-center z-10 shrink-0">
-                          <img
-                            src="https://upload.wikimedia.org/wikipedia/zh/thumb/2/29/National_Sun_Yat-sen_University_logo.svg/500px-National_Sun_Yat-sen_University_logo.svg.png"
-                            onError={(e) => {
-                              e.currentTarget.src = "https://upload.wikimedia.org/wikipedia/commons/e/e5/National_Sun_Yat-sen_University_logo.svg";
-                            }}
-                            alt="NSYSU Official Seal"
-                            referrerPolicy="no-referrer"
-                            className="max-h-11 w-auto object-contain mix-blend-multiply"
-                            style={{ filter: "url(#remove-white)" }}
-                          />
+                          {getNsysuLogoSource() && (
+                            <img
+                              src={getNsysuLogoSource()}
+                              alt="NSYSU Official Seal"
+                              crossOrigin="anonymous"
+                              className="max-h-11 w-auto object-contain mix-blend-multiply"
+                              style={{ filter: "url(#remove-white)" }}
+                            />
+                          )}
                         </div>
 
                         {/* Centered QR Code with high scanning contrast */}
                         <div className="z-10 my-2 flex flex-col items-center">
-                          <img
-                            src={getQrCodeSource()}
-                            alt="Contact QR Code"
-                            className="w-[60px] h-[60px] object-contain rounded-sm border border-[#8d734a]/25 bg-white p-0.5 shadow-xs"
-                          />
+                          {getQrCodeSource() ? (
+                            <img
+                              src={getQrCodeSource()}
+                              alt="Contact QR Code"
+                              className="w-[60px] h-[60px] object-contain rounded-sm border border-[#8d734a]/25 bg-white p-0.5 shadow-xs"
+                            />
+                          ) : (
+                            <div className="w-[60px] h-[60px] rounded-sm border border-[#8d734a]/25 bg-[#fafaf9] animate-pulse" />
+                          )}
                           <span className="text-[7.5px] mt-1.5 font-mono text-slate-400 font-bold tracking-widest uppercase">SCAN CONTACT</span>
                         </div>
 
@@ -1209,10 +1180,10 @@ export default function BusinessCardGenerator() {
           <div className="w-full bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm p-6 shadow-sm max-w-[480px]">
             <h4 className="text-sm font-bold font-serif mb-1.5 flex items-center justify-center gap-2 text-center" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
               <Download className="w-4 h-4 text-[#8d734a]" />
-              儲存與直印輸出系統 (Export & Print System)
+              高解析度 PNG 導出系統 (PNG Export System)
             </h4>
             <p className="text-[11px] text-[#555] mb-4 font-light text-center">
-              支援輸出高解析度 PNG 圖檔與向量 PDF。可自由切換是否帶背景底色，以利 UV 直印生物質名片。
+              可自由切換帶背景底色（標準象牙白）或透明背景（UV 直印生物質名片專用），輸出 4x 向量級高解析度 PNG 圖檔。
             </p>
 
             {/* PNG Export Background Mode Selector */}
@@ -1220,7 +1191,7 @@ export default function BusinessCardGenerator() {
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
-                  PNG 導出背景設定 (PNG Background Mode)
+                  PNG 導出背景設定 (Background Mode)
                 </span>
                 <span className="text-[9px] font-bold font-mono text-[#8d734a] italic">
                   UV 列印專用
@@ -1230,7 +1201,7 @@ export default function BusinessCardGenerator() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setExportTransparent(false)}
-                  className={`py-1.5 px-3 rounded-sm text-[10px] font-bold transition border flex items-center justify-center gap-1.5 ${
+                  className={`py-2 px-3 rounded-sm text-[10.5px] font-bold transition border flex items-center justify-center gap-1.5 ${
                     !exportTransparent
                       ? "text-white shadow-xs"
                       : "bg-[#fdfdfc] hover:bg-[#fafafa] border-[#e5e5e0] text-slate-600"
@@ -1243,7 +1214,7 @@ export default function BusinessCardGenerator() {
                 
                 <button
                   onClick={() => setExportTransparent(true)}
-                  className={`py-1.5 px-3 rounded-sm text-[10px] font-bold transition border flex items-center justify-center gap-1.5 ${
+                  className={`py-2 px-3 rounded-sm text-[10.5px] font-bold transition border flex items-center justify-center gap-1.5 ${
                     exportTransparent
                       ? "text-white shadow-xs"
                       : "bg-[#fdfdfc] hover:bg-[#fafafa] border-[#e5e5e0] text-slate-600"
@@ -1255,56 +1226,33 @@ export default function BusinessCardGenerator() {
                 </button>
               </div>
               
-              <p className="text-[9px] text-slate-500 font-light leading-normal">
+              <p className="text-[9.5px] text-slate-500 font-light leading-normal">
                 {!exportTransparent 
                   ? "包含象牙白優雅底色與卡片外框，適合一般螢幕分享、數位傳閱或一般紙質印刷預覽。"
-                  : "完全移除背景色，僅導出文字、線框與葉脈底紋。適合匯入印表機直印在半透明、透明生物質塑膠（Bioplastic）或原木片上，保留基材原色與質感！"}
+                  : "完全移除背景色，僅導出文字、線框與葉脈底紋。適合匯入 UV 印表機直印在半透明、透明生物質塑膠（Bioplastic）或原木片上，保留基材原色與質感！"}
               </p>
             </div>
 
-            <div className="flex gap-3 justify-center">
+            <div className="flex justify-center">
               <button
                 onClick={exportAsPng}
                 disabled={isExporting}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white border border-[#e5e5e0] text-[10px] font-bold uppercase tracking-widest rounded-sm hover:bg-[#fafafa] shadow-sm active:scale-95 transition-all disabled:opacity-50 shrink-0"
-                style={{ color: GREEN_SHADES[greenShade].primaryHex }}
-              >
-                {isExporting ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    正在輸出...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-3.5 h-3.5" />
-                    儲存為 PNG
-                  </>
-                )}
-              </button>
-              
-              <button
-                onClick={exportAsPdf}
-                disabled={isExporting}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 text-white text-[10px] font-bold uppercase tracking-widest rounded-sm shadow-md active:scale-95 transition-all disabled:opacity-50 shrink-0"
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 text-white text-xs font-bold uppercase tracking-widest rounded-sm shadow-md active:scale-95 transition-all disabled:opacity-50"
                 style={{ backgroundColor: GREEN_SHADES[greenShade].primaryHex }}
               >
                 {isExporting ? (
                   <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    正在組裝...
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    正在輸出 PNG...
                   </>
                 ) : (
                   <>
-                    <FileText className="w-3.5 h-3.5" />
-                    儲存為 PDF (雙面版)
+                    <Download className="w-4 h-4" />
+                    下載高解析度 PNG 名片圖檔 {exportTransparent ? "(透明背景)" : "(標準背景)"}
                   </>
                 )}
               </button>
             </div>
-            
-            <p className="text-[9px] text-[#8d734a] mt-3 italic font-serif">
-              *小提醒：PDF 檔案大小與尺寸已鎖定為 90mm x 54mm 國際通用商用尺寸，可直接送件廠端印製。
-            </p>
           </div>
 
         </div>
