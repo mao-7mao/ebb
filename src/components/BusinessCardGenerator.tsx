@@ -225,7 +225,7 @@ export default function BusinessCardGenerator() {
       titleEn: member.role_en || (member.role.includes("博") ? "Ph.D. Student" : "Master's Student"),
       topicEn: member.research_topic.title_en,
       email: member.id === "fanny" ? "ebblab115@gmail.com" : `${member.id}@mail.nsysu.edu.tw`,
-      tel: "+886-7-525-2000 ext. 4400",
+      tel: "+886-7-525-2000 ext. 4408",
       line: member.id === "fanny" ? "ebb_lab_nsysu" : "",
       qrCodeUrl: "",
       logoUrl: "",

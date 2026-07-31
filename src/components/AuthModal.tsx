@@ -114,7 +114,7 @@ export default function AuthModal({
                 type="text" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="請輸入帳號 (例如: ebblab)"
+                placeholder="請輸入帳號"
                 className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a] font-mono font-medium"
                 autoFocus
               />
@@ -133,7 +133,7 @@ export default function AuthModal({
                 type={showPassword ? "text" : "password"} 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="請輸入固定密碼"
+                placeholder="請輸入密碼"
                 className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2 pl-9 pr-10 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a] font-mono font-medium"
               />
               <button
