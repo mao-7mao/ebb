@@ -47,7 +47,25 @@ export default function SiteGateModal({ onUnlocked }: SiteGateModalProps) {
         body: JSON.stringify({ password: trimmedPass }),
       });
 
-      const data = await res.json().catch(() => ({ success: false, message: "解析回應失敗" }));
+      if (res.status === 404) {
+        setErrorMsg("伺服器驗證端點未找到 (HTTP 404)。請將最新 functions 資料夾推送到 GitHub，以在 Cloudflare 啟用 Pages Functions。");
+        return;
+      }
+
+      const contentType = res.headers.get("content-type") || "";
+      let data: { success?: boolean; message?: string } = {};
+
+      if (contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        try {
+          data = JSON.parse(text);
+        } catch {
+          setErrorMsg("伺服器回應格式異常 (非 JSON)。請確認 Cloudflare Pages Functions 已正常構建。");
+          return;
+        }
+      }
 
       if (res.ok && data.success) {
         setSuccessMsg("驗證成功！正在進入 EBB Lab 系統...");
@@ -120,8 +138,8 @@ export default function SiteGateModal({ onUnlocked }: SiteGateModalProps) {
 
           {/* Feedback messages */}
           {errorMsg && (
-            <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded-sm font-medium">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-sm font-medium leading-relaxed">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{errorMsg}</span>
             </div>
           )}
