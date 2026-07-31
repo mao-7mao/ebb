@@ -6,6 +6,8 @@ pages_build_output_dir = "./dist"
 directory = "./dist"
 
 
+# wrangler.toml
+name = 'ebb'
 
 # Cloudflare Pages Build Settings:
 # Build Command: npm run build
