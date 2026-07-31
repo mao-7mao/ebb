@@ -9,7 +9,7 @@ interface AuthModalProps {
   description?: string;
 }
 
-export const DEFAULT_ADMIN_USER = (import.meta as any).env?.VITE_ADMIN_USER || "ebblab";
+export const DEFAULT_ADMIN_USER = (import.meta as any).env?.VITE_ADMIN_USER || "ebb";
 export const DEFAULT_ADMIN_PASS = (import.meta as any).env?.VITE_ADMIN_PASS || "ebblab2026";
 
 export function checkIsAuthenticated(): boolean {
