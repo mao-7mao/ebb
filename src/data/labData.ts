@@ -122,7 +122,7 @@ export const members: Member[] = [
     "id": "chris",
     "name_zh": "黃科錡",
     "name_en": "Chris",
-    "role": "114碩班",
+    "role": "113碩班",
     "role_en": "Master's Student",
     "research_topic": {
       "title_zh": "VOC 生物處理技術",
