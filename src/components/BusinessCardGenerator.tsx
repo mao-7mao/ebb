@@ -201,7 +201,7 @@ export default function BusinessCardGenerator() {
     titleEn: "Ph.D. Student",
     topicEn: "Innovative Agricultural Mulch Films from Biomass",
     email: "ebblab115@gmail.com",
-    tel: "+886-7-525-2000 ext. 4408",
+    tel: "+886-7-525-2000 ext. 4416",
     line: "ebb_lab_nsysu",
     qrCodeUrl: "", 
     logoUrl: "",   
