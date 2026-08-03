@@ -83,10 +83,7 @@ export default function App() {
   };
 
   // Collapse status for meeting groups
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({
-    "JUNE 2026": false,
-    "APRIL 2026": false
-  });
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   // State to trigger autofill in the BusinessCardGenerator
   const [selectedMemberName, setSelectedMemberName] = useState("");
@@ -148,8 +145,15 @@ export default function App() {
     );
   });
 
+  // Sort meetings by date descending (chronological order, newest first)
+  const sortedActiveMeetings = [...activeMeetings].sort((a, b) => {
+    const dateA = a.date.replace(/\//g, "-");
+    const dateB = b.date.replace(/\//g, "-");
+    return dateB.localeCompare(dateA);
+  });
+
   // Filter meetings based on search bar
-  const filteredMeetings = activeMeetings.filter((m) => {
+  const filteredMeetings = sortedActiveMeetings.filter((m) => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return true;
     return (
@@ -161,7 +165,6 @@ export default function App() {
     );
   });
 
-
   // Group meetings by archive group
   const meetingsGrouped: Record<string, Meeting[]> = {};
   filteredMeetings.forEach((m) => {
@@ -169,6 +172,13 @@ export default function App() {
       meetingsGrouped[m.archive_group] = [];
     }
     meetingsGrouped[m.archive_group].push(m);
+  });
+
+  // Sort archive groups by their latest meeting date descending (newest archive_group at top)
+  const sortedGroupNames = Object.keys(meetingsGrouped).sort((a, b) => {
+    const latestA = meetingsGrouped[a][0]?.date.replace(/\//g, "-") || "";
+    const latestB = meetingsGrouped[b][0]?.date.replace(/\//g, "-") || "";
+    return latestB.localeCompare(latestA);
   });
 
   // Toggle group collapse
@@ -265,7 +275,7 @@ export default function App() {
             }`}
           >
             <Archive className="w-4 h-4 text-[#004b3a]" />
-            Journal Club Archive
+            Journal Club
           </button>
         </nav>
 
@@ -372,7 +382,7 @@ export default function App() {
             }`}
           >
             <Archive className="w-4 h-4 text-[#004b3a]" /> 
-            Journal Club Archive
+            Journal Club
           </button>
         </nav>
         
@@ -405,7 +415,7 @@ export default function App() {
           }`}
         >
           <Users className="w-5 h-5" />
-          <span className="text-[9px] font-bold">Members and Topics</span>
+          <span className="text-[9px] font-bold">Members & Topics</span>
         </button>
         <button 
           onClick={handleOpenCardGenerator}
@@ -423,7 +433,7 @@ export default function App() {
           }`}
         >
           <Calendar className="w-5 h-5" />
-          <span className="text-[9px] font-bold">Group Meeting Schedule</span>
+          <span className="text-[9px] font-bold">Meeting Schedule</span>
         </button>
         <button 
           onClick={() => scrollToId("archive")}
@@ -432,7 +442,7 @@ export default function App() {
           }`}
         >
           <Archive className="w-5 h-5" />
-          <span className="text-[9px] font-bold">Journal Club Archive</span>
+          <span className="text-[9px] font-bold">Journal Club</span>
         </button>
       </div>
 
@@ -864,6 +874,7 @@ export default function App() {
                   onApplyData={(updatedMembers, updatedMeetings) => {
                     setActiveMembers(updatedMembers);
                     setActiveMeetings(updatedMeetings);
+                    setCollapsedGroups({});
                   }}
                   onLogout={handleLogout}
                 />
@@ -963,9 +974,12 @@ export default function App() {
           </div>
 
           <div className="border border-[#e5e5e0] rounded-sm overflow-hidden bg-[#fdfdfc] shadow-sm">
-            {Object.keys(meetingsGrouped).length > 0 ? (
-              Object.keys(meetingsGrouped).map((groupName) => {
-                const isCollapsed = collapsedGroups[groupName] ?? false;
+            {sortedGroupNames.length > 0 ? (
+              sortedGroupNames.map((groupName, index) => {
+                // Top 2 archive_groups are expanded by default (index < 2), remaining automatically collapsed (index >= 2)
+                const isCollapsed = groupName in collapsedGroups
+                  ? collapsedGroups[groupName]
+                  : index >= 2;
                 const groupMeetings = meetingsGrouped[groupName];
 
                 return (
@@ -977,7 +991,7 @@ export default function App() {
                       <div className="flex items-center gap-2 text-sm font-bold text-[#1a1a1a] font-serif">
                         <ChevronRight 
                           className={`w-4 h-4 text-[#004b3a] transition-transform ${
-                            !isCollapsed ? "rotate-95" : ""
+                            !isCollapsed ? "rotate-90" : ""
                           }`} 
                         />
                         <span>{groupName}</span>

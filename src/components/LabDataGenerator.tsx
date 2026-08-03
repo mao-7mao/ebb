@@ -39,9 +39,18 @@ export default function LabDataGenerator({
 }: LabDataGeneratorProps) {
   const [activeTab, setActiveTab] = useState<"members" | "meetings" | "export">("members");
   
+  // Helper: Sort meetings by date descending (newest first)
+  const sortMeetingsByDateDesc = (list: Meeting[]): Meeting[] => {
+    return [...list].sort((a, b) => {
+      const dateA = a.date.replace(/\//g, "-");
+      const dateB = b.date.replace(/\//g, "-");
+      return dateB.localeCompare(dateA);
+    });
+  };
+
   // Local state for editable members and meetings
   const [membersList, setMembersList] = useState<Member[]>(initialMembers);
-  const [meetingsList, setMeetingsList] = useState<Meeting[]>(initialMeetings);
+  const [meetingsList, setMeetingsList] = useState<Meeting[]>(() => sortMeetingsByDateDesc(initialMeetings));
 
   // Form state for Editing/Adding Member
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
@@ -81,10 +90,10 @@ export default function LabDataGenerator({
   const [importError, setImportError] = useState("");
   const [importSuccess, setImportSuccess] = useState("");
 
-  // Helper: auto generate archive group name from date (e.g. 2026/08/15 -> "AUGUST 2026")
+  // Helper: auto generate archive group name from date (e.g. 2026/08/15 or 2026-08-15 -> "AUGUST 2026")
   const getArchiveGroupFromDate = (dateStr: string): string => {
     try {
-      const parts = dateStr.split("/");
+      const parts = dateStr.replace(/-/g, "/").split("/");
       if (parts.length >= 2) {
         const year = parts[0];
         const monthNum = parseInt(parts[1], 10);
@@ -187,8 +196,8 @@ export default function LabDataGenerator({
     setEditingMeetingId(null);
     setMeetingForm({
       id: `m_${Date.now()}`,
-      date: new Date().toISOString().split("T")[0].replace(/-/g, "/"),
-      archive_group: "JULY 2026",
+      date: todayStr,
+      archive_group: getArchiveGroupFromDate(todayStr),
       title: "",
       speaker: "",
       speaker_id: "",
@@ -215,12 +224,17 @@ export default function LabDataGenerator({
       search: searchIndex
     };
 
+    let newList: Meeting[];
     if (editingMeetingId) {
-      setMeetingsList((prev) =>
-        prev.map((m) => (m.id === editingMeetingId ? updatedMeeting : m))
-      );
+      newList = meetingsList.map((m) => (m.id === editingMeetingId ? updatedMeeting : m));
     } else {
-      setMeetingsList((prev) => [...prev, updatedMeeting]);
+      newList = [updatedMeeting, ...meetingsList];
+    }
+
+    const sortedList = sortMeetingsByDateDesc(newList);
+    setMeetingsList(sortedList);
+    if (onApplyData) {
+      onApplyData(membersList, sortedList);
     }
 
     handleResetMeetingForm();
@@ -228,7 +242,11 @@ export default function LabDataGenerator({
 
   const handleDeleteMeeting = (id: string) => {
     if (confirm("確定要刪除這筆會議/期刊導讀紀錄嗎？")) {
-      setMeetingsList((prev) => prev.filter((m) => m.id !== id));
+      const newList = meetingsList.filter((m) => m.id !== id);
+      setMeetingsList(newList);
+      if (onApplyData) {
+        onApplyData(membersList, newList);
+      }
       if (editingMeetingId === id) handleResetMeetingForm();
     }
   };
@@ -318,8 +336,12 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
       }
       const parsed = JSON.parse(jsonImportText);
       if (parsed.members && Array.isArray(parsed.members) && parsed.meetings && Array.isArray(parsed.meetings)) {
+        const sortedMeetings = sortMeetingsByDateDesc(parsed.meetings);
         setMembersList(parsed.members);
-        setMeetingsList(parsed.meetings);
+        setMeetingsList(sortedMeetings);
+        if (onApplyData) {
+          onApplyData(parsed.members, sortedMeetings);
+        }
         setImportSuccess(`成功匯入 ${parsed.members.length} 位成員與 ${parsed.meetings.length} 筆會議紀錄！`);
         setJsonImportText("");
       } else {
