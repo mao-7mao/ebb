@@ -796,102 +796,102 @@ export default function BusinessCardGenerator() {
                     <TextureOverlay color={GREEN_SHADES[greenShade].primaryHex} />
 
                     {/* Header section (Logo and University titles) */}
-                    <div className="flex items-center gap-3.5 z-10 border-b border-[#e5e5e0]/60 pb-2.5">
-                      <div className="flex items-center justify-center max-w-[130px] h-9 shrink-0">
+                    <div className="flex items-center gap-3.5 z-10 border-b border-[#8d734a]/30 pb-2.5">
+                      <div className="flex items-center justify-center max-w-[140px] h-11 shrink-0">
                         {getNsysuLogoSource() && (
                           <img
                             src={getNsysuLogoSource()}
                             alt="NSYSU Full Logo"
                             crossOrigin="anonymous"
-                            className="max-h-9 w-auto object-contain mix-blend-multiply"
+                            className="max-h-11 w-auto object-contain mix-blend-multiply"
                             style={{ filter: "url(#remove-white)" }}
                           />
                         )}
                       </div>
                       <div>
-                        <h4 className="text-[11px] tracking-wide font-bold uppercase font-serif leading-none" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
+                        <h4 className="text-[15.5px] tracking-wide font-bold uppercase font-serif leading-none" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
                           National Sun Yat-sen University
                         </h4>
-                        <p className="text-[9px] tracking-wide font-bold text-slate-800 mt-0.5 leading-none">
+                        <p className="text-[13px] tracking-wide font-bold text-slate-900 mt-0.5 leading-none">
                           Institute of Environmental Engineering
                         </p>
-                        <p className="text-[7.5px] tracking-wider uppercase font-semibold text-slate-400 mt-0.5 leading-none">
+                        <p className="text-[11px] tracking-wider uppercase font-bold text-slate-600 mt-0.5 leading-none">
                           Environmental Biotechnology & Biorefinery Laboratory (EBB Lab)
                         </p>
                       </div>
                     </div>
 
                     {/* Body Section: 2 Columns */}
-                    <div className="flex justify-between items-stretch gap-4.5 z-10 h-[190px] mt-2.5">
+                    <div className="flex justify-between items-stretch gap-4 z-10 h-[200px] mt-2">
                       
-                      {/* Left Column (58% width): Scholar Info & Research Topic */}
-                      <div className="w-[58%] flex flex-col justify-between py-1">
+                      {/* Left Column (54% width): Scholar Info & Research Topic */}
+                      <div className="w-[54%] flex flex-col justify-between py-0.5">
                         
                         {/* Scholar Info */}
                         <div className="space-y-1">
                           <div className="flex items-baseline gap-2">
-                            <span className="text-xl font-bold tracking-wide font-serif text-slate-950">
+                            <span className="text-[31px] font-bold tracking-wide font-serif text-slate-950 leading-none">
                               {formData.nameZh}
                             </span>
-                            <span className="text-[10px] font-semibold text-slate-500 font-sans">
+                            <span className="text-[14px] font-bold text-slate-600 font-sans">
                               {formData.nameEn}
                             </span>
                           </div>
-                          <p className="text-[10.5px] font-bold font-serif italic" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
+                          <p className="text-[15px] font-bold font-serif italic mt-0.5" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
                             {formData.titleEn}
                           </p>
                         </div>
 
                         {/* Research Topic */}
-                        <div className={`p-2.5 rounded-sm border border-[#8d734a]/20 leading-tight ${
+                        <div className={`p-2.5 rounded-sm border border-[#8d734a]/30 leading-tight ${
                           exportTransparent ? "bg-white/10" : "bg-[#fafaf9]/85"
                         }`}>
-                          <span className="block text-[7.5px] uppercase tracking-widest mb-1 font-bold font-serif italic text-[#8d734a]">
+                          <span className="block text-[11px] uppercase tracking-widest mb-1 font-bold font-serif italic text-[#8d734a]">
                             Research Field
                           </span>
-                          <p className="text-[9.5px] font-sans font-semibold text-slate-800 line-clamp-3">
+                          <p className="text-[13.5px] font-sans font-bold text-slate-800 line-clamp-3 leading-snug">
                             {formData.topicEn}
                           </p>
                         </div>
                       </div>
 
                       {/* Vertical Divider */}
-                      <div className="w-[1px] bg-[#e5e5e0]/60 self-stretch"></div>
+                      <div className="w-[1.5px] bg-[#8d734a]/30 self-stretch"></div>
 
-                      {/* Right Column (42% width): Contact Info & QR Code */}
-                      <div className="w-[42%] flex flex-col justify-between pl-1 py-1">
+                      {/* Right Column (46% width): Contact Info & QR Code */}
+                      <div className="w-[46%] flex flex-col justify-between pl-1 py-0.5">
                         
                         {/* Contact details */}
-                        <div className="space-y-1.5 font-mono text-[8.5px]">
+                        <div className="space-y-1.5 font-mono text-[12.5px]">
                           {/* Email */}
                           {formData.email && (
-                            <div className="flex items-center gap-1.5 text-slate-700 font-mono">
-                              <Mail className="w-3 h-3 shrink-0" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
+                            <div className="flex items-center gap-1.5 text-slate-800 font-mono">
+                              <Mail className="w-4.5 h-4.5 shrink-0" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
                               <span className="truncate max-w-[155px] font-bold">{formData.email}</span>
                             </div>
                           )}
 
                           {/* Phone */}
                           {formData.tel && (
-                            <div className="flex items-center gap-1.5 text-slate-700 font-mono">
-                              <Phone className="w-3 h-3 shrink-0" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
+                            <div className="flex items-center gap-1.5 text-slate-800 font-mono">
+                              <Phone className="w-4.5 h-4.5 shrink-0" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
                               <span className="font-bold">{formData.tel}</span>
                             </div>
                           )}
 
                           {/* Line ID */}
                           {formData.line && (
-                            <div className="flex items-center gap-1.5 text-slate-700">
-                              <span className="text-[7px] font-bold text-white rounded-[2px] px-0.5 py-0.2 select-none shrink-0 font-sans tracking-wide" style={{ backgroundColor: GREEN_SHADES[greenShade].primaryHex }}>LINE</span>
-                              <span className="font-mono font-bold">{formData.line}</span>
+                            <div className="flex items-center gap-1.5 text-slate-800">
+                              <span className="text-[11px] font-bold text-white rounded-[2px] px-1 py-0.5 select-none shrink-0 font-sans tracking-wide" style={{ backgroundColor: GREEN_SHADES[greenShade].primaryHex }}>LINE</span>
+                              <span className="font-mono font-bold text-[13px]">{formData.line}</span>
                             </div>
                           )}
 
                           {/* Address */}
                           {formData.addressEn && (
-                            <div className="flex items-start gap-1 text-[#555] leading-normal font-sans">
-                              <MapPin className="w-3 h-3 shrink-0 mt-0.5" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
-                              <span className="text-[7px] leading-tight line-clamp-2">
+                            <div className="flex items-start gap-1 text-[#333] leading-normal font-sans">
+                              <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
+                              <span className="text-[10.5px] leading-tight font-semibold line-clamp-2">
                                 {formData.addressEn}
                               </span>
                             </div>
@@ -899,15 +899,15 @@ export default function BusinessCardGenerator() {
                         </div>
 
                         {/* QR Code, Logo and Scan hint */}
-                        <div className="flex items-center gap-2 mt-1 border-t border-[#e5e5e0]/60 pt-2">
+                        <div className="flex items-center gap-2.5 mt-1 border-t border-[#8d734a]/30 pt-1.5">
                           {getQrCodeSource() ? (
                             <img
                               src={getQrCodeSource()}
                               alt="Contact QR Code"
-                              className="w-[42px] h-[42px] object-contain rounded-sm border border-[#8d734a]/25 bg-white p-0.5 shadow-xs shrink-0"
+                              className="w-[66px] h-[66px] object-contain rounded-sm border border-[#8d734a]/35 bg-white p-0.5 shadow-xs shrink-0"
                             />
                           ) : (
-                            <div className="w-[42px] h-[42px] rounded-sm border border-[#8d734a]/25 bg-[#fafaf9] animate-pulse shrink-0" />
+                            <div className="w-[66px] h-[66px] rounded-sm border border-[#8d734a]/35 bg-[#fafaf9] animate-pulse shrink-0" />
                           )}
                           <div className="flex items-center gap-1.5">
                             {getNsysuLogoSource() && (
@@ -915,13 +915,13 @@ export default function BusinessCardGenerator() {
                                 src={getNsysuLogoSource()}
                                 alt="NSYSU Logo"
                                 crossOrigin="anonymous"
-                                className="h-6 w-auto object-contain mix-blend-multiply shrink-0"
+                                className="h-9 w-auto object-contain mix-blend-multiply shrink-0"
                                 style={{ filter: "url(#remove-white)" }}
                               />
                             )}
                             <div className="flex flex-col">
-                              <span className="text-[9px] font-bold font-serif leading-none" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>EBB Lab</span>
-                              <span className="text-[6.5px] font-mono text-slate-400 font-bold tracking-wide uppercase leading-tight mt-0.5">SCAN<br/>CONTACT</span>
+                              <span className="text-[13px] font-bold font-serif leading-none" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>EBB Lab</span>
+                              <span className="text-[10px] font-mono text-slate-500 font-bold tracking-wide uppercase leading-tight mt-0.5">SCAN<br/>CONTACT</span>
                             </div>
                           </div>
                         </div>
@@ -954,25 +954,25 @@ export default function BusinessCardGenerator() {
 
                       {/* Header: University seal and departments (Clean layout optimized for UV printing on biomass plastic) */}
                       <div className="flex items-start gap-4 z-10">
-                        <div className="flex items-center justify-center max-w-[150px] h-12 shrink-0">
+                        <div className="flex items-center justify-center max-w-[170px] h-14 shrink-0">
                           {getNsysuLogoSource() && (
                             <img
                               src={getNsysuLogoSource()}
                               alt="NSYSU Full Logo"
                               crossOrigin="anonymous"
-                              className="max-h-12 w-auto object-contain mix-blend-multiply"
+                              className="max-h-14 w-auto object-contain mix-blend-multiply"
                               style={{ filter: "url(#remove-white)" }}
                             />
                           )}
                         </div>
                         <div>
-                          <h4 className="text-sm tracking-wide font-bold uppercase font-serif" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
+                          <h4 className="text-[19.5px] tracking-wide font-bold uppercase font-serif leading-snug" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
                             National Sun Yat-sen University
                           </h4>
-                          <p className="text-[11px] tracking-wider mt-0.5 font-bold text-slate-800">
+                          <p className="text-[15.5px] tracking-wider mt-0.5 font-bold text-slate-900">
                             Institute of Environmental Engineering
                           </p>
-                          <p className="text-[9px] tracking-wide uppercase font-semibold text-slate-500">
+                          <p className="text-[13px] tracking-wide uppercase font-bold text-slate-600 mt-0.5">
                             Environmental Biotechnology & Biorefinery Laboratory
                           </p>
                         </div>
@@ -982,29 +982,29 @@ export default function BusinessCardGenerator() {
                       <div className="flex justify-between items-end z-10">
                         
                         {/* Left: Names & Title */}
-                        <div className="space-y-1 max-w-[65%]">
+                        <div className="space-y-1 max-w-[62%]">
                           <div className="flex items-baseline gap-2.5">
-                            <span className="text-2xl font-bold tracking-wide font-serif text-slate-950">
+                            <span className="text-[34px] font-bold tracking-wide font-serif text-slate-950 leading-none">
                               {formData.nameZh}
                             </span>
-                            <span className="text-xs font-semibold text-slate-500">
+                            <span className="text-[17px] font-bold text-slate-600">
                               {formData.nameEn}
                             </span>
                           </div>
                           
-                          <p className="text-xs font-bold font-serif italic" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
+                          <p className="text-[17px] font-bold font-serif italic" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
                             {formData.titleEn}
                           </p>
                         </div>
 
                         {/* Right: Detailed Research (High focus, in English) */}
-                        <div className={`max-w-[45%] text-right p-2.5 rounded-sm border border-[#8d734a]/30 leading-tight ${
+                        <div className={`max-w-[48%] text-right p-3 rounded-sm border border-[#8d734a]/30 leading-tight ${
                           exportTransparent ? "bg-white/10" : "bg-[#fafaf9]/85"
                         }`}>
-                          <span className="block text-[8px] uppercase tracking-widest mb-1 font-bold font-serif italic text-[#8d734a]">
+                          <span className="block text-[12px] uppercase tracking-widest mb-1 font-bold font-serif italic text-[#8d734a]">
                             Research Field
                           </span>
-                          <p className="text-[10px] font-sans font-semibold text-slate-800 line-clamp-3">
+                          <p className="text-[14.5px] font-sans font-bold text-slate-800 line-clamp-3 leading-snug">
                             {formData.topicEn}
                           </p>
                         </div>
@@ -1020,7 +1020,7 @@ export default function BusinessCardGenerator() {
                     <div 
                       ref={backCardRef}
                       id="card-back"
-                      className={`absolute w-full h-full rounded-sm border shadow-md flex rotate-y-180 backface-hidden font-sans overflow-hidden border-[#8d734a]/20 transition-all duration-500 ${
+                      className={`absolute w-full h-full rounded-sm border shadow-md flex rotate-y-180 backface-hidden font-sans overflow-hidden border-[#8d734a]/30 transition-all duration-500 ${
                         exportTransparent ? "bg-transparent text-slate-800" : "bg-[#fdfdfc] text-slate-800"
                       } ${!isFlipped ? "opacity-0 pointer-events-none" : "opacity-100 z-10"}`}
                       style={{
@@ -1030,48 +1030,48 @@ export default function BusinessCardGenerator() {
                     >
                       
                       {/* Left branding panel: Redesigned as a clean, light, ink-saving vertical compartment */}
-                      <div className={`w-[32%] p-5 flex flex-col justify-between items-center text-center border-r border-[#8d734a]/20 relative overflow-hidden transition-colors duration-300 ${
+                      <div className={`w-[36%] p-3.5 flex flex-col justify-between items-center text-center border-r border-[#8d734a]/30 relative overflow-hidden transition-colors duration-300 ${
                         exportTransparent ? "bg-transparent" : "bg-[#fafaf9]"
                       }`}>
                         {/* Unified Bio-Tech & Organic Leaf Vein Background Texture Overlay */}
                         <TextureOverlay color={GREEN_SHADES[greenShade].primaryHex} />
 
-                        <div className="w-[95%] h-11 flex items-center justify-center z-10 shrink-0">
+                        <div className="w-[95%] h-13 flex items-center justify-center z-10 shrink-0">
                           {getNsysuLogoSource() && (
                             <img
                               src={getNsysuLogoSource()}
                               alt="NSYSU Official Seal"
                               crossOrigin="anonymous"
-                              className="max-h-11 w-auto object-contain mix-blend-multiply"
+                              className="max-h-13 w-auto object-contain mix-blend-multiply"
                               style={{ filter: "url(#remove-white)" }}
                             />
                           )}
                         </div>
 
                         {/* Centered QR Code with high scanning contrast */}
-                        <div className="z-10 my-2 flex flex-col items-center">
+                        <div className="z-10 my-0.5 flex flex-col items-center">
                           {getQrCodeSource() ? (
                             <img
                               src={getQrCodeSource()}
                               alt="Contact QR Code"
-                              className="w-[60px] h-[60px] object-contain rounded-sm border border-[#8d734a]/25 bg-white p-0.5 shadow-xs"
+                              className="w-[94px] h-[94px] object-contain rounded-sm border border-[#8d734a]/30 bg-white p-0.5 shadow-xs"
                             />
                           ) : (
-                            <div className="w-[60px] h-[60px] rounded-sm border border-[#8d734a]/25 bg-[#fafaf9] animate-pulse" />
+                            <div className="w-[94px] h-[94px] rounded-sm border border-[#8d734a]/30 bg-[#fafaf9] animate-pulse" />
                           )}
-                          <span className="text-[7.5px] mt-1.5 font-mono text-slate-400 font-bold tracking-widest uppercase">SCAN CONTACT</span>
+                          <span className="text-[11px] mt-1 font-mono text-slate-500 font-bold tracking-widest uppercase">SCAN CONTACT</span>
                         </div>
 
                         <div className="space-y-0.5 z-10">
-                          <span className="text-[11px] font-bold block font-serif" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>EBB Lab</span>
-                          <span className="text-[7.5px] tracking-tight block font-mono leading-tight text-slate-600 font-bold">
+                          <span className="text-[15.5px] font-bold block font-serif" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>EBB Lab</span>
+                          <span className="text-[10.5px] tracking-tight block font-mono leading-tight text-slate-700 font-bold">
                             ENV. BIOTECH &<br/>BIOREFINERY
                           </span>
                         </div>
                       </div>
 
                       {/* Right Details Panel */}
-                      <div className={`w-[68%] p-6 flex flex-col justify-between relative overflow-hidden transition-colors duration-300 ${
+                      <div className={`w-[64%] p-5 flex flex-col justify-between relative overflow-hidden transition-colors duration-300 ${
                         exportTransparent ? "bg-transparent" : "bg-[#fdfdfc]"
                       }`}>
                         {/* Unified Bio-Tech & Organic Leaf Vein Background Texture Overlay */}
@@ -1079,48 +1079,48 @@ export default function BusinessCardGenerator() {
 
                         {/* Top: Name Card reminder */}
                         <div className="z-10">
-                          <h4 className="text-sm font-bold text-slate-900 font-serif">
+                          <h4 className="text-[21px] font-bold text-slate-900 font-serif leading-none">
                             {formData.nameZh}
-                            <span className="text-xs font-normal text-slate-500 ml-1.5 font-sans">
+                            <span className="text-[17px] font-semibold text-slate-600 ml-2 font-sans">
                               {formData.nameEn}
                             </span>
                           </h4>
-                          <p className="text-[10px] font-serif italic font-semibold -mt-0.5" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
+                          <p className="text-[15px] font-serif italic font-bold mt-0.5" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
                             {formData.titleEn}
                           </p>
                         </div>
 
                         {/* Middle: Conditional Fields (If empty, not displayed) */}
-                        <div className="space-y-2 my-2 font-mono text-[10px] z-10">
+                        <div className="space-y-2 my-1 font-mono text-[14px] z-10">
                           
                           {/* Email */}
                           {formData.email && (
-                            <div className="flex items-center gap-2 text-slate-700 font-mono">
-                              <Mail className="w-3.5 h-3.5 shrink-0" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
+                            <div className="flex items-center gap-2 text-slate-900 font-mono font-bold">
+                              <Mail className="w-4.5 h-4.5 shrink-0" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
                               <span className="truncate">{formData.email}</span>
                             </div>
                           )}
 
                           {/* Tel */}
                           {formData.tel && (
-                            <div className="flex items-center gap-2 text-slate-700 font-mono">
-                              <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
+                            <div className="flex items-center gap-2 text-slate-900 font-mono font-bold">
+                              <Phone className="w-4.5 h-4.5 shrink-0" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
                               <span>{formData.tel}</span>
                             </div>
                           )}
 
                           {/* Line */}
                           {formData.line && (
-                            <div className="flex items-center gap-2 text-slate-700">
-                              <span className="text-[8px] font-bold text-white rounded-sm px-1 py-0.2 select-none shrink-0 font-sans tracking-wider" style={{ backgroundColor: GREEN_SHADES[greenShade].primaryHex }}>LINE</span>
-                              <span className="font-mono">{formData.line}</span>
+                            <div className="flex items-center gap-2 text-slate-900">
+                              <span className="text-[11.5px] font-bold text-white rounded-sm px-1.5 py-0.4 select-none shrink-0 font-sans tracking-wider" style={{ backgroundColor: GREEN_SHADES[greenShade].primaryHex }}>LINE</span>
+                              <span className="font-mono font-bold text-[14px]">{formData.line}</span>
                             </div>
                           )}
 
                           {/* Address: ALWAYS EN AS REQUESTED */}
-                          <div className="flex items-start gap-2 text-[#555] leading-normal">
-                            <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
-                            <span className="text-[8px] font-sans">
+                          <div className="flex items-start gap-2 text-[#333] leading-normal">
+                            <MapPin className="w-4.5 h-4.5 shrink-0 mt-0.5" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
+                            <span className="text-[11.5px] font-sans font-semibold">
                               {formData.addressEn}
                             </span>
                           </div>
