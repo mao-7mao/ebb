@@ -821,11 +821,11 @@ export default function BusinessCardGenerator() {
                       <div 
                         ref={frontCardRef}
                         id="card-front"
-                        className={`absolute w-full h-full rounded-sm p-6 border shadow-md flex flex-col justify-between font-sans border-[#8d734a]/30 overflow-hidden transition-all duration-500 ${
-                          exportTransparent ? "bg-transparent text-slate-800" : "bg-[#fdfdfc] text-slate-800"
+                        className={`absolute w-full h-full rounded-sm p-6 border flex flex-col justify-between font-sans border-[#8d734a]/30 overflow-hidden transition-all duration-500 ${
+                          exportTransparent ? "bg-transparent text-slate-800 shadow-none" : "bg-[#fdfdfc] text-slate-800 shadow-md"
                         }`}
                         style={{
-                          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)",
+                          boxShadow: exportTransparent ? "none" : "0 10px 30px rgba(0, 0, 0, 0.08)",
                           boxSizing: "border-box"
                         }}
                       >
@@ -881,7 +881,7 @@ export default function BusinessCardGenerator() {
 
                             {/* Research Topic */}
                             <div className={`p-2.5 rounded-sm border border-[#8d734a]/30 leading-tight ${
-                              exportTransparent ? "bg-white/10" : "bg-[#fafaf9]/85"
+                              exportTransparent ? "bg-transparent" : "bg-[#fafaf9]/85"
                             }`}>
                               <span className="block text-[11px] uppercase tracking-widest mb-1 font-bold font-serif italic text-[#8d734a]">
                                 Research Field
@@ -941,10 +941,14 @@ export default function BusinessCardGenerator() {
                                 <img
                                   src={getQrCodeSource()}
                                   alt="Contact QR Code"
-                                  className="w-[84px] h-[84px] object-contain rounded-sm border-2 border-[#8d734a]/40 bg-white p-1 shadow-sm shrink-0"
+                                  className={`w-[84px] h-[84px] object-contain rounded-sm border-2 border-[#8d734a]/40 bg-white p-1 shrink-0 ${
+                                    exportTransparent ? "shadow-none" : "shadow-sm"
+                                  }`}
                                 />
                               ) : (
-                                <div className="w-[84px] h-[84px] rounded-sm border-2 border-[#8d734a]/40 bg-[#fafaf9] animate-pulse shrink-0" />
+                                <div className={`w-[84px] h-[84px] rounded-sm border-2 border-[#8d734a]/40 bg-[#fafaf9] animate-pulse shrink-0 ${
+                                  exportTransparent ? "shadow-none" : "shadow-sm"
+                                }`} />
                               )}
                               <div className="flex flex-col justify-center">
                                 <div className="flex items-center gap-1 mb-0.5">
@@ -980,11 +984,11 @@ export default function BusinessCardGenerator() {
                         <div 
                           ref={frontCardRef}
                           id="card-front"
-                          className={`absolute w-full h-full rounded-sm p-7 border shadow-md flex flex-col justify-between backface-hidden font-sans border-[#8d734a]/30 overflow-hidden transition-all duration-500 ${
-                            exportTransparent ? "bg-transparent text-slate-800" : "bg-[#fdfdfc] text-slate-800"
+                          className={`absolute w-full h-full rounded-sm p-7 border flex flex-col justify-between backface-hidden font-sans border-[#8d734a]/30 overflow-hidden transition-all duration-500 ${
+                            exportTransparent ? "bg-transparent text-slate-800 shadow-none" : "bg-[#fdfdfc] text-slate-800 shadow-md"
                           } ${isFlipped ? "opacity-0 pointer-events-none" : "opacity-100 z-10"}`}
                           style={{
-                            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)",
+                            boxShadow: exportTransparent ? "none" : "0 10px 30px rgba(0, 0, 0, 0.08)",
                             boxSizing: "border-box"
                           }}
                         >
@@ -1038,7 +1042,7 @@ export default function BusinessCardGenerator() {
 
                             {/* Right: Detailed Research (High focus, in English) */}
                             <div className={`max-w-[48%] text-right p-3 rounded-sm border border-[#8d734a]/30 leading-tight ${
-                              exportTransparent ? "bg-white/10" : "bg-[#fafaf9]/85"
+                              exportTransparent ? "bg-transparent" : "bg-[#fafaf9]/85"
                             }`}>
                               <span className="block text-[12px] uppercase tracking-widest mb-1 font-bold font-serif italic text-[#8d734a]">
                                 Research Field
@@ -1059,11 +1063,11 @@ export default function BusinessCardGenerator() {
                         <div 
                           ref={backCardRef}
                           id="card-back"
-                          className={`absolute w-full h-full rounded-sm border shadow-md flex rotate-y-180 backface-hidden font-sans overflow-hidden border-[#8d734a]/30 transition-all duration-500 ${
-                            exportTransparent ? "bg-transparent text-slate-800" : "bg-[#fdfdfc] text-slate-800"
+                          className={`absolute w-full h-full rounded-sm border flex rotate-y-180 backface-hidden font-sans overflow-hidden border-[#8d734a]/30 transition-all duration-500 ${
+                            exportTransparent ? "bg-transparent text-slate-800 shadow-none" : "bg-[#fdfdfc] text-slate-800 shadow-md"
                           } ${!isFlipped ? "opacity-0 pointer-events-none" : "opacity-100 z-10"}`}
                           style={{
-                            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)",
+                            boxShadow: exportTransparent ? "none" : "0 10px 30px rgba(0, 0, 0, 0.08)",
                             boxSizing: "border-box"
                           }}
                         >
@@ -1093,10 +1097,14 @@ export default function BusinessCardGenerator() {
                                 <img
                                   src={getQrCodeSource()}
                                   alt="Contact QR Code"
-                                  className="w-[94px] h-[94px] object-contain rounded-sm border border-[#8d734a]/30 bg-white p-0.5 shadow-xs"
+                                  className={`w-[94px] h-[94px] object-contain rounded-sm border border-[#8d734a]/30 bg-white p-0.5 ${
+                                    exportTransparent ? "shadow-none" : "shadow-xs"
+                                  }`}
                                 />
                               ) : (
-                                <div className="w-[94px] h-[94px] rounded-sm border border-[#8d734a]/30 bg-[#fafaf9] animate-pulse" />
+                                <div className={`w-[94px] h-[94px] rounded-sm border border-[#8d734a]/30 bg-[#fafaf9] animate-pulse ${
+                                  exportTransparent ? "shadow-none" : "shadow-xs"
+                                }`} />
                               )}
                               <span className="text-[11px] mt-1 font-mono text-slate-500 font-bold tracking-widest uppercase">SCAN CONTACT</span>
                             </div>
