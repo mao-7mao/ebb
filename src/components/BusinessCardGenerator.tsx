@@ -821,8 +821,8 @@ export default function BusinessCardGenerator() {
                       <div 
                         ref={frontCardRef}
                         id="card-front"
-                        className={`absolute w-full h-full rounded-sm p-6 border flex flex-col justify-between font-sans border-[#8d734a]/30 overflow-hidden transition-all duration-500 ${
-                          exportTransparent ? "bg-transparent text-slate-800 shadow-none" : "bg-[#fdfdfc] text-slate-800 shadow-md"
+                        className={`absolute w-full h-full rounded-sm p-6 flex flex-col justify-between font-sans overflow-hidden transition-all duration-500 ${
+                          exportTransparent ? "bg-transparent text-slate-800 border-none shadow-none" : "bg-[#fdfdfc] text-slate-800 border border-[#8d734a]/30 shadow-md"
                         }`}
                         style={{
                           boxShadow: exportTransparent ? "none" : "0 10px 30px rgba(0, 0, 0, 0.08)",
@@ -973,8 +973,10 @@ export default function BusinessCardGenerator() {
 
                         </div>
 
-                        {/* Golden Elegant Stripe at bottom */}
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#8d734a]/30 via-[#8d734a] to-[#8d734a]/30 rounded-b-sm"></div>
+                        {/* Golden Elegant Stripe at bottom (Hidden on transparent export) */}
+                        {!exportTransparent && (
+                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#8d734a]/30 via-[#8d734a] to-[#8d734a]/30 rounded-b-sm"></div>
+                        )}
 
                       </div>
                     ) : (
@@ -984,8 +986,8 @@ export default function BusinessCardGenerator() {
                         <div 
                           ref={frontCardRef}
                           id="card-front"
-                          className={`absolute w-full h-full rounded-sm p-7 border flex flex-col justify-between backface-hidden font-sans border-[#8d734a]/30 overflow-hidden transition-all duration-500 ${
-                            exportTransparent ? "bg-transparent text-slate-800 shadow-none" : "bg-[#fdfdfc] text-slate-800 shadow-md"
+                          className={`absolute w-full h-full rounded-sm p-7 flex flex-col justify-between backface-hidden font-sans overflow-hidden transition-all duration-500 ${
+                            exportTransparent ? "bg-transparent text-slate-800 border-none shadow-none" : "bg-[#fdfdfc] text-slate-800 border border-[#8d734a]/30 shadow-md"
                           } ${isFlipped ? "opacity-0 pointer-events-none" : "opacity-100 z-10"}`}
                           style={{
                             boxShadow: exportTransparent ? "none" : "0 10px 30px rgba(0, 0, 0, 0.08)",
@@ -1054,8 +1056,10 @@ export default function BusinessCardGenerator() {
 
                           </div>
 
-                          {/* Golden Elegant Stripe at bottom of Emerald card */}
-                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#8d734a]/30 via-[#8d734a] to-[#8d734a]/30 rounded-b-sm"></div>
+                          {/* Golden Elegant Stripe at bottom of Emerald card (Hidden on transparent export) */}
+                          {!exportTransparent && (
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#8d734a]/30 via-[#8d734a] to-[#8d734a]/30 rounded-b-sm"></div>
+                          )}
 
                         </div>
 
@@ -1063,8 +1067,8 @@ export default function BusinessCardGenerator() {
                         <div 
                           ref={backCardRef}
                           id="card-back"
-                          className={`absolute w-full h-full rounded-sm border flex rotate-y-180 backface-hidden font-sans overflow-hidden border-[#8d734a]/30 transition-all duration-500 ${
-                            exportTransparent ? "bg-transparent text-slate-800 shadow-none" : "bg-[#fdfdfc] text-slate-800 shadow-md"
+                          className={`absolute w-full h-full rounded-sm flex rotate-y-180 backface-hidden font-sans overflow-hidden transition-all duration-500 ${
+                            exportTransparent ? "bg-transparent text-slate-800 border-none shadow-none" : "bg-[#fdfdfc] text-slate-800 border border-[#8d734a]/30 shadow-md"
                           } ${!isFlipped ? "opacity-0 pointer-events-none" : "opacity-100 z-10"}`}
                           style={{
                             boxShadow: exportTransparent ? "none" : "0 10px 30px rgba(0, 0, 0, 0.08)",
