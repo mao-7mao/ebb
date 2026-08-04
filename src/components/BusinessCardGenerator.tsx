@@ -266,6 +266,10 @@ export default function BusinessCardGenerator() {
   const [isPngExporting, setIsPngExporting] = useState(false);
   const [exportTransparent, setExportTransparent] = useState(false);
 
+  // Optional card section toggles
+  const [showResearchField, setShowResearchField] = useState<boolean>(true);
+  const [showQrCode, setShowQrCode] = useState<boolean>(true);
+
   // Trigger search / autofill if the name matches a member
   useEffect(() => {
     if (!formData.nameZh) return;
@@ -578,13 +582,27 @@ export default function BusinessCardGenerator() {
 
             {/* Research Topic */}
             <div>
-              <label className="block text-[11px] font-semibold text-[#666] mb-1">Research Direction / Topic (English)</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-semibold text-[#666]">Research Direction / Topic (English)</label>
+                <label className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#004b3a] cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={showResearchField}
+                    onChange={(e) => setShowResearchField(e.target.checked)}
+                    className="rounded border-[#e5e5e0] text-[#004b3a] focus:ring-[#004b3a] w-3.5 h-3.5 accent-[#004b3a] cursor-pointer"
+                  />
+                  <span>名片顯示此項</span>
+                </label>
+              </div>
               <textarea
                 value={formData.topicEn}
                 onChange={(e) => setFormData({ ...formData, topicEn: e.target.value })}
                 rows={2}
+                disabled={!showResearchField}
                 placeholder="e.g. Next-Generation Bio-Based Polyester Materials"
-                className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#004b3a] resize-none leading-normal"
+                className={`w-full border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#004b3a] resize-none leading-normal transition-colors ${
+                  showResearchField ? "bg-white" : "bg-gray-100 text-gray-400 opacity-60"
+                }`}
               />
             </div>
 
@@ -626,43 +644,56 @@ export default function BusinessCardGenerator() {
               />
             </div>
 
-            <h3 className="text-sm font-bold text-[#004b3a] border-l-2 border-[#8d734a] pl-2 pt-2 font-serif">聯絡 QR Code 上傳</h3>
+            <div className="flex items-center justify-between pt-2">
+              <h3 className="text-sm font-bold text-[#004b3a] border-l-2 border-[#8d734a] pl-2 font-serif">聯絡 QR Code 設定</h3>
+              <label className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#004b3a] cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showQrCode}
+                  onChange={(e) => setShowQrCode(e.target.checked)}
+                  className="rounded border-[#e5e5e0] text-[#004b3a] focus:ring-[#004b3a] w-3.5 h-3.5 accent-[#004b3a] cursor-pointer"
+                />
+                <span>名片顯示 QR 碼</span>
+              </label>
+            </div>
 
             {/* Upload fields */}
-            <div className="grid grid-cols-1 gap-3">
-              
-              {/* QR Code Upload */}
-              <div className="border border-dashed border-[#e5e5e0] rounded-sm p-3 bg-[#f8f8f5] text-center">
-                <p className="text-[10px] font-bold text-[#666] mb-1">自訂聯絡 QR Code</p>
-                <div className="flex justify-center gap-2 items-center">
-                  {formData.qrCodeUrl ? (
-                    <div className="flex items-center gap-1 bg-white border border-[#e5e5e0] rounded-sm px-2 py-1">
-                      <span className="text-[10px] text-[#004b3a] truncate max-w-[120px]">已上傳 QR 碼</span>
-                      <button onClick={clearQrCode} className="text-red-500 hover:text-red-700">
-                        <Trash2 className="w-3 h-3" />
+            {showQrCode && (
+              <div className="grid grid-cols-1 gap-3">
+                
+                {/* QR Code Upload */}
+                <div className="border border-dashed border-[#e5e5e0] rounded-sm p-3 bg-[#f8f8f5] text-center">
+                  <p className="text-[10px] font-bold text-[#666] mb-1">自訂聯絡 QR Code (若未上傳則帶入 Email Mailto QR)</p>
+                  <div className="flex justify-center gap-2 items-center">
+                    {formData.qrCodeUrl ? (
+                      <div className="flex items-center gap-1 bg-white border border-[#e5e5e0] rounded-sm px-2 py-1">
+                        <span className="text-[10px] text-[#004b3a] truncate max-w-[120px]">已上傳 QR 碼</span>
+                        <button onClick={clearQrCode} className="text-red-500 hover:text-red-700">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => qrInputRef.current?.click()}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-[#fafafa] border border-[#e5e5e0] text-[10px] font-bold uppercase tracking-wider text-slate-700 rounded-sm transition shadow-sm"
+                      >
+                        <Upload className="w-3 h-3 text-[#004b3a]" />
+                        上傳圖片
                       </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => qrInputRef.current?.click()}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-[#fafafa] border border-[#e5e5e0] text-[10px] font-bold uppercase tracking-wider text-slate-700 rounded-sm transition shadow-sm"
-                    >
-                      <Upload className="w-3 h-3 text-[#004b3a]" />
-                      上傳圖片
-                    </button>
-                  )}
-                  <input
-                    ref={qrInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleQrUpload}
-                    className="hidden"
-                  />
+                    )}
+                    <input
+                      ref={qrInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleQrUpload}
+                      className="hidden"
+                    />
+                  </div>
                 </div>
-              </div>
 
-            </div>
+              </div>
+            )}
 
             {/* Address Input */}
             <div>
@@ -880,16 +911,18 @@ export default function BusinessCardGenerator() {
                             </div>
 
                             {/* Research Topic */}
-                            <div className={`p-2.5 rounded-sm border border-[#8d734a]/30 leading-tight ${
-                              exportTransparent ? "bg-transparent" : "bg-[#fafaf9]/85"
-                            }`}>
-                              <span className="block text-[11px] uppercase tracking-widest mb-1 font-bold font-serif italic text-[#8d734a]">
-                                Research Field
-                              </span>
-                              <p className="text-[13.5px] font-sans font-bold text-slate-800 line-clamp-3 leading-snug">
-                                {formData.topicEn}
-                              </p>
-                            </div>
+                            {showResearchField && formData.topicEn && (
+                              <div className={`p-2.5 rounded-sm border border-[#8d734a]/30 leading-tight ${
+                                exportTransparent ? "bg-transparent" : "bg-[#fafaf9]/85"
+                              }`}>
+                                <span className="block text-[11px] uppercase tracking-widest mb-1 font-bold font-serif italic text-[#8d734a]">
+                                  Research Field
+                                </span>
+                                <p className="text-[13.5px] font-sans font-bold text-slate-800 line-clamp-3 leading-snug">
+                                  {formData.topicEn}
+                                </p>
+                              </div>
+                            )}
                           </div>
 
                           {/* Vertical Divider */}
@@ -936,38 +969,40 @@ export default function BusinessCardGenerator() {
                             </div>
 
                             {/* Enriched & Enlarged QR Code section with high contrast & crisp scan frame */}
-                            <div className="flex items-center gap-2.5 mt-0.5 border-t border-[#8d734a]/30 pt-1">
-                              {getQrCodeSource() ? (
-                                <img
-                                  src={getQrCodeSource()}
-                                  alt="Contact QR Code"
-                                  className={`w-[84px] h-[84px] object-contain rounded-sm border-2 border-[#8d734a]/40 bg-white p-1 shrink-0 ${
+                            {showQrCode && (
+                              <div className="flex items-center gap-2.5 mt-0.5 border-t border-[#8d734a]/30 pt-1">
+                                {getQrCodeSource() ? (
+                                  <img
+                                    src={getQrCodeSource()}
+                                    alt="Contact QR Code"
+                                    className={`w-[84px] h-[84px] object-contain rounded-sm border-2 border-[#8d734a]/40 bg-white p-1 shrink-0 ${
+                                      exportTransparent ? "shadow-none" : "shadow-sm"
+                                    }`}
+                                  />
+                                ) : (
+                                  <div className={`w-[84px] h-[84px] rounded-sm border-2 border-[#8d734a]/40 bg-[#fafaf9] animate-pulse shrink-0 ${
                                     exportTransparent ? "shadow-none" : "shadow-sm"
-                                  }`}
-                                />
-                              ) : (
-                                <div className={`w-[84px] h-[84px] rounded-sm border-2 border-[#8d734a]/40 bg-[#fafaf9] animate-pulse shrink-0 ${
-                                  exportTransparent ? "shadow-none" : "shadow-sm"
-                                }`} />
-                              )}
-                              <div className="flex flex-col justify-center">
-                                <div className="flex items-center gap-1 mb-0.5">
-                                  {getNsysuLogoSource() && (
-                                    <img
-                                      src={getNsysuLogoSource()}
-                                      alt="NSYSU Logo"
-                                      crossOrigin="anonymous"
-                                      className="h-8 w-auto object-contain mix-blend-multiply shrink-0"
-                                      style={{ filter: "url(#remove-white)" }}
-                                    />
-                                  )}
+                                  }`} />
+                                )}
+                                <div className="flex flex-col justify-center">
+                                  <div className="flex items-center gap-1 mb-0.5">
+                                    {getNsysuLogoSource() && (
+                                      <img
+                                        src={getNsysuLogoSource()}
+                                        alt="NSYSU Logo"
+                                        crossOrigin="anonymous"
+                                        className="h-8 w-auto object-contain mix-blend-multiply shrink-0"
+                                        style={{ filter: "url(#remove-white)" }}
+                                      />
+                                    )}
+                                  </div>
+                                  <span className="text-[12px] font-bold font-serif leading-none" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>EBB Lab</span>
+                                  <span className="text-[9.5px] font-mono text-slate-700 font-bold tracking-wider uppercase leading-tight mt-1 bg-[#8d734a]/12 px-1.5 py-0.5 rounded-xs border border-[#8d734a]/25 text-center select-none">
+                                    SCAN CONTACT
+                                  </span>
                                 </div>
-                                <span className="text-[12px] font-bold font-serif leading-none" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>EBB Lab</span>
-                                <span className="text-[9.5px] font-mono text-slate-700 font-bold tracking-wider uppercase leading-tight mt-1 bg-[#8d734a]/12 px-1.5 py-0.5 rounded-xs border border-[#8d734a]/25 text-center select-none">
-                                  SCAN CONTACT
-                                </span>
                               </div>
-                            </div>
+                            )}
 
                           </div>
 
@@ -1027,7 +1062,7 @@ export default function BusinessCardGenerator() {
                           <div className="flex justify-between items-end z-10">
                             
                             {/* Left: Names & Title */}
-                            <div className="space-y-1 max-w-[62%]">
+                            <div className={`space-y-1 ${showResearchField && formData.topicEn ? "max-w-[62%]" : "max-w-[100%]"}`}>
                               <div className="flex items-baseline gap-2.5">
                                 <span className="text-[34px] font-bold tracking-wide font-serif text-slate-950 leading-none">
                                   {formData.nameZh}
@@ -1043,16 +1078,18 @@ export default function BusinessCardGenerator() {
                             </div>
 
                             {/* Right: Detailed Research (High focus, in English) */}
-                            <div className={`max-w-[48%] text-right p-3 rounded-sm border border-[#8d734a]/30 leading-tight ${
-                              exportTransparent ? "bg-transparent" : "bg-[#fafaf9]/85"
-                            }`}>
-                              <span className="block text-[12px] uppercase tracking-widest mb-1 font-bold font-serif italic text-[#8d734a]">
-                                Research Field
-                              </span>
-                              <p className="text-[14.5px] font-sans font-bold text-slate-800 line-clamp-3 leading-snug">
-                                {formData.topicEn}
-                              </p>
-                            </div>
+                            {showResearchField && formData.topicEn && (
+                              <div className={`max-w-[48%] text-right p-3 rounded-sm border border-[#8d734a]/30 leading-tight ${
+                                exportTransparent ? "bg-transparent" : "bg-[#fafaf9]/85"
+                              }`}>
+                                <span className="block text-[12px] uppercase tracking-widest mb-1 font-bold font-serif italic text-[#8d734a]">
+                                  Research Field
+                                </span>
+                                <p className="text-[14.5px] font-sans font-bold text-slate-800 line-clamp-3 leading-snug">
+                                  {formData.topicEn}
+                                </p>
+                              </div>
+                            )}
 
                           </div>
 
@@ -1096,22 +1133,24 @@ export default function BusinessCardGenerator() {
                             </div>
 
                             {/* Centered QR Code with high scanning contrast */}
-                            <div className="z-10 my-0.5 flex flex-col items-center">
-                              {getQrCodeSource() ? (
-                                <img
-                                  src={getQrCodeSource()}
-                                  alt="Contact QR Code"
-                                  className={`w-[94px] h-[94px] object-contain rounded-sm border border-[#8d734a]/30 bg-white p-0.5 ${
+                            {showQrCode && (
+                              <div className="z-10 my-0.5 flex flex-col items-center">
+                                {getQrCodeSource() ? (
+                                  <img
+                                    src={getQrCodeSource()}
+                                    alt="Contact QR Code"
+                                    className={`w-[94px] h-[94px] object-contain rounded-sm border border-[#8d734a]/30 bg-white p-0.5 ${
+                                      exportTransparent ? "shadow-none" : "shadow-xs"
+                                    }`}
+                                  />
+                                ) : (
+                                  <div className={`w-[94px] h-[94px] rounded-sm border border-[#8d734a]/30 bg-[#fafaf9] animate-pulse ${
                                     exportTransparent ? "shadow-none" : "shadow-xs"
-                                  }`}
-                                />
-                              ) : (
-                                <div className={`w-[94px] h-[94px] rounded-sm border border-[#8d734a]/30 bg-[#fafaf9] animate-pulse ${
-                                  exportTransparent ? "shadow-none" : "shadow-xs"
-                                }`} />
-                              )}
-                              <span className="text-[11px] mt-1 font-mono text-slate-500 font-bold tracking-widest uppercase">SCAN CONTACT</span>
-                            </div>
+                                  }`} />
+                                )}
+                                <span className="text-[11px] mt-1 font-mono text-slate-500 font-bold tracking-widest uppercase">SCAN CONTACT</span>
+                              </div>
+                            )}
 
                             <div className="space-y-0.5 z-10">
                               <span className="text-[15.5px] font-bold block font-serif" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>EBB Lab</span>
