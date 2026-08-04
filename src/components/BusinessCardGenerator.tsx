@@ -205,7 +205,7 @@ export default function BusinessCardGenerator() {
     line: "ebb_lab_nsysu",
     qrCodeUrl: "", 
     logoUrl: "",   
-    addressEn: "No. 70, Lianhai Rd., Gushan Dist., Kaohsiung City 80424, Taiwan "
+    addressEn: "70 Lianhai Rd., Kaohsiung City 80424, Taiwan "
   });
 
   // Generated QR Code Data URL state (generated locally via qrcode package)
