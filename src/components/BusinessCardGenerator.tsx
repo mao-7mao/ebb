@@ -62,12 +62,12 @@ const GREEN_SHADES: Record<GreenShade, GreenShadeColors> = {
   }
 };
 
-const TextureOverlay = ({ color = "#8d734a" }: { color?: string }) => {
+const TextureOverlay = ({ color = "#d5d5d0" }: { color?: string }) => {
   return (
-    <div className="absolute inset-0 pointer-events-none opacity-[0.20] select-none rounded-sm overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none select-none rounded-sm overflow-hidden">
       <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 550 330" fill="none">
         {/* Organic Leaf Veins Background */}
-        <g opacity="0.85">
+        <g>
           <path d="M-20,350 Q150,200 300,280 T580,240" stroke={color} strokeWidth="3" />
           <path d="M120,240 Q180,160 140,110" stroke={color} strokeWidth="2" />
           <path d="M180,215 Q240,140 220,90" stroke={color} strokeWidth="2" />
@@ -83,7 +83,7 @@ const TextureOverlay = ({ color = "#8d734a" }: { color?: string }) => {
         </g>
 
         {/* DNA Double Helix - Top Right */}
-        <g transform="translate(425, 12) scale(0.65)" opacity="0.9">
+        <g transform="translate(425, 12) scale(0.65)">
           <path d="M10,10 Q30,50 50,90 T90,170" stroke={color} strokeWidth="3.6" strokeDasharray="4 4" />
           <path d="M50,10 Q30,50 10,90 T-30,170" stroke={color} strokeWidth="3.6" />
           <line x1="28" y1="40" x2="32" y2="40" stroke={color} strokeWidth="3" />
@@ -94,7 +94,7 @@ const TextureOverlay = ({ color = "#8d734a" }: { color?: string }) => {
         </g>
 
         {/* Molecular Structure / Benzene/Glucose Ring - Bottom Left */}
-        <g transform="translate(25, 195) scale(0.72)" opacity="0.95">
+        <g transform="translate(25, 195) scale(0.72)">
           <polygon points="50,30 90,10 130,30 130,70 90,90 50,70" stroke={color} strokeWidth="3.6" strokeLinejoin="round" />
           <line x1="88" y1="18" x2="122" y2="35" stroke={color} strokeWidth="2" />
           <line x1="58" y1="65" x2="58" y2="35" stroke={color} strokeWidth="2" />
@@ -109,25 +109,25 @@ const TextureOverlay = ({ color = "#8d734a" }: { color?: string }) => {
         </g>
 
         {/* Erlenmeyer Flask & Sprout Leaf - Center Right / Back Center */}
-        <g transform="translate(345, 140) scale(0.78)" opacity="0.9">
+        <g transform="translate(345, 140) scale(0.78)">
           <path d="M40,20 L60,20 M50,20 L50,45 L15,95 C10,103 16,110 25,110 L105,110 C114,110 120,103 115,95 L80,45 L80,20 M70,20 L90,20" stroke={color} strokeWidth="4" strokeLinejoin="round" />
-          <path d="M22,85 C45,88 75,82 108,85 L105,100 C103,105 98,105 95,105 L35,105 C32,105 27,105 25,100 Z" fill={color} opacity="0.2" />
+          <path d="M22,85 C45,88 75,82 108,85 L105,100 C103,105 98,105 95,105 L35,105 C32,105 27,105 25,100 Z" fill={color} />
           <circle cx="55" cy="70" r="3.5" stroke={color} strokeWidth="2" />
           <circle cx="75" cy="60" r="2" stroke={color} strokeWidth="2" />
           <circle cx="48" cy="45" r="1.5" fill={color} />
           <circle cx="68" cy="38" r="2.5" stroke={color} strokeWidth="1.6" />
-          <path d="M65,30 Q78,5 105,10 Q88,35 65,30 Z" fill={color} opacity="0.45" />
+          <path d="M65,30 Q78,5 105,10 Q88,35 65,30 Z" fill={color} />
           <path d="M65,30 C75,20 90,15 105,10" stroke={color} strokeWidth="2.4" />
         </g>
 
         {/* Microbes / Cell Cultures / Concentric rings - Scattered */}
-        <circle cx="150" cy="50" r="6" stroke={color} strokeWidth="2" strokeDasharray="2 2" opacity="0.5" />
-        <circle cx="150" cy="50" r="2" fill={color} opacity="0.5" />
-        <circle cx="280" cy="40" r="4" stroke={color} strokeWidth="2.4" opacity="0.6" />
-        <circle cx="283" cy="37" r="1" fill={color} opacity="0.6" />
+        <circle cx="150" cy="50" r="6" stroke={color} strokeWidth="2" strokeDasharray="2 2" />
+        <circle cx="150" cy="50" r="2" fill={color} />
+        <circle cx="280" cy="40" r="4" stroke={color} strokeWidth="2.4" />
+        <circle cx="283" cy="37" r="1" fill={color} />
 
         {/* Plant Stem / Curving Bio-Energy stream connecting it all */}
-        <path d="M120,130 C190,140 250,70 330,85 C390,95 440,50 490,65" stroke={color} strokeWidth="2" strokeDasharray="5 5" opacity="0.5" />
+        <path d="M120,130 C190,140 250,70 330,85 C390,95 440,50 490,65" stroke={color} strokeWidth="2" strokeDasharray="5 5" />
       </svg>
     </div>
   );
@@ -200,12 +200,12 @@ export default function BusinessCardGenerator() {
     nameEn: "Fanny Lin",
     titleEn: "Ph.D. Student",
     topicEn: "Innovative Agricultural Mulch Films from Biomass",
-    email: "ebblab115@gmail.com",
+    email: "@gmail.com",
     tel: "07-5252000 ext.4416",
     line: "ebb_lab_nsysu",
     qrCodeUrl: "", 
     logoUrl: "",   
-    addressEn: "70 Lianhai Rd., Kaohsiung City 80424, Taiwan "
+    addressEn: "70 Lianhai Rd., Gushan Dist., Kaohsiung City 80424, Taiwan "
   });
 
   // Generated QR Code Data URL state (generated locally via qrcode package)
@@ -861,7 +861,7 @@ export default function BusinessCardGenerator() {
                         }}
                       >
                         {/* Unified Bio-Tech & Organic Leaf Vein Background Texture Overlay */}
-                        <TextureOverlay color={GREEN_SHADES[greenShade].primaryHex} />
+                        <TextureOverlay color="#d5d5d0" />
 
                         {/* Header section (Logo and University titles) */}
                         <div className="flex items-center gap-3.5 z-10 border-b border-[#8d734a]/30 pb-2.5">
@@ -918,7 +918,7 @@ export default function BusinessCardGenerator() {
                                 <span className="block text-[11px] uppercase tracking-widest mb-1 font-bold font-serif italic text-[#8d734a]">
                                   Research Field
                                 </span>
-                                <p className="text-[13.5px] font-sans font-bold text-slate-800 line-clamp-3 leading-snug">
+                                <p className="text-[13.5px] font-sans font-bold text-slate-800 break-words leading-snug">
                                   {formData.topicEn}
                                 </p>
                               </div>
@@ -935,25 +935,25 @@ export default function BusinessCardGenerator() {
                             <div className="space-y-1 font-mono text-[12px]">
                               {/* Email */}
                               {formData.email && (
-                                <div className="flex items-center gap-1.5 text-slate-800 font-mono">
-                                  <Mail className="w-4 h-4 shrink-0" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
-                                  <span className="truncate max-w-[155px] font-bold">{formData.email}</span>
+                                <div className="flex items-start gap-1.5 text-slate-800 font-mono">
+                                  <Mail className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
+                                  <span className="font-bold break-all leading-tight text-[11.5px]">{formData.email}</span>
                                 </div>
                               )}
 
                               {/* Phone */}
                               {formData.tel && (
-                                <div className="flex items-center gap-1.5 text-slate-800 font-mono">
-                                  <Phone className="w-4 h-4 shrink-0" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
-                                  <span className="font-bold">{formData.tel}</span>
+                                <div className="flex items-start gap-1.5 text-slate-800 font-mono">
+                                  <Phone className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
+                                  <span className="font-bold break-all leading-tight text-[11.5px]">{formData.tel}</span>
                                 </div>
                               )}
 
                               {/* Line ID */}
                               {formData.line && (
-                                <div className="flex items-center gap-1.5 text-slate-800">
-                                  <span className="text-[10px] font-bold text-white rounded-[2px] px-1 py-0.2 select-none shrink-0 font-sans tracking-wide" style={{ backgroundColor: GREEN_SHADES[greenShade].primaryHex }}>LINE</span>
-                                  <span className="font-mono font-bold text-[12.5px]">{formData.line}</span>
+                                <div className="flex items-start gap-1.5 text-slate-800">
+                                  <span className="text-[10px] font-bold text-white rounded-[2px] px-1 py-0.2 select-none shrink-0 font-sans tracking-wide mt-0.5" style={{ backgroundColor: GREEN_SHADES[greenShade].primaryHex }}>LINE</span>
+                                  <span className="font-mono font-bold text-[12px] break-all leading-tight">{formData.line}</span>
                                 </div>
                               )}
 
@@ -961,7 +961,7 @@ export default function BusinessCardGenerator() {
                               {formData.addressEn && (
                                 <div className="flex items-start gap-1 text-[#333] leading-normal font-sans">
                                   <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
-                                  <span className="text-[10px] leading-tight font-semibold line-clamp-2">
+                                  <span className="text-[10px] leading-tight font-semibold break-words">
                                     {formData.addressEn}
                                   </span>
                                 </div>
@@ -1030,7 +1030,7 @@ export default function BusinessCardGenerator() {
                           }}
                         >
                           {/* Unified Bio-Tech & Organic Leaf Vein Background Texture Overlay */}
-                          <TextureOverlay color={GREEN_SHADES[greenShade].primaryHex} />
+                          <TextureOverlay color="#d5d5d0" />
 
                           {/* Header: University seal and departments (Clean layout optimized for UV printing on biomass plastic) */}
                           <div className="flex items-start gap-4 z-10">
@@ -1085,7 +1085,7 @@ export default function BusinessCardGenerator() {
                                 <span className="block text-[12px] uppercase tracking-widest mb-1 font-bold font-serif italic text-[#8d734a]">
                                   Research Field
                                 </span>
-                                <p className="text-[14.5px] font-sans font-bold text-slate-800 line-clamp-3 leading-snug">
+                                <p className="text-[14.5px] font-sans font-bold text-slate-800 break-words leading-snug">
                                   {formData.topicEn}
                                 </p>
                               </div>
@@ -1118,7 +1118,7 @@ export default function BusinessCardGenerator() {
                             exportTransparent ? "bg-transparent" : "bg-[#fafaf9]"
                           }`}>
                             {/* Unified Bio-Tech & Organic Leaf Vein Background Texture Overlay */}
-                            <TextureOverlay color={GREEN_SHADES[greenShade].primaryHex} />
+                            <TextureOverlay color="#d5d5d0" />
 
                             <div className="w-[95%] h-13 flex items-center justify-center z-10 shrink-0">
                               {getNsysuLogoSource() && (
