@@ -968,8 +968,8 @@ export default function BusinessCardGenerator() {
                               )}
                             </div>
 
-                            {/* Enriched & Enlarged QR Code section with high contrast & crisp scan frame */}
-                            {showQrCode && (
+                            {/* Enriched & Enlarged QR Code section or Lab Logo section when QR is hidden */}
+                            {showQrCode ? (
                               <div className="flex items-center gap-2.5 mt-0.5 border-t border-[#8d734a]/30 pt-1">
                                 {getQrCodeSource() ? (
                                   <img
@@ -999,6 +999,33 @@ export default function BusinessCardGenerator() {
                                   <span className="text-[12px] font-bold font-serif leading-none" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>EBB Lab</span>
                                   <span className="text-[9.5px] font-mono text-slate-700 font-bold tracking-wider uppercase leading-tight mt-1 bg-[#8d734a]/12 px-1.5 py-0.5 rounded-xs border border-[#8d734a]/25 text-center select-none">
                                     SCAN CONTACT
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-3 mt-1 border-t border-[#8d734a]/30 pt-2">
+                                {getNsysuLogoSource() && (
+                                  <div className={`p-1.5 rounded-sm border border-[#8d734a]/30 shrink-0 ${
+                                    exportTransparent ? "bg-transparent" : "bg-white/80 shadow-xs"
+                                  }`}>
+                                    <img
+                                      src={getNsysuLogoSource()}
+                                      alt="Lab Logo"
+                                      crossOrigin="anonymous"
+                                      className="h-10 w-auto object-contain mix-blend-multiply"
+                                      style={{ filter: "url(#remove-white)" }}
+                                    />
+                                  </div>
+                                )}
+                                <div className="flex flex-col justify-center">
+                                  <span className="text-[13px] font-bold font-serif leading-tight" style={{ color: GREEN_SHADES[greenShade].primaryHex }}>
+                                    EBB Lab
+                                  </span>
+                                  <span className="text-[10px] font-sans font-semibold text-slate-700 leading-tight mt-0.5">
+                                    Biotechnology & Biorefinery
+                                  </span>
+                                  <span className="text-[9px] font-mono text-slate-600 font-bold tracking-wider uppercase leading-tight mt-1 bg-[#8d734a]/12 px-1.5 py-0.5 rounded-xs border border-[#8d734a]/25 text-center select-none w-fit">
+                                    RESEARCH LAB
                                   </span>
                                 </div>
                               </div>
