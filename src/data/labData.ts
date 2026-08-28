@@ -189,56 +189,48 @@ export const members: Member[] = [
       "keywords": []
     },
     "description": ""
+  },
+  {
+    "id": "safira",
+    "name_zh": "Safira Prameshwari Ananta Haryanto",
+    "name_en": "Safira",
+    "role": "",
+    "role_en": "Master exchange student",
+    "research_topic": {
+      "title_zh": "",
+      "title_en": "Next-Generation Bio-Based Polyester Materials",
+      "keywords": [
+        "PEF"
+      ]
+    },
+    "description": "Focusing on the development of next-generation bio-based polyester materials (PEF) with high-barrier properties, exploring process optimization and prospective applications."
   }
 ];
 
 export const meetings: Meeting[] = [
- 
   {
-    "id": "m7",
-    "date": "2026/04/30",
-    "archive_group": "APRIL 2026",
-    "title": "Insights into the Synthesis of Poly(ethylene 2,5-Furandicarboxylate) from 2,5-Furandicarboxylic Acid: Steps toward Environmental and Food Safety Excellence in Packaging Applications",
+    "id": "m_1785724881358",
+    "date": "2026/07/23",
+    "archive_group": "JULY 2026",
+    "title": "Incorporation of Poly(ethylene 2,5-furanoate) into Poly(butylene adipate-co-terephthalate)toward Sustainable Food Packaging Films with Enhanced Strength and Barrier Properties",
     "speaker": "Kalin",
     "speaker_id": "kalin",
     "status": "completed",
     "status_label": "✓ Completed",
-    "search": "Polymer Matrix Scaling Material kalin"
+    "search": "Incorporation of Poly(ethylene 2,5-furanoate) into Poly(butylene adipate-co-terephthalate)toward Sustainable Food Packaging Films with Enhanced Strength and Barrier Properties Kalin 2026/07/23 JULY 2026"
   },
   {
-    "id": "m8",
-    "date": "2026/04/30",
-    "archive_group": "APRIL 2026",
-    "title": "A sustainable solution to plastics pollution: An eco-friendly bioplastic film production from high-salt contained Spirulina sp. residues",
+    "id": "m_1785724881358",
+    "date": "2026/07/23",
+    "archive_group": "JULY 2026",
+    "title": "3D printing of edible hydrogels containing thiamine and their comparison\nto cast gels",
     "speaker": "Eko",
     "speaker_id": "eko",
     "status": "completed",
     "status_label": "✓ Completed",
-    "search": "high-salt contained Spirulina sp. residues eko"
+    "search": "3D printing of edible hydrogels containing thiamine and their comparison\nto cast gels Eko 2026/07/23 JULY 2026"
   },
   {
-    "id": "m9",
-    "date": "2026/04/16",
-    "archive_group": "APRIL 2026",
-    "title": "Catalytic Synthesis of Lactic Acid from Cellulose over Easily-prepared Niobium-doped Titania by Solution Combustion Synthesis",
-    "speaker": "Kevin",
-    "speaker_id": "kevin",
-    "status": "completed",
-    "status_label": "✓ Completed",
-    "search": "Lactic Acid kevin"
-  },
-  {
-    "id": "m10",
-    "date": "2026/04/16",
-    "archive_group": "APRIL 2026",
-    "title": "Valorization of Spruce Bark to Environmentally Sustainable Packaging Materials",
-    "speaker": "Fanny",
-    "speaker_id": "fanny",
-    "status": "completed",
-    "status_label": "✓ Completed",
-    "search": "Sustainable Packaging Materials fanny"
-  },
-   {
     "id": "m1",
     "date": "2026/06/18",
     "archive_group": "JUNE 2026",
@@ -305,25 +297,47 @@ export const meetings: Meeting[] = [
     "search": "Collaborative Removal NOx Toluene Flue Gas Aerobic Denitrifying Biotrickling Filter Chris"
   },
   {
-    "id": "m_1785724881358",
-    "date": "2026/07/23",
-    "archive_group": "JULY 2026",
-    "title": "Incorporation of Poly(ethylene 2,5-furanoate) into Poly(butylene adipate-co-terephthalate)toward Sustainable Food Packaging Films with Enhanced Strength and Barrier Properties",
+    "id": "m7",
+    "date": "2026/04/30",
+    "archive_group": "APRIL 2026",
+    "title": "Insights into the Synthesis of Poly(ethylene 2,5-Furandicarboxylate) from 2,5-Furandicarboxylic Acid: Steps toward Environmental and Food Safety Excellence in Packaging Applications",
     "speaker": "Kalin",
     "speaker_id": "kalin",
     "status": "completed",
     "status_label": "✓ Completed",
-    "search": "Incorporation of Poly(ethylene 2,5-furanoate) into Poly(butylene adipate-co-terephthalate)toward Sustainable Food Packaging Films with Enhanced Strength and Barrier Properties Kalin 2026/07/23 JULY 2026"
+    "search": "Polymer Matrix Scaling Material kalin"
   },
   {
-    "id": "m_1785724881358",
-    "date": "2026/07/23",
-    "archive_group": "JULY 2026",
-    "title": "3D printing of edible hydrogels containing thiamine and their comparison\nto cast gels",
+    "id": "m8",
+    "date": "2026/04/30",
+    "archive_group": "APRIL 2026",
+    "title": "A sustainable solution to plastics pollution: An eco-friendly bioplastic film production from high-salt contained Spirulina sp. residues",
     "speaker": "Eko",
     "speaker_id": "eko",
     "status": "completed",
     "status_label": "✓ Completed",
-    "search": "3D printing of edible hydrogels containing thiamine and their comparison\nto cast gels Eko 2026/07/23 JULY 2026"
+    "search": "high-salt contained Spirulina sp. residues eko"
+  },
+  {
+    "id": "m9",
+    "date": "2026/04/16",
+    "archive_group": "APRIL 2026",
+    "title": "Catalytic Synthesis of Lactic Acid from Cellulose over Easily-prepared Niobium-doped Titania by Solution Combustion Synthesis",
+    "speaker": "Kevin",
+    "speaker_id": "kevin",
+    "status": "completed",
+    "status_label": "✓ Completed",
+    "search": "Lactic Acid kevin"
+  },
+  {
+    "id": "m10",
+    "date": "2026/04/16",
+    "archive_group": "APRIL 2026",
+    "title": "Valorization of Spruce Bark to Environmentally Sustainable Packaging Materials",
+    "speaker": "Fanny",
+    "speaker_id": "fanny",
+    "status": "completed",
+    "status_label": "✓ Completed",
+    "search": "Sustainable Packaging Materials fanny"
   }
 ];
