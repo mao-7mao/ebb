@@ -78,9 +78,36 @@ export default function App() {
   // Mobile menu drawer
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Dynamic active members & meetings state (allows live generator updates)
-  const [activeMembers, setActiveMembers] = useState<Member[]>(initialMembersData);
-  const [activeMeetings, setActiveMeetings] = useState<Meeting[]>(initialMeetingsData);
+  // Local storage keys for client-side persistence
+  const MEMBERS_STORAGE_KEY = "ebblab_custom_members";
+  const MEETINGS_STORAGE_KEY = "ebblab_custom_meetings";
+
+  // Dynamic active members & meetings state (loads from localStorage if exists, else initial labData)
+  const [activeMembers, setActiveMembers] = useState<Member[]>(() => {
+    try {
+      const saved = localStorage.getItem(MEMBERS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn("Failed to load saved members from localStorage", e);
+    }
+    return initialMembersData;
+  });
+
+  const [activeMeetings, setActiveMeetings] = useState<Meeting[]>(() => {
+    try {
+      const saved = localStorage.getItem(MEETINGS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn("Failed to load saved meetings from localStorage", e);
+    }
+    return initialMeetingsData;
+  });
 
   // Site Access Gate & Admin Auth Modal States
   const [isSiteUnlocked, setIsSiteUnlocked] = useState(false);
@@ -150,17 +177,48 @@ export default function App() {
     }, 200);
   };
 
-  // Extract unique roles for directory filter
+  // Helper to check if role is any type of exchange student
+  const isExchangeRole = (role?: string, roleEn?: string): boolean => {
+    const combined = `${role || ""} ${roleEn || ""}`.toLowerCase();
+    return combined.includes("交換") || combined.includes("exchange");
+  };
+
+  // Extract unique roles for directory filter (unifying all exchange students into a single '交換學生' tag)
   const memberRoles = React.useMemo(() => {
-    const set = new Set<string>();
-    activeMembers.forEach((m) => set.add(m.role));
-    return Array.from(set);
+    const categories = new Set<string>();
+    let hasExchange = false;
+
+    activeMembers.forEach((m) => {
+      if (isExchangeRole(m.role, m.role_en)) {
+        hasExchange = true;
+      } else if (m.role) {
+        categories.add(m.role);
+      }
+    });
+
+    const sortedRoles = Array.from(categories).sort((a, b) => {
+      const isDocA = a.includes("博");
+      const isDocB = b.includes("博");
+      if (isDocA && !isDocB) return -1;
+      if (!isDocA && isDocB) return 1;
+      return a.localeCompare(b);
+    });
+
+    if (hasExchange) {
+      sortedRoles.push("交換學生");
+    }
+
+    return sortedRoles;
   }, [activeMembers]);
 
   // Filter members based on search bar and role filter
   const filteredMembers = activeMembers.filter((m) => {
-    if (memberRoleFilter !== "ALL" && m.role !== memberRoleFilter) {
-      return false;
+    if (memberRoleFilter !== "ALL") {
+      if (memberRoleFilter === "交換學生") {
+        if (!isExchangeRole(m.role, m.role_en)) return false;
+      } else {
+        if (m.role !== memberRoleFilter) return false;
+      }
     }
     const query = searchQuery.trim().toLowerCase();
     if (!query) return true;
@@ -168,6 +226,8 @@ export default function App() {
       m.name_zh.toLowerCase().includes(query) ||
       m.name_en.toLowerCase().includes(query) ||
       m.role.toLowerCase().includes(query) ||
+      (m.role_en && m.role_en.toLowerCase().includes(query)) ||
+      (isExchangeRole(m.role, m.role_en) && ("交換學生 exchange student".includes(query) || query.includes("交換") || query.includes("exchange"))) ||
       m.research_topic.title_zh.toLowerCase().includes(query) ||
       m.research_topic.title_en.toLowerCase().includes(query) ||
       m.research_topic.keywords.some((k) => k.toLowerCase().includes(query))
@@ -859,10 +919,14 @@ export default function App() {
                             <div>
                               <h4 className="text-lg font-bold text-[#1a1a1a] font-serif flex items-baseline gap-2">
                                 {m.name_zh}
-                                <span className="text-xs font-normal text-[#666] font-mono">{m.name_en}</span>
+                                {m.name_en && m.name_zh !== m.name_en && (
+                                  <span className="text-xs font-normal text-[#666] font-mono">{m.name_en}</span>
+                                )}
                               </h4>
                               <p className="text-[11px] text-[#8d734a] font-bold font-serif italic mt-0.5">
-                                {m.role}
+                                {isExchangeRole(m.role, m.role_en)
+                                  ? (m.role_en && m.role_en !== m.role ? `${m.role || "交換學生"} · ${m.role_en}` : (m.role || "交換學生"))
+                                  : m.role}
                               </p>
                             </div>
                             <span className="p-2 rounded-sm bg-[#f8f8f5] border border-[#e5e5e0] text-[#004b3a] shrink-0 group-hover:bg-[#fafafa] transition-colors">
@@ -1357,6 +1421,21 @@ export default function App() {
                   setActiveMembers(updatedMembers);
                   setActiveMeetings(updatedMeetings);
                   setCollapsedGroups({});
+                  try {
+                    localStorage.setItem(MEMBERS_STORAGE_KEY, JSON.stringify(updatedMembers));
+                    localStorage.setItem(MEETINGS_STORAGE_KEY, JSON.stringify(updatedMeetings));
+                  } catch (e) {
+                    console.error("Failed to save to localStorage:", e);
+                  }
+                }}
+                onResetToDefault={() => {
+                  if (confirm("確定要重置並還原為代碼庫預設的原始資料 (labData.ts) 嗎？")) {
+                    localStorage.removeItem(MEMBERS_STORAGE_KEY);
+                    localStorage.removeItem(MEETINGS_STORAGE_KEY);
+                    setActiveMembers(initialMembersData);
+                    setActiveMeetings(initialMeetingsData);
+                    setCollapsedGroups({});
+                  }
                 }}
                 onLogout={handleLogout}
               />

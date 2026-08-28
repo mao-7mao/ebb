@@ -274,19 +274,39 @@ export default function BusinessCardGenerator() {
   useEffect(() => {
     if (!formData.nameZh) return;
     
+    // Get latest members from localStorage if available
+    let allMembers = members;
+    try {
+      const saved = localStorage.getItem("ebblab_custom_members");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) allMembers = parsed;
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+
     // Find exact match in members database
-    const matched = members.find(
-      m => m.name_zh === formData.nameZh.trim() || 
+    const matched = allMembers.find(
+      m => m.name_zh.toLowerCase() === formData.nameZh.trim().toLowerCase() || 
            m.name_en.toLowerCase() === formData.nameZh.trim().toLowerCase()
     );
 
     if (matched) {
+      const isExchange = matched.role.includes("交換") || matched.role.toLowerCase().includes("exchange");
+      const defaultTitle = isExchange ? (matched.role_en || "Exchange Student") : (matched.role.includes("博") ? "Ph.D. Student" : "Master's Student");
+      const cleanEnglishName = matched.name_zh.match(/^[a-zA-Z\s]+$/) 
+        ? matched.name_zh 
+        : matched.name_en.includes(" ")
+          ? matched.name_en
+          : `${matched.name_en} ${matched.name_en === "Fanny" ? "Lin" : matched.name_en === "Kevin" ? "Yu" : matched.name_en === "Kalin" ? "Chen" : matched.name_en === "Eko" ? "Tang" : matched.name_en === "Martin" ? "Chen" : matched.name_en === "Peter" ? "Hua" : matched.name_en === "Nina" ? "Chen" : matched.name_en === "Chris" ? "Huang" : matched.name_en === "Tina" ? "Wu" : "Scholar"}`;
+
       // Auto-populate associated academic values
       setFormData(prev => ({
         ...prev,
         nameZh: matched.name_zh,
-        nameEn: `${matched.name_en} ${matched.name_en === "Fanny" ? "Lin" : matched.name_en === "Kevin" ? "Yu" : matched.name_en === "Kalin" ? "Chen" : matched.name_en === "Eko" ? "Tang" : matched.name_en === "Martin" ? "Chen" : matched.name_en === "Peter" ? "Hua" : matched.name_en === "Nina" ? "Chen" : matched.name_en === "Chris" ? "Huang" : matched.name_en === "Tina" ? "Wu" : "Scholar"}`,
-        titleEn: matched.role_en || (matched.role.includes("博") ? "Ph.D. Student" : "Master's Student"),
+        nameEn: cleanEnglishName,
+        titleEn: matched.role_en || defaultTitle,
         topicEn: matched.research_topic.title_en,
         // Keep existing contact details unless empty
         email: prev.email || "klchang@mail.nsysu.edu.tw",
@@ -297,10 +317,18 @@ export default function BusinessCardGenerator() {
 
   // Handle autocomplete selection
   const handleSelectMember = (member: Member) => {
+    const isExchange = member.role.includes("交換") || member.role.toLowerCase().includes("exchange");
+    const defaultTitle = isExchange ? (member.role_en || "Exchange Student") : (member.role.includes("博") ? "Ph.D. Student" : "Master's Student");
+    const cleanEnglishName = member.name_zh.match(/^[a-zA-Z\s]+$/) 
+      ? member.name_zh 
+      : member.name_en.includes(" ")
+        ? member.name_en
+        : `${member.name_en} ${member.name_en === "Fanny" ? "Lin" : member.name_en === "Kevin" ? "Yu" : member.name_en === "Kalin" ? "Chen" : member.name_en === "Eko" ? "Tang" : member.name_en === "Martin" ? "Chen" : member.name_en === "Peter" ? "Hua" : member.name_en === "Nina" ? "Chen" : member.name_en === "Chris" ? "Huang" : member.name_en === "Tina" ? "Wu" : "Scholar"}`;
+
     setFormData({
       nameZh: member.name_zh,
-      nameEn: `${member.name_en} ${member.name_en === "Fanny" ? "Lin" : member.name_en === "Kevin" ? "Yu" : member.name_en === "Kalin" ? "Chen" : member.name_en === "Eko" ? "Tang" : member.name_en === "Martin" ? "Chen" : member.name_en === "Peter" ? "Hua" : member.name_en === "Nina" ? "Chen" : member.name_en === "Chris" ? "Huang" : member.name_en === "Tina" ? "Wu" : "Scholar"}`,
-      titleEn: member.role_en || (member.role.includes("博") ? "Ph.D. Student" : "Master's Student"),
+      nameEn: cleanEnglishName,
+      titleEn: member.role_en || defaultTitle,
       topicEn: member.research_topic.title_en,
       email: member.id === "fanny" ? "ebblab115@gmail.com" : `${member.id}@mail.nsysu.edu.tw`,
       tel: "+886-7-525-2000 ext. 4400",

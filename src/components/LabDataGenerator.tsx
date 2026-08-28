@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Member, Meeting } from "../data/labData";
 import { 
   Database, 
@@ -28,6 +28,7 @@ interface LabDataGeneratorProps {
   initialMembers: Member[];
   initialMeetings: Meeting[];
   onApplyData?: (updatedMembers: Member[], updatedMeetings: Meeting[]) => void;
+  onResetToDefault?: () => void;
   onLogout?: () => void;
 }
 
@@ -35,6 +36,7 @@ export default function LabDataGenerator({
   initialMembers,
   initialMeetings,
   onApplyData,
+  onResetToDefault,
   onLogout
 }: LabDataGeneratorProps) {
   const [activeTab, setActiveTab] = useState<"members" | "meetings" | "export">("members");
@@ -51,6 +53,15 @@ export default function LabDataGenerator({
   // Local state for editable members and meetings
   const [membersList, setMembersList] = useState<Member[]>(initialMembers);
   const [meetingsList, setMeetingsList] = useState<Meeting[]>(() => sortMeetingsByDateDesc(initialMeetings));
+
+  // Keep local state in sync when initialMembers / initialMeetings props change
+  useEffect(() => {
+    setMembersList(initialMembers);
+  }, [initialMembers]);
+
+  useEffect(() => {
+    setMeetingsList(sortMeetingsByDateDesc(initialMeetings));
+  }, [initialMeetings]);
 
   // Form state for Editing/Adding Member
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
@@ -157,12 +168,16 @@ export default function LabDataGenerator({
       }
     };
 
+    let updatedList: Member[];
     if (editingMemberId) {
-      setMembersList((prev) =>
-        prev.map((m) => (m.id === editingMemberId ? updatedMember : m))
-      );
+      updatedList = membersList.map((m) => (m.id === editingMemberId ? updatedMember : m));
     } else {
-      setMembersList((prev) => [...prev, updatedMember]);
+      updatedList = [...membersList, updatedMember];
+    }
+
+    setMembersList(updatedList);
+    if (onApplyData) {
+      onApplyData(updatedList, meetingsList);
     }
 
     handleResetMemberForm();
@@ -170,7 +185,11 @@ export default function LabDataGenerator({
 
   const handleDeleteMember = (id: string) => {
     if (confirm("確定要刪除這位實驗室成員嗎？")) {
-      setMembersList((prev) => prev.filter((m) => m.id !== id));
+      const updatedList = membersList.filter((m) => m.id !== id);
+      setMembersList(updatedList);
+      if (onApplyData) {
+        onApplyData(updatedList, meetingsList);
+      }
       if (editingMemberId === id) handleResetMemberForm();
     }
   };
@@ -183,6 +202,9 @@ export default function LabDataGenerator({
       newList[index] = newList[targetIndex];
       newList[targetIndex] = temp;
       setMembersList(newList);
+      if (onApplyData) {
+        onApplyData(newList, meetingsList);
+      }
     }
   };
 
@@ -391,7 +413,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
         </div>
 
         {/* Top Control Buttons */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={handleApplyToLiveApp}
@@ -402,8 +424,20 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
             }`}
           >
             {appliedStatus ? <Check className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
-            <span>{appliedStatus ? "已套用至當前應用!" : "即時套用至前端 (Apply Live)"}</span>
+            <span>{appliedStatus ? "已同步並儲存至瀏覽器!" : "即時同步至前端 (已自動儲存)"}</span>
           </button>
+
+          {onResetToDefault && (
+            <button
+              type="button"
+              onClick={onResetToDefault}
+              className="px-3 py-2 bg-white hover:bg-amber-50 border border-amber-300 text-amber-900 rounded-sm text-xs font-bold transition flex items-center gap-1.5"
+              title="還原回原始碼 labData.ts 預設數據"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
+              <span>還原預設</span>
+            </button>
+          )}
 
           {onLogout && (
             <button
@@ -507,24 +541,83 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">身份/年級</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">身份/年級</label>
+                    <span className="text-[10px] text-slate-400 font-mono">或點選快速填入</span>
+                  </div>
                   <input
                     type="text"
+                    list="role-options"
                     value={memberForm.role}
                     onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
-                    placeholder="例如: 114博班"
+                    placeholder="例如: 114博班 / 交換學生"
                     className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a]"
                   />
+                  <datalist id="role-options">
+                    <option value="114博班" />
+                    <option value="114碩班" />
+                    <option value="113碩班" />
+                    <option value="115碩班" />
+                    <option value="交換學生" />
+                  </datalist>
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {["114博班", "114碩班", "113碩班", "115碩班", "交換學生"].map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => {
+                          const isExchange = r === "交換學生";
+                          setMemberForm({
+                            ...memberForm,
+                            role: r,
+                            role_en: isExchange ? (memberForm.role_en || "Exchange Student") : memberForm.role_en
+                          });
+                        }}
+                        className={`text-[9.5px] px-1.5 py-0.5 rounded-xs border transition ${
+                          memberForm.role === r
+                            ? "bg-[#004b3a] text-white border-[#004b3a]"
+                            : "bg-white text-slate-600 border-[#e5e5e0] hover:bg-[#fafafa]"
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">English Role</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">English Role</label>
+                  </div>
                   <input
                     type="text"
+                    list="role-en-options"
                     value={memberForm.role_en || ""}
                     onChange={(e) => setMemberForm({ ...memberForm, role_en: e.target.value })}
-                    placeholder="Ph.D. Student / Master's Student"
+                    placeholder="Ph.D. Student / Exchange Student"
                     className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a]"
                   />
+                  <datalist id="role-en-options">
+                    <option value="Ph.D. Student" />
+                    <option value="Master's Student" />
+                    <option value="Doctoral Exchange Student" />
+                    <option value="Exchange Student" />
+                  </datalist>
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {["Ph.D. Student", "Master's Student", "Doctoral Exchange Student", "Exchange Student"].map((re) => (
+                      <button
+                        key={re}
+                        type="button"
+                        onClick={() => setMemberForm({ ...memberForm, role_en: re })}
+                        className={`text-[9.5px] px-1.5 py-0.5 rounded-xs border transition ${
+                          memberForm.role_en === re
+                            ? "bg-[#8d734a] text-white border-[#8d734a]"
+                            : "bg-white text-slate-600 border-[#e5e5e0] hover:bg-[#fafafa]"
+                        }`}
+                      >
+                        {re}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
