@@ -194,6 +194,7 @@ export default function LabDataGenerator({
 
   const handleResetMeetingForm = () => {
     setEditingMeetingId(null);
+    const todayStr = new Date().toISOString().split("T")[0].replace(/-/g, "/");
     setMeetingForm({
       id: `m_${Date.now()}`,
       date: todayStr,

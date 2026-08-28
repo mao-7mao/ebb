@@ -13,6 +13,22 @@
   --font-display: Georgia, Cambria, "Times New Roman", Times, serif;
 }
 
+html[data-font-size="sm"] {
+  font-size: 14.5px;
+}
+
+html[data-font-size="md"] {
+  font-size: 16px;
+}
+
+html[data-font-size="lg"] {
+  font-size: 18px;
+}
+
+html[data-font-size="xl"] {
+  font-size: 20px;
+}
+
 body {
   background-color: #f4f1ea; /* warm ivory paper */
   color: #1a1a1a; /* deep charcoal */
@@ -60,14 +76,15 @@ body {
 .perspective-1000 {
   perspective: 1000px;
 }
+
 .transform-style-3d {
   transform-style: preserve-3d;
 }
+
 .backface-hidden {
   backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
 }
+
 .rotate-y-180 {
   transform: rotateY(180deg);
 }
-
