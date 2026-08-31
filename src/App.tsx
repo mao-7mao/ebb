@@ -551,7 +551,7 @@ export default function App() {
         <div className="pt-4 border-t border-[#e5e5e0] space-y-3">
           <FontSizeAdjuster />
           <div className="text-[11px] text-slate-400 font-mono">
-            NSYSU · Dept. of Marine Env.
+            Copyright © Miao. All rights reserved.
           </div>
         </div>
       </aside>
