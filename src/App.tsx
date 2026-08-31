@@ -43,7 +43,8 @@ import {
   X,
   Layers,
   ChevronDown,
-  ExternalLink
+  ExternalLink,
+  HardDrive
 } from "lucide-react";
 
 export type NavPage = 
@@ -1299,7 +1300,22 @@ export default function App() {
                 </p>
               </div>
               
-              <div className="relative w-full sm:w-72">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                {/* Internal NAS Drive Quick Access */}
+                <a
+                  href="http://140.117.64.13:5000"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#004b3a] hover:bg-[#00382b] text-white rounded-sm text-xs font-bold font-sans shadow-xs transition-all active:scale-95 group shrink-0"
+                  title="開啟組內 NAS 網盤 (http://140.117.64.13:5000)"
+                >
+                  <HardDrive className="w-4 h-4 text-emerald-300 group-hover:scale-110 transition-transform" />
+                  <span>組內 NAS 網盤</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-white/80 group-hover:text-white" />
+                </a>
+
+                {/* Search Bar */}
+                <div className="relative w-full sm:w-64">
                 <Search className="w-4 h-4 text-[#004b3a] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
@@ -1308,6 +1324,7 @@ export default function App() {
                   placeholder="Filter papers or speaker..."
                   className="w-full pl-9 pr-4 py-2 bg-white border border-[#e5e5e0] rounded-sm text-xs font-sans focus:outline-none focus:border-[#004b3a]"
                 />
+                </div>
               </div>
             </div>
 

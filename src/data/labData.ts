@@ -174,7 +174,7 @@ export const members: Member[] = [
 
 export const meetings: Meeting[] = [
   {
-    "id": "m_1785724881358",
+    "id": "m_1785724881358_kalin",
     "date": "2026/07/23",
     "archive_group": "JULY 2026",
     "title": "Incorporation of Poly(ethylene 2,5-furanoate) into Poly(butylene adipate-co-terephthalate)toward Sustainable Food Packaging Films with Enhanced Strength and Barrier Properties",
@@ -185,15 +185,15 @@ export const meetings: Meeting[] = [
     "search": "Incorporation of Poly(ethylene 2,5-furanoate) into Poly(butylene adipate-co-terephthalate)toward Sustainable Food Packaging Films with Enhanced Strength and Barrier Properties Kalin 2026/07/23 JULY 2026"
   },
   {
-    "id": "m_1785724881358",
+    "id": "m_1785724881358_eko",
     "date": "2026/07/23",
     "archive_group": "JULY 2026",
-    "title": "3D printing of edible hydrogels containing thiamine and their comparison\nto cast gels",
+    "title": "3D printing of edible hydrogels containing thiamine and their comparison to cast gels",
     "speaker": "Eko",
     "speaker_id": "eko",
     "status": "completed",
     "status_label": "✓ Completed",
-    "search": "3D printing of edible hydrogels containing thiamine and their comparison\nto cast gels Eko 2026/07/23 JULY 2026"
+    "search": "3D printing of edible hydrogels containing thiamine and their comparison to cast gels Eko 2026/07/23 JULY 2026"
   },
   {
     "id": "m1",
