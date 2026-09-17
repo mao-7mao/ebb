@@ -702,7 +702,7 @@ export default function ProcurementFormModal({
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-slate-800 font-bold flex items-center gap-1.5 text-xs">
                       <Store className="w-3.5 h-3.5 text-amber-700" />
-                      <span>{lang === "zh" ? "購物平台 (蝦皮/淘寶等，可自行輸入或點選歷史)" : "Shopping Platform (Custom input or click saved)"}</span>
+                      <span>{lang === "zh" ? "購物平台 (科研市集/蝦皮/淘寶等，可自行輸入或點選歷史)" : "Shopping Platform (Custom input or click saved)"}</span>
                     </label>
                     <span className="text-[10px] text-slate-500">
                       {lang === "zh" ? "輸入新平台會自動記錄，下次可直接點選" : "New platforms will be remembered"}
@@ -744,7 +744,7 @@ export default function ProcurementFormModal({
                           }
                         }
                       }}
-                      placeholder="自行輸入購物平台 (例如: 蝦皮、淘寶、1688等)..."
+                      placeholder="自行輸入購物平台 (例如: 科研市集、蝦皮、淘寶、1688等)..."
                       className="w-full bg-white border border-[#e5e5e0] rounded-sm p-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#1b4372] focus:outline-none"
                     />
                     {currentItem.platform && !availablePlatforms.includes(currentItem.platform.trim()) && (
