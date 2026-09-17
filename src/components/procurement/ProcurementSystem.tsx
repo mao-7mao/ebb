@@ -247,7 +247,7 @@ export default function ProcurementSystem() {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {}
-    return ["蝦皮", "1688", "淘寶"];
+    return ["蝦皮", "淘寶", "科研市集"];
   });
 
   useEffect(() => {
