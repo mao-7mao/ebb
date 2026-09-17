@@ -47,9 +47,12 @@ export default function ProgressTimelineView({
     if (filterState.timeRange === "last_3_months") return "3m";
     if (filterState.timeRange === "last_6_months") return "6m";
     if (filterState.timeRange === "last_year") return "1y";
-    if (filterState.timeRange === "all") return "full";
+    if (filterState.timeRange === "all") return "6m";
     return "6m";
   });
+
+  // Time direction: "forward" = start from today into future (default); "backward" = end at today looking back
+  const [timeDirection, setTimeDirection] = useState<"forward" | "backward">("forward");
 
   // Effective time span priority: filterState if custom, otherwise internalSpan
   const effectiveSpan = filterState.timeRange === "custom" ? "custom" : internalSpan;
@@ -90,46 +93,89 @@ export default function ProgressTimelineView({
     });
   }, [entries, filterState]);
 
-  // Determine timeline boundary dates
+  // Determine timeline boundary dates (Default start is TODAY)
   const { startDate, endDate, totalDays, monthsList } = useMemo(() => {
     const today = new Date();
-    let start = new Date();
-    let end = new Date(today);
-    // Give some future buffer (e.g. +14 days)
-    end.setDate(today.getDate() + 14);
+    today.setHours(0, 0, 0, 0);
 
-    if (effectiveSpan === "custom" && filterState.customStartDate) {
-      const parsedStart = new Date(filterState.customStartDate);
-      if (!isNaN(parsedStart.getTime())) {
-        start = parsedStart;
+    let start = new Date(today);
+    let end = new Date(today);
+
+    if (effectiveSpan === "custom") {
+      if (filterState.customStartDate) {
+        const parsedStart = new Date(filterState.customStartDate + "T00:00:00");
+        if (!isNaN(parsedStart.getTime())) {
+          start = parsedStart;
+        }
+      } else {
+        start = new Date(today);
       }
+
       if (filterState.customEndDate) {
-        const parsedEnd = new Date(filterState.customEndDate);
+        const parsedEnd = new Date(filterState.customEndDate + "T23:59:59");
         if (!isNaN(parsedEnd.getTime())) {
           end = parsedEnd;
-          // Add 1 day buffer to end date so entries on the last day fall inside the bounds
-          end.setDate(end.getDate() + 1);
         }
+      } else {
+        end = new Date(start);
+        end.setMonth(start.getMonth() + 3);
+        end.setHours(23, 59, 59, 999);
       }
     } else if (effectiveSpan === "3m") {
-      start.setMonth(today.getMonth() - 3);
+      if (timeDirection === "forward") {
+        start = new Date(today);
+        end = new Date(today);
+        end.setMonth(today.getMonth() + 3);
+        end.setHours(23, 59, 59, 999);
+      } else {
+        start = new Date(today);
+        start.setMonth(today.getMonth() - 3);
+        end = new Date(today);
+        end.setHours(23, 59, 59, 999);
+      }
     } else if (effectiveSpan === "6m") {
-      start.setMonth(today.getMonth() - 6);
+      if (timeDirection === "forward") {
+        start = new Date(today);
+        end = new Date(today);
+        end.setMonth(today.getMonth() + 6);
+        end.setHours(23, 59, 59, 999);
+      } else {
+        start = new Date(today);
+        start.setMonth(today.getMonth() - 6);
+        end = new Date(today);
+        end.setHours(23, 59, 59, 999);
+      }
     } else if (effectiveSpan === "1y") {
-      start.setFullYear(today.getFullYear() - 1);
+      if (timeDirection === "forward") {
+        start = new Date(today);
+        end = new Date(today);
+        end.setFullYear(today.getFullYear() + 1);
+        end.setHours(23, 59, 59, 999);
+      } else {
+        start = new Date(today);
+        start.setFullYear(today.getFullYear() - 1);
+        end = new Date(today);
+        end.setHours(23, 59, 59, 999);
+      }
     } else if (effectiveSpan === "full") {
-      // Find oldest entry date
-      let oldest = new Date();
-      entries.forEach((e) => {
-        const d = new Date(e.date);
-        if (d < oldest) oldest = d;
-      });
-      oldest.setDate(oldest.getDate() - 15);
-      start = oldest;
-    }
+      // Find oldest entry date and latest entry date
+      let oldest = new Date(today);
+      let latest = new Date(today);
+      latest.setMonth(today.getMonth() + 6);
 
-    // Snap start to first day of month
-    start = new Date(start.getFullYear(), start.getMonth(), 1);
+      entries.forEach((e) => {
+        const d = new Date(e.date + "T00:00:00");
+        if (!isNaN(d.getTime())) {
+          if (d < oldest) oldest = d;
+          if (d > latest) latest = d;
+        }
+      });
+
+      oldest.setDate(oldest.getDate() - 3);
+      latest.setDate(latest.getDate() + 14);
+      start = oldest;
+      end = latest;
+    }
 
     // If end is before or equal to start, ensure at least 30 days window
     if (end <= start) {
@@ -156,12 +202,16 @@ export default function ProgressTimelineView({
       const widthPct = Math.max(0, ((endDayOffset - startDayOffset) / diffDays) * 100);
 
       const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
-      months.push({
-        label: `${year}年 ${monthNames[month]}`,
-        yearMonth: `${year}-${String(month + 1).padStart(2, "0")}`,
-        offsetPct,
-        widthPct
-      });
+      
+      if (widthPct > 0.5) {
+        const isStartMonth = cur.getFullYear() === start.getFullYear() && cur.getMonth() === start.getMonth() && start.getDate() > 1;
+        months.push({
+          label: isStartMonth ? `${year}年 ${monthNames[month]} (${start.getDate()}日起)` : `${year}年 ${monthNames[month]}`,
+          yearMonth: `${year}-${String(month + 1).padStart(2, "0")}`,
+          offsetPct,
+          widthPct
+        });
+      }
 
       cur.setMonth(cur.getMonth() + 1);
     }
@@ -172,14 +222,16 @@ export default function ProgressTimelineView({
       totalDays: diffDays,
       monthsList: months
     };
-  }, [effectiveSpan, filterState.customStartDate, filterState.customEndDate, entries]);
+  }, [effectiveSpan, timeDirection, filterState.customStartDate, filterState.customEndDate, entries]);
 
   // Convert date string YYYY-MM-DD into horizontal percentage (0% - 100%)
   const getDatePercentage = (dateStr: string): number => {
-    const d = new Date(dateStr);
+    const d = new Date(dateStr + "T00:00:00");
     const offsetTime = d.getTime() - startDate.getTime();
-    const pct = (offsetTime / (endDate.getTime() - startDate.getTime())) * 100;
-    return Math.max(1, Math.min(99, pct));
+    const totalTime = endDate.getTime() - startDate.getTime();
+    if (totalTime <= 0) return 0;
+    const pct = (offsetTime / totalTime) * 100;
+    return Math.max(1.2, Math.min(98.8, pct));
   };
 
   // Helper to determine specific icon for key event
@@ -196,12 +248,14 @@ export default function ProgressTimelineView({
     return <Sparkles className="w-3.5 h-3.5 text-white fill-white" />;
   };
 
+  const todayStr = new Date().toISOString().split("T")[0];
+
   return (
     <div className="space-y-4">
       {/* Timeline Controls Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-[#e5e5e0] p-4 rounded-sm text-xs">
-        {/* Left: View Span Selector */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Left: View Span Selector & Direction */}
+        <div className="flex items-center gap-2.5 flex-wrap">
           <span className="font-bold text-slate-700 flex items-center gap-1">
             <Calendar className="w-4 h-4 text-[#004b3a]" />
             時間跨度 (Time Horizon):
@@ -229,7 +283,7 @@ export default function ProgressTimelineView({
                     else if (span.id === "custom") onFilterStateChange({ ...filterState, timeRange: "custom" });
                   }
                 }}
-                className={`px-3 py-1 rounded-xs font-mono font-medium transition ${
+                className={`px-3 py-1 rounded-xs font-mono font-medium transition cursor-pointer ${
                   effectiveSpan === span.id
                     ? "bg-[#004b3a] text-white shadow-xs font-bold"
                     : "text-slate-600 hover:text-slate-900"
@@ -240,12 +294,54 @@ export default function ProgressTimelineView({
             ))}
           </div>
 
+          {/* Time Direction Toggle (when not in full history or custom mode) */}
+          {effectiveSpan !== "full" && effectiveSpan !== "custom" && (
+            <div className="inline-flex rounded-sm bg-[#f8f8f5] p-0.5 border border-[#e5e5e0] items-center text-[11px]">
+              <button
+                type="button"
+                onClick={() => setTimeDirection("forward")}
+                className={`px-2 py-0.5 rounded-xs transition font-mono cursor-pointer ${
+                  timeDirection === "forward"
+                    ? "bg-[#004b3a] text-white font-bold shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                title="起始點默認為當日，往後規劃與追蹤進度"
+              >
+                從當日起 (預設)
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimeDirection("backward")}
+                className={`px-2 py-0.5 rounded-xs transition font-mono cursor-pointer ${
+                  timeDirection === "backward"
+                    ? "bg-[#004b3a] text-white font-bold shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                title="回溯過去的進度紀錄"
+              >
+                回溯過去
+              </button>
+            </div>
+          )}
+
+          {/* Today Indicator Tag */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200/80 text-emerald-800 rounded-sm font-mono text-[11px] shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-bold">
+              {effectiveSpan === "full"
+                ? "涵蓋全部歷程"
+                : timeDirection === "forward"
+                ? `起點：當日 (${todayStr})`
+                : `終點：當日 (${todayStr})`}
+            </span>
+          </div>
+
           {/* Custom Date Range Pickers if custom span selected */}
           {effectiveSpan === "custom" && (
             <div className="flex items-center gap-1 bg-[#f8f8f5] px-2 py-1 rounded-sm border border-[#e5e5e0]">
               <input
                 type="date"
-                value={filterState.customStartDate || ""}
+                value={filterState.customStartDate || todayStr}
                 onChange={(e) => {
                   if (onFilterStateChange) {
                     onFilterStateChange({ ...filterState, timeRange: "custom", customStartDate: e.target.value });
@@ -274,7 +370,7 @@ export default function ProgressTimelineView({
                       onFilterStateChange({ ...filterState, customStartDate: undefined, customEndDate: undefined });
                     }
                   }}
-                  className="text-[10px] text-slate-400 hover:text-slate-600 ml-0.5 px-1 py-0.5"
+                  className="text-[10px] text-slate-400 hover:text-slate-600 ml-0.5 px-1 py-0.5 cursor-pointer"
                   title="清除自訂日期"
                 >
                   ✕
@@ -345,14 +441,22 @@ export default function ProgressTimelineView({
 
           {/* Today's Vertical Marker Line */}
           {(() => {
-            const todayPct = getDatePercentage(new Date().toISOString().split("T")[0]);
+            const todayD = new Date(todayStr + "T00:00:00");
+            const totalTime = endDate.getTime() - startDate.getTime();
+            if (totalTime <= 0) return null;
+            const todayOffset = todayD.getTime() - startDate.getTime();
+            const todayPct = (todayOffset / totalTime) * 100;
+
+            if (todayPct < -1 || todayPct > 101) return null;
+            const clampedPct = Math.max(0, Math.min(100, todayPct));
+
             return (
               <div
-                style={{ left: `calc(16rem + (100% - 16rem) * ${todayPct / 100})` }}
-                className="absolute top-0 bottom-0 w-px bg-rose-500/60 z-10 pointer-events-none"
+                style={{ left: `calc(16rem + (100% - 16rem) * ${clampedPct / 100})` }}
+                className="absolute top-0 bottom-0 w-px bg-rose-500/90 z-20 pointer-events-none"
               >
-                <div className="sticky top-12 -ml-6 px-1.5 py-0.5 bg-rose-500 text-white rounded-xs text-[9px] font-mono font-bold shadow-xs whitespace-nowrap">
-                  今日 TODAY
+                <div className={`sticky top-12 ${clampedPct < 6 ? "ml-1" : "-ml-6"} px-1.5 py-0.5 bg-rose-500 text-white rounded-xs text-[9.5px] font-mono font-bold shadow-xs whitespace-nowrap`}>
+                  今日 TODAY ({todayStr.slice(5)})
                 </div>
               </div>
             );
@@ -361,7 +465,11 @@ export default function ProgressTimelineView({
           {/* Rows: One track per member */}
           <div className="divide-y divide-[#e5e5e0]">
             {members.map((member) => {
-              const memberEntries = filteredEntries.filter((e) => e.member_id === member.id);
+              const memberEntries = filteredEntries.filter((e) => {
+                if (e.member_id !== member.id) return false;
+                const d = new Date(e.date + "T00:00:00");
+                return d >= startDate && d <= endDate;
+              });
               const keyCount = memberEntries.filter((e) => e.is_key_event).length;
 
               return (

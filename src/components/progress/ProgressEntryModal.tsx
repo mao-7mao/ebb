@@ -49,6 +49,14 @@ export default function ProgressEntryModal({
   const [isKeyEvent, setIsKeyEvent] = useState<boolean>(false);
   const [status, setStatus] = useState<ProgressStatus>("in_progress");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [customTags, setCustomTags] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("lab_progress_custom_tags");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [customTagInput, setCustomTagInput] = useState<string>("");
   const [attachments, setAttachments] = useState<ProgressAttachment[]>([]);
   const [newAttachName, setNewAttachName] = useState<string>("");
@@ -67,6 +75,20 @@ export default function ProgressEntryModal({
         setStatus(initialEntry.status || "in_progress");
         setSelectedTags(initialEntry.tags || []);
         setAttachments(initialEntry.attachments || []);
+
+        // Include any non-default tags from entry into customTags
+        if (initialEntry.tags && initialEntry.tags.length > 0) {
+          const extra = initialEntry.tags.filter((t) => !DEFAULT_TAGS.includes(t as any));
+          if (extra.length > 0) {
+            setCustomTags((prev) => {
+              const merged = Array.from(new Set([...prev, ...extra]));
+              try {
+                localStorage.setItem("lab_progress_custom_tags", JSON.stringify(merged));
+              } catch {}
+              return merged;
+            });
+          }
+        }
       } else {
         const defaultMember = targetMemberId || (members.length > 0 ? members[0].id : "");
         setMemberId(defaultMember);
@@ -111,11 +133,33 @@ export default function ProgressEntryModal({
   };
 
   const handleAddCustomTag = () => {
-    const trimmed = customTagInput.trim();
-    if (trimmed && !selectedTags.includes(trimmed)) {
-      setSelectedTags([...selectedTags, trimmed]);
-      setCustomTagInput("");
+    const trimmed = customTagInput.trim().replace(/^#/, "");
+    if (!trimmed) return;
+
+    // Add to custom tags pool if not existing in default tags and custom tags
+    if (!DEFAULT_TAGS.includes(trimmed as any) && !customTags.includes(trimmed)) {
+      const nextCustom = [...customTags, trimmed];
+      setCustomTags(nextCustom);
+      try {
+        localStorage.setItem("lab_progress_custom_tags", JSON.stringify(nextCustom));
+      } catch {}
     }
+
+    // Always select this tag
+    if (!selectedTags.includes(trimmed)) {
+      setSelectedTags((prev) => [...prev, trimmed]);
+    }
+    setCustomTagInput("");
+  };
+
+  const handleDeleteCustomTag = (tagToDelete: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const nextCustom = customTags.filter((t) => t !== tagToDelete);
+    setCustomTags(nextCustom);
+    setSelectedTags((prev) => prev.filter((t) => t !== tagToDelete));
+    try {
+      localStorage.setItem("lab_progress_custom_tags", JSON.stringify(nextCustom));
+    } catch {}
   };
 
   const handleAddAttachment = () => {
@@ -348,36 +392,120 @@ export default function ProgressEntryModal({
           </div>
 
           {/* Tags */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <label className="font-bold text-slate-700 flex items-center gap-1">
                 <Tag className="w-3.5 h-3.5 text-[#1b4372]" />
                 標籤 (Tags)
               </label>
-              <span className="text-[10px] text-slate-400 font-mono">可點選或輸入新標籤</span>
-            </div>
-            
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {DEFAULT_TAGS.map((tag) => {
-                const isSelected = selectedTags.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => handleToggleTag(tag)}
-                    className={`px-2 py-0.5 rounded-xs text-[11px] font-mono border transition ${
-                      isSelected
-                        ? "bg-[#1b4372] text-white border-[#1b4372]"
-                        : "bg-white text-slate-600 border-[#e5e5e0] hover:bg-slate-50"
-                    }`}
-                  >
-                    {isSelected ? `✓ ${tag}` : `+ ${tag}`}
-                  </button>
-                );
-              })}
+              <span className="text-[10px] text-slate-400 font-mono">點選切換或下方自訂</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Currently Active / Selected Tags Bar */}
+            {selectedTags.length > 0 && (
+              <div className="p-2.5 bg-blue-50/70 border border-[#1b4372]/20 rounded-sm">
+                <div className="flex items-center justify-between text-[11px] font-bold text-[#1b4372] mb-1.5">
+                  <span className="flex items-center gap-1">
+                    <Check className="w-3 h-3" />
+                    已選取的標籤 ({selectedTags.length})：
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTags([])}
+                    className="text-[10px] text-slate-400 hover:text-rose-600 font-normal transition cursor-pointer"
+                  >
+                    全部清除
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-[11px] font-mono bg-[#1b4372] text-white shadow-2xs"
+                    >
+                      <span>✓ {tag}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleTag(tag)}
+                        className="hover:bg-white/25 rounded-full p-0.5 transition cursor-pointer"
+                        title="取消勾選此標籤"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Default Preset Tags */}
+            <div>
+              <div className="text-[10.5px] font-bold text-slate-500 mb-1">常用推薦標籤：</div>
+              <div className="flex flex-wrap gap-1.5">
+                {DEFAULT_TAGS.map((tag) => {
+                  const isSelected = selectedTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => handleToggleTag(tag)}
+                      className={`px-2 py-0.5 rounded-xs text-[11px] font-mono border transition flex items-center gap-1 cursor-pointer ${
+                        isSelected
+                          ? "bg-[#1b4372] text-white border-[#1b4372] shadow-2xs font-bold"
+                          : "bg-white text-slate-600 border-[#e5e5e0] hover:bg-slate-50 hover:border-slate-300"
+                      }`}
+                    >
+                      <span>{isSelected ? "✓" : "+"}</span>
+                      <span>{tag}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* User-Added Custom Tags Pool */}
+            {customTags.length > 0 && (
+              <div>
+                <div className="text-[10.5px] font-bold text-[#8d734a] mb-1">我的自訂標籤庫：</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {customTags.map((tag) => {
+                    const isSelected = selectedTags.includes(tag);
+                    return (
+                      <div
+                        key={tag}
+                        className={`inline-flex items-center rounded-xs text-[11px] font-mono border transition ${
+                          isSelected
+                            ? "bg-[#8d734a] text-white border-[#8d734a] shadow-2xs font-bold"
+                            : "bg-white text-slate-700 border-[#e5e5e0] hover:bg-amber-50/50 hover:border-amber-200"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleToggleTag(tag)}
+                          className="px-2 py-0.5 flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>{isSelected ? "✓" : "+"}</span>
+                          <span>{tag}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteCustomTag(tag, e)}
+                          className={`pr-1.5 pl-0.5 py-0.5 hover:text-rose-400 transition cursor-pointer ${
+                            isSelected ? "text-white/80" : "text-slate-400"
+                          }`}
+                          title="從自訂標籤庫中刪除"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Custom Tag Input & Add Button */}
+            <div className="flex items-center gap-2 pt-1">
               <input
                 type="text"
                 value={customTagInput}
@@ -388,15 +516,16 @@ export default function ProgressEntryModal({
                     handleAddCustomTag();
                   }
                 }}
-                placeholder="新增自訂標籤 (按下 Enter 加入)..."
-                className="flex-1 bg-white border border-[#e5e5e0] rounded-sm py-1 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
+                placeholder="新增自訂標籤 (例如: 水性配方、XRD分析，按 Enter 或點右側加入)..."
+                className="flex-1 bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
               />
               <button
                 type="button"
                 onClick={handleAddCustomTag}
-                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm font-bold text-xs"
+                className="px-3 py-1.5 bg-[#1b4372] hover:bg-[#102844] text-white rounded-sm font-bold text-xs transition flex items-center gap-1 shrink-0 cursor-pointer shadow-2xs"
               >
-                加入
+                <Plus className="w-3.5 h-3.5" />
+                <span>加入標籤</span>
               </button>
             </div>
           </div>
