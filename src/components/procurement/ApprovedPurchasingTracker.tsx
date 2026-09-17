@@ -510,9 +510,9 @@ export default function ApprovedPurchasingTracker({
           badgeClass: "bg-purple-50 text-purple-900 border-purple-300 font-bold",
           dotColor: "bg-purple-600"
         };
-      case "assistant_purchased":
+      case "postpayment":
         return {
-          label: "🏢 助理代購",
+          label: "🏢 貨到後計畫付款",
           badgeClass: "bg-blue-50 text-blue-900 border-blue-300 font-bold",
           dotColor: "bg-blue-600"
         };
@@ -746,7 +746,7 @@ export default function ApprovedPurchasingTracker({
               <option value="pending_purchase">⏳ 尚未購買 (待採購)</option>
               <option value="student_purchased">🛒 請購人已購買 (學生自購)</option>
               <option value="professor_purchased">🎓 教授已購買 (老師統購)</option>
-              <option value="assistant_purchased">🏢 助理代購</option>
+              <option value="postpayment">🏢 貨到後計畫付款</option>
               <option value="delivered">📦 已到貨 / 已收訖</option>
               <option value="completed">✅ 採購驗收完成</option>
             </select>
@@ -1015,7 +1015,7 @@ export default function ApprovedPurchasingTracker({
                     { id: "pending_purchase", label: "⏳ 尚未購買 (待採購)", desc: "尚未下單" },
                     { id: "student_purchased", label: "🛒 請購人已購買", desc: "申請學生已下訂自購" },
                     { id: "professor_purchased", label: "🎓 教授已購買", desc: "教授/PI 統一採購" },
-                    { id: "Postpayment", label: "🏢 貨到後計畫付款", desc: "廠商先行寄送" },
+                    { id: "postpayment", label: "🏢 貨到後計畫付款", desc: "廠商先行寄送" },
                     { id: "delivered", label: "📦 已到貨 / 已收訖", desc: "物品送達實驗室" },
                     { id: "completed", label: "✅ 採購驗收完成", desc: "物品驗收完成結案" }
                   ].map((opt) => (

@@ -719,7 +719,7 @@ export default function ProcurementDetailModal({
                         type="text"
                         value={invoiceNumber}
                         onChange={(e) => setInvoiceNumber(e.target.value)}
-                        placeholder="例如: 淘寶訂單號或發票"
+                        placeholder="例如: 發票"
                         className="w-full bg-white border border-emerald-200 rounded-sm p-1.5 text-xs font-mono font-bold text-emerald-800"
                       />
                     </div>

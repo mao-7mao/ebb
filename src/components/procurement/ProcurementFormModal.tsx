@@ -928,7 +928,7 @@ export default function ProcurementFormModal({
                         onChange={(e) => handleUpdateActiveItem("requiresInstallation", e.target.checked)}
                         className="rounded text-[#1b4372]"
                       />
-                      <span>需原廠專人到校安裝 (Requires Installation)</span>
+                      <span>需原廠安裝 (Requires Installation)</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -1135,7 +1135,7 @@ export default function ProcurementFormModal({
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="例如: 配合 9 月份批次縮聚反應實驗、需附原廠 COA 與出廠檢驗報告"
+              placeholder="例如: 電壓110V、電壓220V等"
               className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs focus:border-[#1b4372] focus:outline-none"
             />
           </div>

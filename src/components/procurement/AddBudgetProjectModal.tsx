@@ -86,7 +86,7 @@ export default function AddBudgetProjectModal({
               type="text"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="例如：NSTC-114-2221-E-110-088-MY3 或 MOE-HED-114"
+              placeholder=""
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700"
               autoFocus
             />
@@ -102,7 +102,7 @@ export default function AddBudgetProjectModal({
               onChange={(e) => setFundingAgency(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700"
             >
-              <option value="國科會 (NSTC)">國科會 (NSTC) 專題研究計畫</option>
+              <option value="國科會 (NSTC)">國科會專題研究計畫</option>
             </select>
           </div>
 
@@ -114,7 +114,7 @@ export default function AddBudgetProjectModal({
               type="text"
               value={nameZh}
               onChange={(e) => setNameZh(e.target.value)}
-              placeholder="例如：生物相容性綠色高分子薄膜開發與環境生物精煉"
+              placeholder=""
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700"
             />
           </div>
@@ -139,7 +139,7 @@ export default function AddBudgetProjectModal({
                 type="text"
                 value={validPeriod}
                 onChange={(e) => setValidPeriod(e.target.value)}
-                placeholder="2025/08/01 - 2028/07/31"
+                placeholder="2026/08/01 - 2027/07/31"
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700"
               />
             </div>

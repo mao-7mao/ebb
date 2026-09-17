@@ -39,10 +39,8 @@ import {
   Users, 
   TrendingUp, 
   Clock, 
-  SlidersHorizontal,
-  Cloud
+  SlidersHorizontal
 } from "lucide-react";
-import MemberGasModal from "../MemberGasModal";
 import { getSavedMemberWebhookUrl, syncMemberDataToGoogle } from "../../services/googleMemberSyncService";
 
 interface MemberProgressTrackingProps {
@@ -142,7 +140,6 @@ export default function MemberProgressTracking({
 
   const [isExternalModalOpen, setIsExternalModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [isGasModalOpen, setIsGasModalOpen] = useState(false);
 
   // Combine system members and external members into a unified interface
   const combinedMembers: CombinedMember[] = useMemo(() => {
@@ -318,16 +315,6 @@ export default function MemberProgressTracking({
 
         {/* Top Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setIsGasModalOpen(true)}
-            className="px-3.5 py-2 bg-white border border-[#1b4372]/30 hover:bg-blue-50 text-[#1b4372] rounded-sm font-bold text-xs flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
-            title="與 Google Sheet 試算表雙向同步研究進度與在職生資料 (免 Git 部署)"
-          >
-            <Cloud className="w-3.5 h-3.5 text-[#1b4372]" />
-            <span>Google Sheet 同步</span>
-          </button>
-
           <button
             type="button"
             onClick={() => setIsReportModalOpen(true)}
@@ -569,7 +556,7 @@ export default function MemberProgressTracking({
           </div>
 
           {/* Time Range */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-slate-500 font-bold">時間:</span>
             <select
               value={filterState.timeRange}
@@ -581,7 +568,38 @@ export default function MemberProgressTracking({
               <option value="last_3_months">近 3 個月</option>
               <option value="last_6_months">近 6 個月</option>
               <option value="last_year">近 1 年</option>
+              <option value="custom">自訂時間段...</option>
             </select>
+
+            {filterState.timeRange === "custom" && (
+              <div className="flex items-center gap-1 bg-[#f8f8f5] px-2 py-0.5 rounded-sm border border-[#e5e5e0]">
+                <input
+                  type="date"
+                  value={filterState.customStartDate || ""}
+                  onChange={(e) => setFilterState({ ...filterState, customStartDate: e.target.value })}
+                  className="bg-white border border-slate-200 rounded px-1.5 py-0.5 text-xs text-slate-700 font-mono focus:outline-none focus:border-[#1b4372]"
+                  placeholder="開始日期"
+                />
+                <span className="text-slate-400 text-xs">至</span>
+                <input
+                  type="date"
+                  value={filterState.customEndDate || ""}
+                  onChange={(e) => setFilterState({ ...filterState, customEndDate: e.target.value })}
+                  className="bg-white border border-slate-200 rounded px-1.5 py-0.5 text-xs text-slate-700 font-mono focus:outline-none focus:border-[#1b4372]"
+                  placeholder="結束日期"
+                />
+                {(filterState.customStartDate || filterState.customEndDate) && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterState({ ...filterState, customStartDate: undefined, customEndDate: undefined })}
+                    className="text-[10px] text-slate-400 hover:text-slate-600 ml-0.5 px-1 py-0.5"
+                    title="清除自訂日期"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Sort By (primarily for List view) */}
@@ -635,6 +653,7 @@ export default function MemberProgressTracking({
           members={displayMembers}
           entries={entries}
           filterState={filterState}
+          onFilterStateChange={setFilterState}
           onAddEntry={handleOpenAddEntry}
           onViewEntryDetail={handleViewDetail}
         />
@@ -688,25 +707,6 @@ export default function MemberProgressTracking({
         onClose={() => setIsReportModalOpen(false)}
         entries={entries}
         members={combinedMembers}
-      />
-
-      {/* Google Sheets GAS Sync Modal */}
-      <MemberGasModal
-        isOpen={isGasModalOpen}
-        onClose={() => setIsGasModalOpen(false)}
-        currentMembers={systemMembers}
-        currentProgressEntries={entries}
-        currentExternalMembers={externalMembers}
-        onDataLoadedFromGoogle={(data) => {
-          if (data.progressEntries && data.progressEntries.length > 0) {
-            setEntries(data.progressEntries);
-            localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(data.progressEntries));
-          }
-          if (data.externalMembers && data.externalMembers.length > 0) {
-            setExternalMembers(data.externalMembers);
-            localStorage.setItem(STORAGE_KEY_EXTERNAL_MEMBERS, JSON.stringify(data.externalMembers));
-          }
-        }}
       />
     </div>
   );

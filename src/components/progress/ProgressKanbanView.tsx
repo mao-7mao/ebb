@@ -64,6 +64,32 @@ export default function ProgressKanbanView({
     if (filterState.onlyKeyEvents && !e.is_key_event) {
       return false;
     }
+    // Time Range Filter
+    const entryDate = new Date(e.date);
+    const now = new Date();
+    if (filterState.timeRange === "this_month") {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      if (entryDate < startOfMonth) return false;
+    } else if (filterState.timeRange === "last_3_months") {
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setDate(now.getDate() - 90);
+      if (entryDate < threeMonthsAgo) return false;
+    } else if (filterState.timeRange === "last_6_months") {
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setDate(now.getDate() - 180);
+      if (entryDate < sixMonthsAgo) return false;
+    } else if (filterState.timeRange === "last_year") {
+      const oneYearAgo = new Date();
+      oneYearAgo.setDate(now.getDate() - 365);
+      if (entryDate < oneYearAgo) return false;
+    } else if (filterState.timeRange === "custom") {
+      if (filterState.customStartDate && e.date < filterState.customStartDate) {
+        return false;
+      }
+      if (filterState.customEndDate && e.date > filterState.customEndDate) {
+        return false;
+      }
+    }
     if (filterState.searchQuery.trim()) {
       const q = filterState.searchQuery.toLowerCase();
       const m = memberMap.get(e.member_id);

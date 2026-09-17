@@ -1,8 +1,11 @@
 /**
- * External Links & Backend Integration Configuration
+ * External Links & Backend Integration Configuration (後端與外部連結配置檔)
  * 
- * You can modify the links below in VS Code.
- * Changes will take effect across the Instrument Reservation and Chemical Inventory modules.
+ * ============================================================================
+ * 💡 雲端表單 / Google Apps Script 後端串接配置處 (Backend Integration URLs)
+ * ============================================================================
+ * 請購系統與進度報告的 Google Apps Script Webhook 網址或 Google 表單/試算表網址，
+ * 請直接在下方指定欄位中貼入。系統啟動時會直接由後端/配置檔讀取，無需前端手動輸入。
  */
 
 export interface CabinetConfig {
@@ -15,10 +18,34 @@ export interface CabinetConfig {
 }
 
 export const EXTERNAL_LINKS = {
-  // Google Apps Script endpoint for Instrument Reservation
+  // ==========================================================================
+  // 1. 請購系統 (Procurement System)
+  // 【請在此貼入】請購系統 Google Apps Script Webhook 網址 (部署為網頁應用程式後的 URL，以 /exec 結尾)
+  // 範例: "https://script.google.com/macros/s/AKfycbx.../exec"
+  // ==========================================================================
+  procurementWebhookUrl: ((typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_PROCUREMENT_GAS_WEBHOOK_URL) as string) || "",
+
+  // 請購系統對應的 Google 試算表或 Google 表單網址 (供管理備查)
+  procurementSheetUrl: "https://script.google.com/macros/s/AKfycbxGhaQFFh8J-fK3CA37gkAZPlrAdkHX53XQzjAHkkoXj9jCFtInROtqq4DvwuA-jRg5/exec",
+
+  // ==========================================================================
+  // 2. 進度報告與成員管理 (Progress Tracking & Member Sync)
+  // 【請在此貼入】進度報告 Google Apps Script Webhook 網址 (部署為網頁應用程式後的 URL，以 /exec 結尾)
+  // 範例: "https://script.google.com/macros/s/AKfycby.../exec"
+  // ==========================================================================
+  progressReportWebhookUrl: ((typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_PROGRESS_GAS_WEBHOOK_URL) as string) || "",
+
+  // 進度報告對應的 Google 試算表或 Google 表單網址 (供管理備查)
+  progressReportSheetUrl: "https://script.google.com/macros/s/AKfycbyQQqXMNJilRNxQjpmewgIZ3ENpHCRflRqFMyK5J2Q1L3aNrRY6USUDWkF4TPmVyFZo/exec",
+
+  // ==========================================================================
+  // 3. 儀器預約系統 (Instrument Reservation)
+  // ==========================================================================
   instrumentReservationScriptUrl: "https://script.google.com/macros/s/AKfycbwA4Z3wVMCMni_Uf0sMI4PsGXIETXuvZdf9_e_se-c5cY0T9PFXYH1ppphJgnhcAvRcHQ/exec",
 
-  // Google Spreadsheet URL for Chemical & Reagent Inventory (Default: A Cabinet)
+  // ==========================================================================
+  // 4. 化學品與耗材清冊 (Chemical & Reagent Inventory)
+  // ==========================================================================
   chemicalInventorySheetUrl: "https://docs.google.com/spreadsheets/d/1fR4pSvZ5sKq6cqzNJPqa9zGyx7Nt14ez/edit?gid=1566311014#gid=1566311014",
   
   // Specific spreadsheet ID

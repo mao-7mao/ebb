@@ -33,9 +33,9 @@ export default function ProcurementOfficialRequisition({
 
   // Primary requisition info
   const primaryReq = items[0];
-  const applicant = primaryReq.applicantName || "徐星";
-  const assistantReviewer = primaryReq.assistantReview?.reviewerName || "楊子瑩";
-  const professorReviewer = primaryReq.professorReview?.reviewerName || "張國良 教授";
+  const applicant = primaryReq.applicantName || "";
+  const assistantReviewer = primaryReq.assistantReview?.reviewerName || "助理";
+  const professorReviewer = primaryReq.professorReview?.reviewerName || "教授";
 
   // Requisition Date formatted as YYYY.MM.DD (matches screenshot: 2025.08.06)
   const formatRequisitionDate = (dateStr?: string) => {
@@ -83,7 +83,7 @@ export default function ProcurementOfficialRequisition({
             platform: req.platform,
             productUrl: req.productUrl,
             purpose: req.purpose || "生質塑膠添加劑",
-            vendorName: req.vendorName || "徐星",
+            vendorName: req.vendorName || "",
             status: req.status === "rejected" ? "rejected" : "approved"
           }
         ];
@@ -103,7 +103,7 @@ export default function ProcurementOfficialRequisition({
       const fullName = `${line.itemName}${specSuffix}`;
 
       // Compose vendor and platform info
-      let vendorInfo = line.vendorName || primaryReq.vendorName || "徐星";
+      let vendorInfo = line.vendorName || primaryReq.vendorName || "";
       if (line.platform && !vendorInfo.includes(line.platform)) {
         vendorInfo = `${vendorInfo} (${line.platform})`;
       } else if (primaryReq.platform && !vendorInfo.includes(primaryReq.platform)) {
@@ -284,9 +284,9 @@ export default function ProcurementOfficialRequisition({
             ${emptyRowsHtml}
             <tr>
               <td style="font-weight:bold; font-size:12pt; letter-spacing:4px;">總　計</td>
+              <td style="font-size:11pt; font-weight:bold;">${getCurrencyUnitLabel()}</td>
               <td>&nbsp;</td>
               <td style="font-size:12pt; font-weight:bold;">${primaryTotalAmount.toLocaleString()}</td>
-              <td style="font-size:11pt; font-weight:bold;">${getCurrencyUnitLabel()}</td>
               <td>&nbsp;</td>
               <td>&nbsp;</td>
             </tr>
@@ -497,12 +497,12 @@ export default function ProcurementOfficialRequisition({
                   <td className="border border-black p-2 text-center text-[15px] tracking-[6px]">
                     總　計
                   </td>
+                  <td className="border border-black p-2 text-center text-[13px]">
+                    {getCurrencyUnitLabel()}
+                  </td>
                   <td className="border border-black p-2"></td>
                   <td className="border border-black p-2 text-center font-mono text-[14px]">
                     {primaryTotalAmount.toLocaleString()}
-                  </td>
-                  <td className="border border-black p-2 text-center text-[13px]">
-                    {getCurrencyUnitLabel()}
                   </td>
                   <td className="border border-black p-2"></td>
                   <td className="border border-black p-2"></td>

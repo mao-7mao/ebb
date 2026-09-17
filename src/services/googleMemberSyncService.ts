@@ -1,5 +1,6 @@
 import { Member, Meeting } from "../data/labData";
 import { ProgressEntry, ExternalMember } from "../types/progress";
+import { EXTERNAL_LINKS } from "../config/externalLinks";
 
 export const STORAGE_KEY_MEMBER_WEBHOOK = "ebblab_member_gas_webhook";
 export const STORAGE_KEY_LAST_SYNC_TIME = "ebblab_member_gas_last_sync";
@@ -24,9 +25,19 @@ export interface GoogleSyncFetchResult {
 }
 
 /**
- * 取得儲存的 Google Apps Script Webhook 網址
+ * 取得儲存的 Google Apps Script Webhook 網址 (優先讀取後端設定檔)
  */
 export function getSavedMemberWebhookUrl(): string {
+  // 1. 優先由後端配置檔讀取 (src/config/externalLinks.ts)
+  if (EXTERNAL_LINKS.progressReportWebhookUrl && EXTERNAL_LINKS.progressReportWebhookUrl.trim()) {
+    return EXTERNAL_LINKS.progressReportWebhookUrl.trim();
+  }
+  // 2. 次之由環境變數讀取
+  const envUrl = typeof import.meta !== "undefined" ? (import.meta as any).env?.VITE_PROGRESS_GAS_WEBHOOK_URL : "";
+  if (envUrl && typeof envUrl === "string" && envUrl.trim()) {
+    return envUrl.trim();
+  }
+  // 3. 備援本機儲存 (LocalStorage)
   try {
     return localStorage.getItem(STORAGE_KEY_MEMBER_WEBHOOK) || "";
   } catch (e) {
