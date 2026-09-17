@@ -156,7 +156,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
       width: 256,
       margin: 2,
       color: {
-        dark: "#004b3a",
+        dark: "#1b4372",
         light: "#ffffff",
       },
     })
@@ -476,7 +476,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
       <div className="bg-[#fdfdfc] border border-[#e5e5e0] rounded-sm p-4 md:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-sm bg-[#004b3a] text-white">
+            <span className="p-1.5 rounded-sm bg-[#1b4372] text-white">
               <FlaskConical className="w-4 h-4" />
             </span>
             <span className="text-xs font-bold text-[#8d734a] tracking-widest uppercase font-serif italic">
@@ -500,7 +500,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
               onClick={() => setActiveTab("clean")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm transition ${
                 activeTab === "clean"
-                  ? "bg-[#004b3a] text-white shadow-xs"
+                  ? "bg-[#1b4372] text-white shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -512,7 +512,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
               onClick={() => setActiveTab("embed")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm transition ${
                 activeTab === "embed"
-                  ? "bg-[#004b3a] text-white shadow-xs"
+                  ? "bg-[#1b4372] text-white shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -528,7 +528,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f8f8f5] hover:bg-[#eae6dc] text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold transition shadow-2xs"
             title="Scan QR Code on Mobile"
           >
-            <QrCode className="w-3.5 h-3.5 text-[#004b3a]" />
+            <QrCode className="w-3.5 h-3.5 text-[#1b4372]" />
             <span className="hidden sm:inline">Mobile QR</span>
           </button>
 
@@ -539,7 +539,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f8f8f5] hover:bg-[#eae6dc] text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold transition shadow-2xs"
             title="Reload All Cabinets"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-[#004b3a] ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-[#1b4372] ${isLoading ? "animate-spin" : ""}`} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
 
@@ -550,7 +550,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f8f8f5] hover:bg-[#eae6dc] text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold transition shadow-2xs"
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
           >
-            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-[#004b3a]" /> : <Maximize2 className="w-3.5 h-3.5 text-[#004b3a]" />}
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-[#1b4372]" /> : <Maximize2 className="w-3.5 h-3.5 text-[#1b4372]" />}
           </button>
 
           {/* Open Original Google Spreadsheet Button */}
@@ -558,7 +558,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
             href={activeSheetUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm text-xs font-bold uppercase tracking-wider shadow-xs transition active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#1b4372] hover:bg-[#102844] text-white rounded-sm text-xs font-bold uppercase tracking-wider shadow-xs transition active:scale-95"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             <span>Open Sheet</span>
@@ -580,7 +580,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-bold transition-all ${
                 selectedCabinetId === "ALL"
-                  ? "bg-[#004b3a] text-white shadow-xs"
+                  ? "bg-[#1b4372] text-white shadow-xs"
                   : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc] border border-[#e5e5e0]"
               }`}
             >
@@ -612,7 +612,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                     isSelected
                       ? isToxic 
                         ? "bg-amber-700 text-white shadow-xs"
-                        : "bg-[#004b3a] text-white shadow-xs"
+                        : "bg-[#1b4372] text-white shadow-xs"
                       : isToxic
                         ? "bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100"
                         : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc] border border-[#e5e5e0]"
@@ -645,7 +645,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
           <div className="flex flex-col lg:flex-row gap-2.5 items-stretch lg:items-center justify-between pt-1 border-t border-[#e5e5e0]/60">
             {/* Search input with Clear & Count */}
             <div className="relative flex-1 min-w-[240px]">
-              <Search className="w-4 h-4 text-[#004b3a] absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[#1b4372] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
@@ -655,7 +655,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                     ? "Instant Search: Name (中文/英文), Formula, CAS (e.g. 64-17-5), or No..."
                     : `Search ${currentCabinetConfig.shortName} by Name, Formula, CAS...`
                 }
-                className="w-full pl-9 pr-8 py-2 bg-white border border-[#e5e5e0] rounded-sm text-xs font-sans text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a]"
+                className="w-full pl-9 pr-8 py-2 bg-white border border-[#e5e5e0] rounded-sm text-xs font-sans text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1b4372] focus:ring-1 focus:ring-[#1b4372]"
               />
               {searchQuery && (
                 <button
@@ -677,7 +677,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                   onClick={() => setLetterFilter("ALL")}
                   className={`px-1.5 py-0.5 rounded-xs font-bold transition ${
                     letterFilter === "ALL"
-                      ? "bg-[#004b3a] text-white"
+                      ? "bg-[#1b4372] text-white"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -690,8 +690,8 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                     onClick={() => setLetterFilter(letterFilter === letter ? "ALL" : letter)}
                     className={`px-1.5 py-0.5 rounded-xs font-bold transition ${
                       letterFilter === letter
-                        ? "bg-[#004b3a] text-white"
-                        : "text-slate-600 hover:text-[#004b3a] hover:bg-white"
+                        ? "bg-[#1b4372] text-white"
+                        : "text-slate-600 hover:text-[#1b4372] hover:bg-white"
                     }`}
                   >
                     {letter}
@@ -709,7 +709,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                   onClick={() => setDensity("compact")}
                   className={`px-2 py-1 rounded-xs transition text-[11px] font-bold ${
                     density === "compact"
-                      ? "bg-white text-[#004b3a] shadow-xs"
+                      ? "bg-white text-[#1b4372] shadow-xs"
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                   title="Compact Density (Less Scrolling)"
@@ -721,7 +721,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                   onClick={() => setDensity("comfortable")}
                   className={`px-2 py-1 rounded-xs transition text-[11px] font-bold ${
                     density === "comfortable"
-                      ? "bg-white text-[#004b3a] shadow-xs"
+                      ? "bg-white text-[#1b4372] shadow-xs"
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                   title="Spacious Density"
@@ -739,7 +739,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                     const val = e.target.value;
                     setPageSize(val === "all" ? "all" : Number(val));
                   }}
-                  className="bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm px-2 py-1 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#004b3a]"
+                  className="bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm px-2 py-1 text-xs font-bold text-slate-700 focus:outline-none focus:border-[#1b4372]"
                 >
                   <option value={25}>25 / page</option>
                   <option value={30}>30 / page</option>
@@ -754,7 +754,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                 <button
                   type="button"
                   onClick={() => setViewMode("table")}
-                  className={`p-1 rounded-xs transition ${viewMode === "table" ? "bg-white text-[#004b3a] shadow-xs font-bold" : "text-slate-500 hover:text-slate-800"}`}
+                  className={`p-1 rounded-xs transition ${viewMode === "table" ? "bg-white text-[#1b4372] shadow-xs font-bold" : "text-slate-500 hover:text-slate-800"}`}
                   title="Table View"
                 >
                   <Table className="w-3.5 h-3.5" />
@@ -762,7 +762,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                 <button
                   type="button"
                   onClick={() => setViewMode("grid")}
-                  className={`p-1 rounded-xs transition ${viewMode === "grid" ? "bg-white text-[#004b3a] shadow-xs font-bold" : "text-slate-500 hover:text-slate-800"}`}
+                  className={`p-1 rounded-xs transition ${viewMode === "grid" ? "bg-white text-[#1b4372] shadow-xs font-bold" : "text-slate-500 hover:text-slate-800"}`}
                   title="Card Grid View"
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
@@ -780,10 +780,10 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
           <div className="flex flex-wrap items-center justify-between text-xs text-slate-600 px-1 py-1 font-mono gap-2 border-b border-[#e5e5e0]/60">
             <div className="flex items-center gap-2 flex-wrap">
               <span>
-                Found <strong className="text-[#004b3a] font-bold">{totalItems}</strong> matching chemicals
+                Found <strong className="text-[#1b4372] font-bold">{totalItems}</strong> matching chemicals
               </span>
               {selectedCabinetId !== "ALL" && (
-                <span className="bg-[#004b3a]/10 text-[#004b3a] px-2 py-0.5 rounded-xs font-bold text-[10px]">
+                <span className="bg-[#1b4372]/10 text-[#1b4372] px-2 py-0.5 rounded-xs font-bold text-[10px]">
                   {currentCabinetConfig.shortName}
                 </span>
               )}
@@ -832,8 +832,8 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
           {/* Loading indicator */}
           {isLoading ? (
             <div className="py-16 text-center space-y-3">
-              <div className="w-8 h-8 border-3 border-[#004b3a]/20 border-t-[#004b3a] rounded-full animate-spin mx-auto"></div>
-              <p className="text-xs font-bold text-[#004b3a] font-serif">
+              <div className="w-8 h-8 border-3 border-[#1b4372]/20 border-t-[#1b4372] rounded-full animate-spin mx-auto"></div>
+              <p className="text-xs font-bold text-[#1b4372] font-serif">
                 {loadingProgress || "Loading chemical inventory records across all cabinets..."}
               </p>
             </div>
@@ -848,7 +848,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                   <button
                     type="button"
                     onClick={() => setSearchQuery("")}
-                    className="text-xs text-[#004b3a] font-bold hover:underline"
+                    className="text-xs text-[#1b4372] font-bold hover:underline"
                   >
                     Clear Search Query
                   </button>
@@ -866,7 +866,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                   <button
                     type="button"
                     onClick={() => setSelectedCabinetId("ALL")}
-                    className="text-xs text-[#004b3a] font-bold hover:underline"
+                    className="text-xs text-[#1b4372] font-bold hover:underline"
                   >
                     View All Cabinets
                   </button>
@@ -890,7 +890,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                       <div className="flex items-center justify-center gap-0.5">
                         <span>櫃位</span>
                         {sortKey === "cabinet" ? (
-                          sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-[#004b3a]" /> : <ArrowDown className="w-3 h-3 text-[#004b3a]" />
+                          sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-[#1b4372]" /> : <ArrowDown className="w-3 h-3 text-[#1b4372]" />
                         ) : (
                           <ArrowUpDown className="w-2.5 h-2.5 text-slate-400 opacity-60" />
                         )}
@@ -900,12 +900,12 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                     {/* 2. No. (編號) - Compact width */}
                     <th 
                       onClick={() => handleSort("no")}
-                      className="py-2 px-1.5 md:px-2 font-bold text-[#004b3a] font-serif tracking-wider w-14 sm:w-16 text-center uppercase text-[11px] cursor-pointer hover:bg-[#eae6dc]/60 transition select-none shrink-0"
+                      className="py-2 px-1.5 md:px-2 font-bold text-[#1b4372] font-serif tracking-wider w-14 sm:w-16 text-center uppercase text-[11px] cursor-pointer hover:bg-[#eae6dc]/60 transition select-none shrink-0"
                     >
                       <div className="flex items-center justify-center gap-0.5">
                         <span>編號</span>
                         {sortKey === "no" ? (
-                          sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-[#004b3a]" /> : <ArrowDown className="w-3 h-3 text-[#004b3a]" />
+                          sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-[#1b4372]" /> : <ArrowDown className="w-3 h-3 text-[#1b4372]" />
                         ) : (
                           <ArrowUpDown className="w-2.5 h-2.5 text-slate-400 opacity-60" />
                         )}
@@ -920,7 +920,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                       <div className="flex items-center gap-1">
                         <span>中文名稱 / 品名</span>
                         {sortKey === "nameZh" ? (
-                          sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-[#004b3a]" /> : <ArrowDown className="w-3 h-3 text-[#004b3a]" />
+                          sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-[#1b4372]" /> : <ArrowDown className="w-3 h-3 text-[#1b4372]" />
                         ) : (
                           <ArrowUpDown className="w-2.5 h-2.5 text-slate-400 opacity-60" />
                         )}
@@ -935,7 +935,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                       <div className="flex items-center gap-1">
                         <span>英文名稱 (English Name)</span>
                         {sortKey === "nameEn" ? (
-                          sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-[#004b3a]" /> : <ArrowDown className="w-3 h-3 text-[#004b3a]" />
+                          sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-[#1b4372]" /> : <ArrowDown className="w-3 h-3 text-[#1b4372]" />
                         ) : (
                           <ArrowUpDown className="w-2.5 h-2.5 text-slate-400 opacity-60" />
                         )}
@@ -945,12 +945,12 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                     {/* 5. Formula (化學式) - Wrap text */}
                     <th 
                       onClick={() => handleSort("formula")}
-                      className="py-2 px-2 md:px-2.5 font-bold text-[#004b3a] font-serif tracking-wider uppercase text-[11px] w-[18%] min-w-[85px] cursor-pointer hover:bg-[#eae6dc]/60 transition select-none"
+                      className="py-2 px-2 md:px-2.5 font-bold text-[#1b4372] font-serif tracking-wider uppercase text-[11px] w-[18%] min-w-[85px] cursor-pointer hover:bg-[#eae6dc]/60 transition select-none"
                     >
                       <div className="flex items-center gap-0.5">
                         <span>化學式</span>
                         {sortKey === "formula" ? (
-                          sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-[#004b3a]" /> : <ArrowDown className="w-3 h-3 text-[#004b3a]" />
+                          sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-[#1b4372]" /> : <ArrowDown className="w-3 h-3 text-[#1b4372]" />
                         ) : (
                           <ArrowUpDown className="w-2.5 h-2.5 text-slate-400 opacity-60" />
                         )}
@@ -965,7 +965,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                       <div className="flex items-center gap-0.5">
                         <span>CAS 號碼</span>
                         {sortKey === "cas" ? (
-                          sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-[#004b3a]" /> : <ArrowDown className="w-3 h-3 text-[#004b3a]" />
+                          sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-[#1b4372]" /> : <ArrowDown className="w-3 h-3 text-[#1b4372]" />
                         ) : (
                           <ArrowUpDown className="w-2.5 h-2.5 text-slate-400 opacity-60" />
                         )}
@@ -1006,8 +1006,8 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                         </td>
 
                         {/* 2. 編號 */}
-                        <td className={`${density === "compact" ? "py-1.5 px-1.5" : "py-2.5 px-2"} font-mono font-bold text-[#004b3a] text-center select-none text-xs`}>
-                          <span className="bg-[#004b3a]/8 px-1 py-0.5 rounded-xs border border-[#004b3a]/15 text-[11px] whitespace-nowrap">
+                        <td className={`${density === "compact" ? "py-1.5 px-1.5" : "py-2.5 px-2"} font-mono font-bold text-[#1b4372] text-center select-none text-xs`}>
+                          <span className="bg-[#1b4372]/8 px-1 py-0.5 rounded-xs border border-[#1b4372]/15 text-[11px] whitespace-nowrap">
                             {highlightMatch(item.no, searchQuery)}
                           </span>
                         </td>
@@ -1041,7 +1041,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                                 href={`https://pubchem.ncbi.nlm.nih.gov/#query=${encodeURIComponent(item.cas)}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="font-bold text-[#8d734a] hover:text-[#004b3a] bg-amber-50/80 hover:bg-amber-100 px-1 py-0.5 rounded-xs border border-amber-200 text-[10.5px] transition inline-flex items-center gap-0.5 whitespace-nowrap"
+                                className="font-bold text-[#8d734a] hover:text-[#1b4372] bg-amber-50/80 hover:bg-amber-100 px-1 py-0.5 rounded-xs border border-amber-200 text-[10.5px] transition inline-flex items-center gap-0.5 whitespace-nowrap"
                                 title="Look up on PubChem"
                               >
                                 <span>{highlightMatch(item.cas, searchQuery)}</span>
@@ -1050,7 +1050,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                               <button
                                 type="button"
                                 onClick={() => handleCopyCas(item.cas)}
-                                className="p-0.5 text-slate-400 hover:text-[#004b3a] hover:bg-slate-100 rounded transition"
+                                className="p-0.5 text-slate-400 hover:text-[#1b4372] hover:bg-slate-100 rounded transition"
                                 title="Copy CAS Number"
                               >
                                 {copiedCas === item.cas ? (
@@ -1078,7 +1078,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                 return (
                   <div
                     key={item.id}
-                    className={`bg-white border hover:border-[#004b3a]/40 rounded-sm p-3.5 shadow-xs hover:shadow-md transition-all space-y-2 flex flex-col justify-between ${
+                    className={`bg-white border hover:border-[#1b4372]/40 rounded-sm p-3.5 shadow-xs hover:shadow-md transition-all space-y-2 flex flex-col justify-between ${
                       isToxic ? "border-amber-300 bg-amber-50/10" : "border-[#e5e5e0]"
                     }`}
                   >
@@ -1090,7 +1090,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                           }`}>
                             {item.cabinetName}
                           </span>
-                          <span className="text-xs font-mono font-bold text-[#004b3a] bg-[#004b3a]/10 px-1.5 py-0.5 rounded-xs border border-[#004b3a]/20">
+                          <span className="text-xs font-mono font-bold text-[#1b4372] bg-[#1b4372]/10 px-1.5 py-0.5 rounded-xs border border-[#1b4372]/20">
                             #{highlightMatch(item.no, searchQuery)}
                           </span>
                         </div>
@@ -1103,7 +1103,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                             <button
                               type="button"
                               onClick={() => handleCopyCas(item.cas)}
-                              className="text-slate-400 hover:text-[#004b3a]"
+                              className="text-slate-400 hover:text-[#1b4372]"
                               title="Copy CAS"
                             >
                               {copiedCas === item.cas ? (
@@ -1190,7 +1190,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                           onClick={() => handlePageChange(p)}
                           className={`min-w-[28px] h-7 px-2 rounded-sm font-bold font-mono text-xs transition ${
                             currentPage === p
-                              ? "bg-[#004b3a] text-white shadow-xs"
+                              ? "bg-[#1b4372] text-white shadow-xs"
                               : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc] border border-[#e5e5e0]"
                           }`}
                         >
@@ -1231,14 +1231,14 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
           isFullscreen ? "h-[calc(100vh-130px)]" : "h-[760px] md:h-[840px]"
         }`}>
           <div className="bg-[#f8f8f5] border-b border-[#e5e5e0] px-4 py-2 flex items-center justify-between text-xs">
-            <span className="font-bold text-[#004b3a] font-serif">
+            <span className="font-bold text-[#1b4372] font-serif">
               Google Spreadsheet Embed: {currentCabinetConfig.name}
             </span>
             <a
               href={activeSheetUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[#8d734a] hover:text-[#004b3a] font-bold"
+              className="inline-flex items-center gap-1 text-[#8d734a] hover:text-[#1b4372] font-bold"
             >
               <span>Open in new tab</span>
               <ExternalLink className="w-3 h-3" />
@@ -1258,7 +1258,7 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-[#fdfdfc] border border-[#e5e5e0] rounded-sm p-6 max-w-sm w-full shadow-xl space-y-4 text-center">
             <div className="flex items-center justify-between border-b border-[#e5e5e0] pb-3">
-              <h3 className="text-base font-bold text-[#004b3a] font-serif flex items-center gap-2">
+              <h3 className="text-base font-bold text-[#1b4372] font-serif flex items-center gap-2">
                 <QrCode className="w-4 h-4 text-[#8d734a]" />
                 Scan to Query Chemicals
               </h3>
@@ -1299,13 +1299,13 @@ export default function ChemicalInventory({ onBackToHome }: ChemicalInventoryPro
                 }}
                 className="px-4 py-2 bg-[#f8f8f5] hover:bg-[#eae6dc] text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold flex items-center gap-1.5 transition"
               >
-                {copiedCas === "SHEET_URL" ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#004b3a]" />}
+                {copiedCas === "SHEET_URL" ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#1b4372]" />}
                 <span>{copiedCas === "SHEET_URL" ? "Copied" : "Copy Sheet URL"}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setShowQrModal(false)}
-                className="px-4 py-2 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm text-xs font-bold transition"
+                className="px-4 py-2 bg-[#1b4372] hover:bg-[#102844] text-white rounded-sm text-xs font-bold transition"
               >
                 Close
               </button>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Member, Meeting } from "../data/labData";
+import MemberProgressTracking from "./progress/MemberProgressTracking";
 import { 
   Database, 
   UserPlus, 
@@ -21,12 +22,15 @@ import {
   ChevronDown, 
   Save, 
   AlertCircle,
-  Plus
+  Plus,
+  TrendingUp,
+  Lock
 } from "lucide-react";
 
 interface LabDataGeneratorProps {
   initialMembers: Member[];
   initialMeetings: Meeting[];
+  initialTab?: "members" | "meetings" | "progress" | "export";
   onApplyData?: (updatedMembers: Member[], updatedMeetings: Meeting[]) => void;
   onResetToDefault?: () => void;
   onLogout?: () => void;
@@ -35,11 +39,18 @@ interface LabDataGeneratorProps {
 export default function LabDataGenerator({
   initialMembers,
   initialMeetings,
+  initialTab,
   onApplyData,
   onResetToDefault,
   onLogout
 }: LabDataGeneratorProps) {
-  const [activeTab, setActiveTab] = useState<"members" | "meetings" | "export">("members");
+  const [activeTab, setActiveTab] = useState<"members" | "meetings" | "progress" | "export">(initialTab || "members");
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   
   // Helper: Sort meetings by date descending (newest first)
   const sortMeetingsByDateDesc = (list: Meeting[]): Meeting[] => {
@@ -393,7 +404,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
       {/* HEADER BAR */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#e5e5e0] pb-6">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-[#004b3a] text-white rounded-sm shadow-sm shrink-0 border border-[#8d734a]/30">
+          <div className="p-3 bg-[#1b4372] text-white rounded-sm shadow-sm shrink-0 border border-[#8d734a]/30">
             <Database className="w-6 h-6 text-amber-300" />
           </div>
           <div>
@@ -401,13 +412,13 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
               <h2 className="text-xl font-bold text-[#1a1a1a] font-serif">
                 LabData 後端資料生成與維護 Studio
               </h2>
-              <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-sm flex items-center gap-1">
+              <span className="text-[10px] font-mono font-bold bg-blue-100 text-blue-900 border border-blue-300 px-2 py-0.5 rounded-sm flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3" />
                 Admin Protected
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              方便後端/管理者輸入新增實驗室成員、修改研究課題、新增期刊導讀，並自動生成完整型別與資料檔案。
+              方便管理者維護實驗室成員與研究課題、新增期刊導讀、追蹤成員論文與研究進度，並即時同步儲存或匯出代碼。
             </p>
           </div>
         </div>
@@ -420,7 +431,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
             className={`px-4 py-2 rounded-sm text-xs font-bold transition-all flex items-center gap-2 border shadow-sm ${
               appliedStatus
                 ? "bg-emerald-600 text-white border-emerald-600"
-                : "bg-[#004b3a] hover:bg-[#003328] text-white border-[#004b3a]"
+                : "bg-[#1b4372] hover:bg-[#102844] text-white border-[#1b4372]"
             }`}
           >
             {appliedStatus ? <Check className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
@@ -458,7 +469,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
           onClick={() => setActiveTab("members")}
           className={`px-4 py-2 rounded-sm transition flex items-center gap-2 ${
             activeTab === "members"
-              ? "bg-[#004b3a] text-white shadow-sm"
+              ? "bg-[#1b4372] text-white shadow-sm"
               : "bg-[#f8f8f5] text-slate-700 hover:bg-[#fafafa]"
           }`}
         >
@@ -470,7 +481,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
           onClick={() => setActiveTab("meetings")}
           className={`px-4 py-2 rounded-sm transition flex items-center gap-2 ${
             activeTab === "meetings"
-              ? "bg-[#004b3a] text-white shadow-sm"
+              ? "bg-[#1b4372] text-white shadow-sm"
               : "bg-[#f8f8f5] text-slate-700 hover:bg-[#fafafa]"
           }`}
         >
@@ -479,10 +490,22 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
         </button>
 
         <button
+          onClick={() => setActiveTab("progress")}
+          className={`px-4 py-2 rounded-sm transition flex items-center gap-2 ${
+            activeTab === "progress"
+              ? "bg-[#1b4372] text-white shadow-sm"
+              : "bg-[#f8f8f5] text-slate-700 hover:bg-[#fafafa]"
+          }`}
+        >
+          <TrendingUp className="w-4 h-4" />
+          <span>成員進度追蹤 (Progress Tracking)</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab("export")}
           className={`px-4 py-2 rounded-sm transition flex items-center gap-2 ${
             activeTab === "export"
-              ? "bg-[#004b3a] text-white shadow-sm"
+              ? "bg-[#1b4372] text-white shadow-sm"
               : "bg-[#f8f8f5] text-slate-700 hover:bg-[#fafafa]"
           }`}
         >
@@ -498,7 +521,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
           {/* Left Form: Add / Edit Member */}
           <div className="lg:col-span-5 bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm p-5 space-y-4 shadow-xs">
             <div className="flex items-center justify-between border-b border-[#e5e5e0] pb-3">
-              <span className="text-xs font-bold text-[#004b3a] font-serif uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-xs font-bold text-[#1b4372] font-serif uppercase tracking-wider flex items-center gap-1.5">
                 <UserPlus className="w-4 h-4" />
                 {editingMemberId ? "編輯成員資料" : "新增實驗室成員"}
               </span>
@@ -522,7 +545,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                     value={memberForm.name_zh}
                     onChange={(e) => setMemberForm({ ...memberForm, name_zh: e.target.value })}
                     placeholder="例如: 林郁芳"
-                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a]"
+                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
                     required
                   />
                 </div>
@@ -533,7 +556,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                     value={memberForm.name_en}
                     onChange={(e) => setMemberForm({ ...memberForm, name_en: e.target.value })}
                     placeholder="例如: Fanny"
-                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a]"
+                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
                     required
                   />
                 </div>
@@ -551,7 +574,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                     value={memberForm.role}
                     onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
                     placeholder="例如: 114博班 / 交換學生"
-                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a]"
+                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
                   />
                   <datalist id="role-options">
                     <option value="114博班" />
@@ -575,7 +598,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                         }}
                         className={`text-[9.5px] px-1.5 py-0.5 rounded-xs border transition ${
                           memberForm.role === r
-                            ? "bg-[#004b3a] text-white border-[#004b3a]"
+                            ? "bg-[#1b4372] text-white border-[#1b4372]"
                             : "bg-white text-slate-600 border-[#e5e5e0] hover:bg-[#fafafa]"
                         }`}
                       >
@@ -594,7 +617,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                     value={memberForm.role_en || ""}
                     onChange={(e) => setMemberForm({ ...memberForm, role_en: e.target.value })}
                     placeholder="Ph.D. Student / Exchange Student"
-                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a]"
+                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
                   />
                   <datalist id="role-en-options">
                     <option value="Ph.D. Student" />
@@ -633,7 +656,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                     })
                   }
                   placeholder="例如: 農業創新覆蓋膜"
-                  className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a]"
+                  className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
                 />
               </div>
 
@@ -649,7 +672,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                     })
                   }
                   placeholder="Innovative Agricultural Mulch Films"
-                  className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a]"
+                  className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
                 />
               </div>
 
@@ -660,7 +683,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                   value={keywordsInput}
                   onChange={(e) => setKeywordsInput(e.target.value)}
                   placeholder="例如: 生物質, 液體地膜, 農業剩餘物"
-                  className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a]"
+                  className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
                 />
               </div>
 
@@ -671,14 +694,14 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                   value={memberForm.description}
                   onChange={(e) => setMemberForm({ ...memberForm, description: e.target.value })}
                   placeholder="中文說明 / English description"
-                  className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a]"
+                  className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
                 />
               </div>
 
               <div className="pt-2 flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition"
+                  className="flex-1 py-2.5 bg-[#1b4372] hover:bg-[#102844] text-white rounded-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{editingMemberId ? "儲存更新" : "新增至成員陣列"}</span>
@@ -705,7 +728,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
               </span>
               <button
                 onClick={handleResetMemberForm}
-                className="text-xs text-[#004b3a] font-bold flex items-center gap-1 hover:underline"
+                className="text-xs text-[#1b4372] font-bold flex items-center gap-1 hover:underline"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>新增成員</span>
@@ -719,14 +742,14 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                   className={`p-3.5 rounded-sm border transition flex items-start justify-between gap-3 ${
                     editingMemberId === m.id
                       ? "bg-amber-50/80 border-amber-300 ring-1 ring-amber-300"
-                      : "bg-[#f8f8f5] border-[#e5e5e0] hover:border-[#004b3a]"
+                      : "bg-[#f8f8f5] border-[#e5e5e0] hover:border-[#1b4372]"
                   }`}
                 >
                   <div className="space-y-1 flex-1 min-w-0">
                     <div className="flex items-baseline gap-2">
                       <span className="font-bold text-sm text-slate-900 font-serif">{m.name_zh}</span>
                       <span className="text-xs text-slate-500 font-mono font-semibold">{m.name_en}</span>
-                      <span className="text-[10px] bg-white border border-[#e5e5e0] px-1.5 py-0.2 rounded text-[#004b3a] font-bold">
+                      <span className="text-[10px] bg-white border border-[#e5e5e0] px-1.5 py-0.2 rounded text-[#1b4372] font-bold">
                         {m.role}
                       </span>
                     </div>
@@ -770,7 +793,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                     <button
                       type="button"
                       onClick={() => handleEditMember(m)}
-                      className="p-1.5 bg-white border border-[#e5e5e0] hover:bg-emerald-50 text-[#004b3a] rounded-sm transition"
+                      className="p-1.5 bg-white border border-[#e5e5e0] hover:bg-blue-50 text-[#1b4372] rounded-sm transition"
                       title="編輯"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
@@ -799,7 +822,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
           {/* Left Form: Add / Edit Meeting */}
           <div className="lg:col-span-5 bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm p-5 space-y-4 shadow-xs">
             <div className="flex items-center justify-between border-b border-[#e5e5e0] pb-3">
-              <span className="text-xs font-bold text-[#004b3a] font-serif uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-xs font-bold text-[#1b4372] font-serif uppercase tracking-wider flex items-center gap-1.5">
                 <CalendarPlus className="w-4 h-4" />
                 {editingMeetingId ? "編輯會議/導讀紀錄" : "新增會議/導讀紀錄"}
               </span>
@@ -823,7 +846,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                     value={meetingForm.date}
                     onChange={(e) => setMeetingForm({ ...meetingForm, date: e.target.value })}
                     placeholder="2026/08/15"
-                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a] font-mono"
+                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372] font-mono"
                     required
                   />
                 </div>
@@ -841,7 +864,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                         speaker_id: matchedMember ? matchedMember.id : selectedSpeaker.toLowerCase()
                       });
                     }}
-                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a]"
+                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
                   >
                     <option value="">-- 請選擇成員 --</option>
                     {membersList.map((m) => (
@@ -860,7 +883,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                   value={meetingForm.title}
                   onChange={(e) => setMeetingForm({ ...meetingForm, title: e.target.value })}
                   placeholder="Recovery of lignin from deep eutectic solvents by liquid-liquid extraction"
-                  className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a]"
+                  className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
                   required
                 />
               </div>
@@ -878,7 +901,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                         status_label: st === "completed" ? "✓ Completed" : "⏳ Scheduled"
                       });
                     }}
-                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a]"
+                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
                   >
                     <option value="completed">已完成 (Completed)</option>
                     <option value="upcoming">預定舉行 (Scheduled)</option>
@@ -892,7 +915,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                     value={meetingForm.archive_group}
                     onChange={(e) => setMeetingForm({ ...meetingForm, archive_group: e.target.value })}
                     placeholder="例如: AUGUST 2026"
-                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#004b3a] font-mono"
+                    className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372] font-mono"
                   />
                 </div>
               </div>
@@ -900,7 +923,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
               <div className="pt-2 flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition"
+                  className="flex-1 py-2.5 bg-[#1b4372] hover:bg-[#102844] text-white rounded-sm font-bold flex items-center justify-center gap-1.5 shadow-xs transition"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{editingMeetingId ? "儲存更新" : "新增會議紀錄"}</span>
@@ -927,7 +950,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
               </span>
               <button
                 onClick={handleResetMeetingForm}
-                className="text-xs text-[#004b3a] font-bold flex items-center gap-1 hover:underline"
+                className="text-xs text-[#1b4372] font-bold flex items-center gap-1 hover:underline"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>新增會議</span>
@@ -941,12 +964,12 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                   className={`p-3.5 rounded-sm border transition flex items-start justify-between gap-3 ${
                     editingMeetingId === m.id
                       ? "bg-amber-50/80 border-amber-300 ring-1 ring-amber-300"
-                      : "bg-[#f8f8f5] border-[#e5e5e0] hover:border-[#004b3a]"
+                      : "bg-[#f8f8f5] border-[#e5e5e0] hover:border-[#1b4372]"
                   }`}
                 >
                   <div className="space-y-1 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold font-mono text-[#004b3a] bg-white border border-[#e5e5e0] px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-bold font-mono text-[#1b4372] bg-white border border-[#e5e5e0] px-2 py-0.5 rounded">
                         {m.date}
                       </span>
                       <span className="text-[10px] font-bold font-mono text-slate-500 bg-white border border-[#e5e5e0] px-2 py-0.5 rounded">
@@ -967,7 +990,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                     <button
                       type="button"
                       onClick={() => handleEditMeeting(m)}
-                      className="p-1.5 bg-white border border-[#e5e5e0] hover:bg-emerald-50 text-[#004b3a] rounded-sm transition"
+                      className="p-1.5 bg-white border border-[#e5e5e0] hover:bg-blue-50 text-[#1b4372] rounded-sm transition"
                       title="編輯"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
@@ -992,17 +1015,16 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
       {/* ==================== TAB 3: CODE GENERATOR & EXPORT / IMPORT ==================== */}
       {activeTab === "export" && (
         <div className="space-y-8">
-          
           {/* Top Actions Box */}
           <div className="p-5 bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-[#004b3a] font-serif flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[#1b4372] font-serif flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-amber-500" />
                   一鍵生成與匯出 labData 檔案
                 </h3>
                 <p className="text-xs text-slate-600 mt-0.5">
-                  可複製 TypeScript 原始碼直接取代 <code className="bg-white px-1 border rounded text-[#004b3a]">src/data/labData.ts</code> 內容，或下載 JSON 檔作為備份。
+                  可複製 TypeScript 原始碼直接取代 <code className="bg-white px-1 border rounded text-[#1b4372]">src/data/labData.ts</code> 內容，或下載 JSON 檔作為備份。
                 </p>
               </div>
 
@@ -1010,7 +1032,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                 <button
                   type="button"
                   onClick={() => handleCopyCode(generateTypeScriptCode(), "TS_CODE")}
-                  className="px-3.5 py-2 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+                  className="px-3.5 py-2 bg-[#1b4372] hover:bg-[#102844] text-white rounded-sm text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span>{copyStatus === "TS_CODE" ? "已複製 TypeScript!" : "複製 labData.ts 程式碼"}</span>
@@ -1021,7 +1043,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                   onClick={() => handleDownloadFile(generateTypeScriptCode(), "labData.ts", "text/typescript")}
                   className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-[#e5e5e0] text-slate-800 rounded-sm text-xs font-bold transition flex items-center gap-1.5"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#004b3a]" />
+                  <Download className="w-3.5 h-3.5 text-[#1b4372]" />
                   <span>下載 labData.ts</span>
                 </button>
 
@@ -1051,7 +1073,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
 
           {/* Import Panel */}
           <div className="p-5 bg-white border border-[#e5e5e0] rounded-sm space-y-4">
-            <h4 className="text-xs font-bold text-[#004b3a] font-serif uppercase tracking-wider flex items-center gap-2">
+            <h4 className="text-xs font-bold text-[#1b4372] font-serif uppercase tracking-wider flex items-center gap-2">
               <Upload className="w-4 h-4" />
               匯入外部 JSON 數據 (Import External JSON)
             </h4>
@@ -1062,7 +1084,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                   type="file"
                   accept=".json"
                   onChange={handleFileUpload}
-                  className="block text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-bold file:bg-[#004b3a] file:text-white hover:file:bg-[#003328] cursor-pointer"
+                  className="block text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-bold file:bg-[#1b4372] file:text-white hover:file:bg-[#102844] cursor-pointer"
                 />
                 <span className="text-slate-400">或直接貼上 JSON 文本:</span>
               </div>
@@ -1072,7 +1094,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                 value={jsonImportText}
                 onChange={(e) => setJsonImportText(e.target.value)}
                 placeholder='貼上包含 {"members": [...], "meetings": [...]} 的 JSON 內容...'
-                className="w-full bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm p-3 text-xs font-mono focus:outline-none focus:border-[#004b3a]"
+                className="w-full bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm p-3 text-xs font-mono focus:outline-none focus:border-[#1b4372]"
               />
 
               {importError && (
@@ -1092,7 +1114,7 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
               <button
                 type="button"
                 onClick={handleImportJson}
-                className="px-4 py-2 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm font-bold flex items-center gap-1.5 transition"
+                className="px-4 py-2 bg-[#1b4372] hover:bg-[#102844] text-white rounded-sm font-bold flex items-center gap-1.5 transition"
               >
                 <Upload className="w-3.5 h-3.5" />
                 <span>解析並匯入至 Studio</span>
@@ -1103,6 +1125,12 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
         </div>
       )}
 
+      {/* ==================== TAB 3: MEMBER PROGRESS TRACKING ==================== */}
+      {activeTab === "progress" && (
+        <div className="pt-2 animate-in fade-in duration-200">
+          <MemberProgressTracking systemMembers={membersList} />
+        </div>
+      )}
     </div>
   );
 }

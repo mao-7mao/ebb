@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-light: #fdfdfc;
+  --color-brand-light: #fbf9f5;
   --color-brand-card: #ffffff;
-  --color-brand-border: #e5e5e0;
-  --color-brand-accent: #004b3a;
-  --color-brand-muted: #8d734a;
+  --color-brand-border: #e6e1d6;
+  --color-brand-accent: #1b4372;
+  --color-brand-muted: #9c8262;
   
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang TC", "Microsoft JhengHei", sans-serif;
   --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
@@ -30,46 +30,46 @@ html[data-font-size="xl"] {
 }
 
 body {
-  background-color: #f4f1ea; /* warm ivory paper */
+  background-color: #f5f2eb; /* refined warm beige paper */
   color: #1a1a1a; /* deep charcoal */
   font-family: var(--font-sans);
   overflow-x: hidden;
 }
 
 ::selection {
-  background-color: rgba(0, 75, 58, 0.15);
-  color: #004b3a;
+  background-color: rgba(27, 67, 114, 0.15);
+  color: #1b4372;
 }
 
 /* Glassmorphism utilities tailored to Editorial theme */
 .glass-panel {
-  background: rgba(253, 253, 252, 0.9);
+  background: rgba(251, 249, 245, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid #e5e5e0;
+  border: 1px solid #e6e1d6;
 }
 
 .glass-nav {
-  background: rgba(253, 253, 252, 0.95);
+  background: rgba(251, 249, 245, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid #e5e5e0;
+  border-bottom: 1px solid #e6e1d6;
 }
 
-/* Custom scrollbars matching deep academic green */
+/* Custom scrollbars matching deep academic blue */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #fdfdfc;
+  background: #f5f2eb;
 }
 ::-webkit-scrollbar-thumb {
-  background: #004b3a;
+  background: #1b4372;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #003328;
+  background: #122e4f;
 }
 
 /* Business card specific styling to guarantee perfect 3D flipping */

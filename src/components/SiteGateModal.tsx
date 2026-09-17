@@ -90,12 +90,12 @@ export default function SiteGateModal({ onUnlocked }: SiteGateModalProps) {
       >
         {/* Header Branding */}
         <div className="text-center space-y-3 border-b border-[#e5e5e0] pb-6">
-          <div className="w-14 h-14 rounded-sm bg-[#004b3a] text-white flex items-center justify-center mx-auto shadow-md border border-[#8d734a]/40 font-serif italic font-bold text-2xl">
+          <div className="w-14 h-14 rounded-sm bg-[#1b4372] text-white flex items-center justify-center mx-auto shadow-md border border-[#8d734a]/40 font-serif italic font-bold text-2xl">
             E
           </div>
           <div>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[#e5e5e0] bg-[#f8f8f5] text-[10px] uppercase tracking-widest font-bold text-[#8d734a]">
-              <Sparkles className="w-3 h-3 text-[#004b3a]" />
+              <Sparkles className="w-3 h-3 text-[#1b4372]" />
               EBB Lab Private Access
             </span>
             <h2 className="text-xl font-bold text-[#1a1a1a] font-serif mt-2">
@@ -115,7 +115,7 @@ export default function SiteGateModal({ onUnlocked }: SiteGateModalProps) {
             </label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
-                <KeyRound className="w-4 h-4 text-[#004b3a]" />
+                <KeyRound className="w-4 h-4 text-[#1b4372]" />
               </span>
               <input 
                 type={showPassword ? "text" : "password"} 
@@ -123,7 +123,7 @@ export default function SiteGateModal({ onUnlocked }: SiteGateModalProps) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="請輸入全站存取密碼"
                 disabled={isLoading}
-                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2.5 pl-9 pr-10 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a] font-mono font-medium disabled:opacity-50"
+                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2.5 pl-9 pr-10 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#1b4372] focus:ring-1 focus:ring-[#1b4372] font-mono font-medium disabled:opacity-50"
                 autoFocus
               />
               <button
@@ -156,7 +156,7 @@ export default function SiteGateModal({ onUnlocked }: SiteGateModalProps) {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3 bg-[#1b4372] hover:bg-[#102844] text-white rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Lock className="w-4 h-4 text-amber-300" />
               <span>{isLoading ? "驗證中..." : "進入 EBB Lab 系統"}</span>

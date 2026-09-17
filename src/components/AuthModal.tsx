@@ -113,7 +113,7 @@ export default function AuthModal({
       >
         {/* Header Branding */}
         <div className="flex items-center gap-3 border-b border-[#e5e5e0] pb-4">
-          <div className="w-10 h-10 rounded-sm bg-[#004b3a] text-white flex items-center justify-center shrink-0 shadow-sm border border-[#8d734a]/30">
+          <div className="w-10 h-10 rounded-sm bg-[#1b4372] text-white flex items-center justify-center shrink-0 shadow-sm border border-[#8d734a]/30">
             <Lock className="w-5 h-5 text-amber-300" />
           </div>
           <div>
@@ -148,7 +148,7 @@ export default function AuthModal({
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="請輸入管理者帳號"
                 disabled={isLoading}
-                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a] font-mono font-medium disabled:opacity-50"
+                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#1b4372] focus:ring-1 focus:ring-[#1b4372] font-mono font-medium disabled:opacity-50"
                 autoFocus
               />
             </div>
@@ -168,7 +168,7 @@ export default function AuthModal({
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="請輸入管理者密碼"
                 disabled={isLoading}
-                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2 pl-9 pr-10 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a] font-mono font-medium disabled:opacity-50"
+                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2 pl-9 pr-10 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#1b4372] focus:ring-1 focus:ring-[#1b4372] font-mono font-medium disabled:opacity-50"
               />
               <button
                 type="button"
@@ -208,7 +208,7 @@ export default function AuthModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="w-2/3 py-2.5 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-2/3 py-2.5 bg-[#1b4372] hover:bg-[#102844] text-white rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Lock className="w-3.5 h-3.5" />
               <span>{isLoading ? "驗證中..." : "登入存取"}</span>

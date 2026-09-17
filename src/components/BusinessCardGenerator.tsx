@@ -37,28 +37,28 @@ interface GreenShadeColors {
 
 const GREEN_SHADES: Record<GreenShade, GreenShadeColors> = {
   classic: {
-    name: "經典翠綠 (Classic Emerald)",
-    frontGradient: "from-[#00382b] via-[#004b3a] to-[#043329]",
-    backLeftBg: "bg-[#004b3a]",
-    primaryBg: "bg-[#004b3a]",
+    name: "學術海軍藍 (Classic Navy)",
+    frontGradient: "from-[#102844] via-[#1b4372] to-[#122e4f]",
+    backLeftBg: "bg-[#1b4372]",
+    primaryBg: "bg-[#1b4372]",
     accentText: "text-[#ebdcb9]",
-    primaryHex: "#05795e"
+    primaryHex: "#1b4372"
   },
   jade: {
-    name: "山海翡翠 (Teal Jade)",
-    frontGradient: "from-[#012d2e] via-[#055c50] to-[#033f38]",
-    backLeftBg: "bg-[#055c50]",
-    primaryBg: "bg-[#055c50]",
+    name: "普魯士深藍 (Prussian Blue)",
+    frontGradient: "from-[#0a1c30] via-[#122f54] to-[#1a3f6d]",
+    backLeftBg: "bg-[#122f54]",
+    primaryBg: "bg-[#122f54]",
     accentText: "text-[#ebdcb9]",
-    primaryHex: "#055c50"
+    primaryHex: "#122f54"
   },
   moss: {
-    name: "墨荷雅緻 (Deep Moss)",
-    frontGradient: "from-[#111c16] via-[#1c2e24] to-[#15241b]",
-    backLeftBg: "bg-[#1c2e24]",
-    primaryBg: "bg-[#1c2e24]",
+    name: "牛津蔚藍 (Oxford Blue)",
+    frontGradient: "from-[#0f1f33] via-[#18365c] to-[#204778]",
+    backLeftBg: "bg-[#18365c]",
+    primaryBg: "bg-[#18365c]",
     accentText: "text-[#e3d1ae]",
-    primaryHex: "#1c2e24"
+    primaryHex: "#18365c"
   }
 };
 
@@ -501,7 +501,7 @@ export default function BusinessCardGenerator() {
 
       <div className="text-center mb-12">
         <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm text-xs font-bold text-[#8d734a] uppercase tracking-widest font-serif italic mb-3">
-          <Sparkles className="w-3.5 h-3.5 text-[#004b3a]" />
+          <Sparkles className="w-3.5 h-3.5 text-[#1b4372]" />
           NSYSU Academic Utility
         </span>
         <h2 className="text-3xl md:text-4xl font-bold text-[#1a1a1a] tracking-tight font-serif">
@@ -519,8 +519,8 @@ export default function BusinessCardGenerator() {
           
           {/* Autocomplete Finder */}
           <div className="relative">
-            <label className="block text-xs font-bold text-[#004b3a] uppercase tracking-widest mb-2 flex items-center gap-1 font-serif italic">
-              <Search className="w-3.5 h-3.5 text-[#004b3a]" />
+            <label className="block text-xs font-bold text-[#1b4372] uppercase tracking-widest mb-2 flex items-center gap-1 font-serif italic">
+              <Search className="w-3.5 h-3.5 text-[#1b4372]" />
               快速載入成員 (EBB Lab Database)
             </label>
             <div className="relative">
@@ -533,7 +533,7 @@ export default function BusinessCardGenerator() {
                 }}
                 onFocus={() => setShowSuggestions(true)}
                 placeholder="輸入成員姓名，例如：林郁芳, Fanny..."
-                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a] transition-all font-sans text-slate-800"
+                className="w-full bg-white border border-[#e5e5e0] rounded-sm py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:border-[#1b4372] focus:ring-1 focus:ring-[#1b4372] transition-all font-sans text-slate-800"
               />
               <Search className="w-4 h-4 text-[#8d734a] absolute left-3 top-3.5" />
               {searchTerm && (
@@ -572,7 +572,7 @@ export default function BusinessCardGenerator() {
           </div>
 
           <div className="border-t border-[#e5e5e0] pt-4 space-y-4 font-sans">
-            <h3 className="text-sm font-bold text-[#004b3a] border-l-2 border-[#8d734a] pl-2 font-serif">名片文字資訊 (英文版)</h3>
+            <h3 className="text-sm font-bold text-[#1b4372] border-l-2 border-[#8d734a] pl-2 font-serif">名片文字資訊 (英文版)</h3>
             
             {/* Double Name Inputs */}
             <div className="grid grid-cols-2 gap-3">
@@ -582,7 +582,7 @@ export default function BusinessCardGenerator() {
                   type="text"
                   value={formData.nameZh}
                   onChange={(e) => setFormData({ ...formData, nameZh: e.target.value })}
-                  className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#004b3a]"
+                  className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#1b4372]"
                 />
               </div>
               <div>
@@ -591,7 +591,7 @@ export default function BusinessCardGenerator() {
                   type="text"
                   value={formData.nameEn}
                   onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
-                  className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#004b3a]"
+                  className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#1b4372]"
                 />
               </div>
             </div>
@@ -604,7 +604,7 @@ export default function BusinessCardGenerator() {
                 value={formData.titleEn}
                 onChange={(e) => setFormData({ ...formData, titleEn: e.target.value })}
                 placeholder="e.g. Ph.D. Student / Master's Student"
-                className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#004b3a]"
+                className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#1b4372]"
               />
             </div>
 
@@ -612,12 +612,12 @@ export default function BusinessCardGenerator() {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-[11px] font-semibold text-[#666]">Research Direction / Topic (English)</label>
-                <label className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#004b3a] cursor-pointer select-none">
+                <label className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#1b4372] cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={showResearchField}
                     onChange={(e) => setShowResearchField(e.target.checked)}
-                    className="rounded border-[#e5e5e0] text-[#004b3a] focus:ring-[#004b3a] w-3.5 h-3.5 accent-[#004b3a] cursor-pointer"
+                    className="rounded border-[#e5e5e0] text-[#1b4372] focus:ring-[#1b4372] w-3.5 h-3.5 accent-[#1b4372] cursor-pointer"
                   />
                   <span>名片顯示此項</span>
                 </label>
@@ -628,13 +628,13 @@ export default function BusinessCardGenerator() {
                 rows={2}
                 disabled={!showResearchField}
                 placeholder="e.g. Next-Generation Bio-Based Polyester Materials"
-                className={`w-full border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#004b3a] resize-none leading-normal transition-colors ${
+                className={`w-full border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#1b4372] resize-none leading-normal transition-colors ${
                   showResearchField ? "bg-white" : "bg-gray-100 text-gray-400 opacity-60"
                 }`}
               />
             </div>
 
-            <h3 className="text-sm font-bold text-[#004b3a] border-l-2 border-[#8d734a] pl-2 pt-2 font-serif">聯絡方式 (若留空則名片不顯示)</h3>
+            <h3 className="text-sm font-bold text-[#1b4372] border-l-2 border-[#8d734a] pl-2 pt-2 font-serif">聯絡方式 (若留空則名片不顯示)</h3>
 
             {/* Email & Phone */}
             <div className="grid grid-cols-2 gap-3">
@@ -645,7 +645,7 @@ export default function BusinessCardGenerator() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="e.g. abc@mail.nsysu.edu.tw"
-                  className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#004b3a]"
+                  className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#1b4372]"
                 />
               </div>
               <div>
@@ -655,7 +655,7 @@ export default function BusinessCardGenerator() {
                   value={formData.tel}
                   onChange={(e) => setFormData({ ...formData, tel: e.target.value })}
                   placeholder="e.g. +886-7-525-2000"
-                  className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#004b3a]"
+                  className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#1b4372]"
                 />
               </div>
             </div>
@@ -668,18 +668,18 @@ export default function BusinessCardGenerator() {
                 value={formData.line}
                 onChange={(e) => setFormData({ ...formData, line: e.target.value })}
                 placeholder="e.g. Line帳號"
-                className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#004b3a]"
+                className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#1b4372]"
               />
             </div>
 
             <div className="flex items-center justify-between pt-2">
-              <h3 className="text-sm font-bold text-[#004b3a] border-l-2 border-[#8d734a] pl-2 font-serif">聯絡 QR Code 設定</h3>
-              <label className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#004b3a] cursor-pointer select-none">
+              <h3 className="text-sm font-bold text-[#1b4372] border-l-2 border-[#8d734a] pl-2 font-serif">聯絡 QR Code 設定</h3>
+              <label className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#1b4372] cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={showQrCode}
                   onChange={(e) => setShowQrCode(e.target.checked)}
-                  className="rounded border-[#e5e5e0] text-[#004b3a] focus:ring-[#004b3a] w-3.5 h-3.5 accent-[#004b3a] cursor-pointer"
+                  className="rounded border-[#e5e5e0] text-[#1b4372] focus:ring-[#1b4372] w-3.5 h-3.5 accent-[#1b4372] cursor-pointer"
                 />
                 <span>名片顯示 QR 碼</span>
               </label>
@@ -695,7 +695,7 @@ export default function BusinessCardGenerator() {
                   <div className="flex justify-center gap-2 items-center">
                     {formData.qrCodeUrl ? (
                       <div className="flex items-center gap-1 bg-white border border-[#e5e5e0] rounded-sm px-2 py-1">
-                        <span className="text-[10px] text-[#004b3a] truncate max-w-[120px]">已上傳 QR 碼</span>
+                        <span className="text-[10px] text-[#1b4372] truncate max-w-[120px]">已上傳 QR 碼</span>
                         <button onClick={clearQrCode} className="text-red-500 hover:text-red-700">
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -706,7 +706,7 @@ export default function BusinessCardGenerator() {
                         onClick={() => qrInputRef.current?.click()}
                         className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-[#fafafa] border border-[#e5e5e0] text-[10px] font-bold uppercase tracking-wider text-slate-700 rounded-sm transition shadow-sm"
                       >
-                        <Upload className="w-3 h-3 text-[#004b3a]" />
+                        <Upload className="w-3 h-3 text-[#1b4372]" />
                         上傳圖片
                       </button>
                     )}
@@ -730,7 +730,7 @@ export default function BusinessCardGenerator() {
                 type="text"
                 value={formData.addressEn}
                 onChange={(e) => setFormData({ ...formData, addressEn: e.target.value })}
-                className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#004b3a]"
+                className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs text-slate-800 focus:outline-none focus:border-[#1b4372]"
               />
             </div>
 
@@ -744,7 +744,7 @@ export default function BusinessCardGenerator() {
           {/* Card Layout Mode Selector */}
           <div className="w-full bg-[#fdfdfc] border border-[#e5e5e0] rounded-sm p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#004b3a] uppercase tracking-widest font-serif flex items-center gap-1.5">
+              <span className="text-xs font-bold text-[#1b4372] uppercase tracking-widest font-serif flex items-center gap-1.5">
                 <Layers className="w-4 h-4" style={{ color: GREEN_SHADES[greenShade].primaryHex }} />
                 名片版面配置 (Card Layout Mode)
               </span>
@@ -762,7 +762,7 @@ export default function BusinessCardGenerator() {
                 }}
                 className={`px-4 py-3 rounded-sm text-xs font-bold tracking-wider transition flex flex-col items-center justify-center gap-1.5 border ${
                   layoutMode === "double"
-                    ? "bg-[#004b3a] text-white border-[#004b3a]"
+                    ? "bg-[#1b4372] text-white border-[#1b4372]"
                     : "bg-white hover:bg-[#fafafa] border-[#e5e5e0] text-slate-700"
                 }`}
                 style={layoutMode === "double" ? { backgroundColor: GREEN_SHADES[greenShade].primaryHex, borderColor: GREEN_SHADES[greenShade].primaryHex } : undefined}
@@ -778,7 +778,7 @@ export default function BusinessCardGenerator() {
                 }}
                 className={`px-4 py-3 rounded-sm text-xs font-bold tracking-wider transition flex flex-col items-center justify-center gap-1.5 border ${
                   layoutMode === "single"
-                    ? "bg-[#004b3a] text-white border-[#004b3a]"
+                    ? "bg-[#1b4372] text-white border-[#1b4372]"
                     : "bg-white hover:bg-[#fafafa] border-[#e5e5e0] text-slate-700"
                 }`}
                 style={layoutMode === "single" ? { backgroundColor: GREEN_SHADES[greenShade].primaryHex, borderColor: GREEN_SHADES[greenShade].primaryHex } : undefined}
@@ -798,9 +798,9 @@ export default function BusinessCardGenerator() {
             {/* 3 Shades of Green Selectors */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#004b3a] uppercase tracking-widest font-serif flex items-center gap-1.5">
+                <span className="text-xs font-bold text-[#1b4372] uppercase tracking-widest font-serif flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#8d734a]"></span>
-                  綠能雅緻色調 (Green Shade Accent)
+                  學術藍金雅緻色調 (Blue & Beige Palette)
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-2">
@@ -812,7 +812,7 @@ export default function BusinessCardGenerator() {
                       onClick={() => setGreenShade(shade)}
                       className={`px-3 py-2 rounded-sm text-[10.5px] tracking-wide font-bold transition flex flex-col items-center gap-1.5 border ${
                         isSelected
-                          ? "bg-[#004b3a] text-white shadow-sm"
+                          ? "bg-[#1b4372] text-white shadow-sm"
                           : "bg-white hover:bg-[#fafafa] border-[#e5e5e0] text-slate-700"
                       }`}
                       style={isSelected ? { backgroundColor: GREEN_SHADES[shade].primaryHex, borderColor: GREEN_SHADES[shade].primaryHex } : undefined}
@@ -821,7 +821,7 @@ export default function BusinessCardGenerator() {
                         className="w-4 h-4 rounded-full border border-white/20 shadow-sm" 
                         style={{ backgroundColor: GREEN_SHADES[shade].primaryHex }}
                       />
-                      <span className="text-[10px] truncate">{shade === "classic" ? "經典翠綠" : shade === "jade" ? "山海翡翠" : "墨荷雅緻"}</span>
+                      <span className="text-[10px] truncate">{shade === "classic" ? "海軍藍調" : shade === "jade" ? "普魯士藍" : "牛津蔚藍"}</span>
                     </button>
                   );
                 })}

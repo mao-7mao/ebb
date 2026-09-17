@@ -36,7 +36,7 @@ export default function InstrumentReservation({ onBackToHome }: InstrumentReserv
       width: 256,
       margin: 2,
       color: {
-        dark: "#004b3a",
+        dark: "#1b4372",
         light: "#ffffff",
       },
     })
@@ -65,7 +65,7 @@ export default function InstrumentReservation({ onBackToHome }: InstrumentReserv
       <div className="bg-[#fdfdfc] border border-[#e5e5e0] rounded-sm p-5 md:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-sm bg-[#004b3a] text-white">
+            <span className="p-1.5 rounded-sm bg-[#1b4372] text-white">
               <Wrench className="w-4 h-4" />
             </span>
             <span className="text-xs font-bold text-[#8d734a] tracking-widest uppercase font-serif italic">
@@ -89,7 +89,7 @@ export default function InstrumentReservation({ onBackToHome }: InstrumentReserv
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#f8f8f5] hover:bg-[#eae6dc] text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold transition shadow-xs"
             title="Scan QR Code on Mobile"
           >
-            <QrCode className="w-4 h-4 text-[#004b3a]" />
+            <QrCode className="w-4 h-4 text-[#1b4372]" />
             <span className="hidden sm:inline">Mobile QR</span>
           </button>
 
@@ -100,7 +100,7 @@ export default function InstrumentReservation({ onBackToHome }: InstrumentReserv
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#f8f8f5] hover:bg-[#eae6dc] text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold transition shadow-xs"
             title="Reload Booking System"
           >
-            <RefreshCw className={`w-4 h-4 text-[#004b3a] ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-4 h-4 text-[#1b4372] ${isLoading ? "animate-spin" : ""}`} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
 
@@ -111,7 +111,7 @@ export default function InstrumentReservation({ onBackToHome }: InstrumentReserv
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#f8f8f5] hover:bg-[#eae6dc] text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold transition shadow-xs"
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
           >
-            {isFullscreen ? <Minimize2 className="w-4 h-4 text-[#004b3a]" /> : <Maximize2 className="w-4 h-4 text-[#004b3a]" />}
+            {isFullscreen ? <Minimize2 className="w-4 h-4 text-[#1b4372]" /> : <Maximize2 className="w-4 h-4 text-[#1b4372]" />}
             <span className="hidden sm:inline">{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</span>
           </button>
 
@@ -120,7 +120,7 @@ export default function InstrumentReservation({ onBackToHome }: InstrumentReserv
             href={scriptUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition active:scale-95"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1b4372] hover:bg-[#102844] text-white rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition active:scale-95"
           >
             <ExternalLink className="w-4 h-4" />
             <span>Open in New Tab</span>
@@ -138,8 +138,8 @@ export default function InstrumentReservation({ onBackToHome }: InstrumentReserv
         {/* Loading overlay */}
         {isLoading && (
           <div className="absolute inset-0 bg-[#fdfdfc]/90 z-20 flex flex-col items-center justify-center gap-3 backdrop-blur-xs">
-            <div className="w-10 h-10 border-3 border-[#004b3a]/20 border-t-[#004b3a] rounded-full animate-spin"></div>
-            <p className="text-xs font-bold text-[#004b3a] font-serif">Loading Instrument Reservation...</p>
+            <div className="w-10 h-10 border-3 border-[#1b4372]/20 border-t-[#1b4372] rounded-full animate-spin"></div>
+            <p className="text-xs font-bold text-[#1b4372] font-serif">Loading Instrument Reservation...</p>
             <p className="text-[11px] text-slate-400 font-mono">Connecting to Google Apps Script</p>
           </div>
         )}
@@ -158,14 +158,14 @@ export default function InstrumentReservation({ onBackToHome }: InstrumentReserv
         {/* Sub-bar footer with quick notes */}
         <div className="p-3 bg-[#f8f8f5] border-t border-[#e5e5e0] text-xs text-slate-600 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-[11px]">
-            <Info className="w-3.5 h-3.5 text-[#004b3a] shrink-0" />
+            <Info className="w-3.5 h-3.5 text-[#1b4372] shrink-0" />
             <span>Booking Notice: Please arrive on time and complete the equipment logbook after usage.</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={handleCopyLink}
-              className="text-[11px] font-mono text-[#004b3a] hover:underline flex items-center gap-1 font-bold"
+              className="text-[11px] font-mono text-[#1b4372] hover:underline flex items-center gap-1 font-bold"
             >
               {copied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
               <span>{copied ? "Link Copied" : "Copy Booking URL"}</span>
@@ -179,7 +179,7 @@ export default function InstrumentReservation({ onBackToHome }: InstrumentReserv
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-[#fdfdfc] border border-[#e5e5e0] rounded-sm p-6 max-w-sm w-full shadow-xl space-y-4 text-center">
             <div className="flex items-center justify-between border-b border-[#e5e5e0] pb-3">
-              <h3 className="text-base font-bold text-[#004b3a] font-serif flex items-center gap-2">
+              <h3 className="text-base font-bold text-[#1b4372] font-serif flex items-center gap-2">
                 <QrCode className="w-4 h-4 text-[#8d734a]" />
                 Scan to Book on Mobile
               </h3>
@@ -216,13 +216,13 @@ export default function InstrumentReservation({ onBackToHome }: InstrumentReserv
                 onClick={handleCopyLink}
                 className="px-4 py-2 bg-[#f8f8f5] hover:bg-[#eae6dc] text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold flex items-center gap-1.5 transition"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#004b3a]" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#1b4372]" />}
                 <span>{copied ? "Copied" : "Copy URL"}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setShowQrModal(false)}
-                className="px-4 py-2 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm text-xs font-bold transition"
+                className="px-4 py-2 bg-[#1b4372] hover:bg-[#102844] text-white rounded-sm text-xs font-bold transition"
               >
                 Close
               </button>

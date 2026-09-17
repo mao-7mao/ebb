@@ -37,14 +37,14 @@ export default function FontSizeAdjuster({ compact = false }: FontSizeAdjusterPr
           title="Adjust Text Size"
           aria-label="Adjust font size"
         >
-          <Type className="w-3.5 h-3.5 text-[#004b3a]" />
+          <Type className="w-3.5 h-3.5 text-[#1b4372]" />
           <span className="font-mono text-[11px] uppercase">{fontSize}</span>
         </button>
 
         {isOpen && (
           <div className="absolute right-0 mt-2 w-48 bg-white border border-[#e5e5e0] rounded-sm shadow-lg p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between px-2 py-1 border-b border-[#e5e5e0] mb-1">
-              <span className="text-[11px] font-bold text-[#004b3a] uppercase tracking-wider font-serif">
+              <span className="text-[11px] font-bold text-[#1b4372] uppercase tracking-wider font-serif">
                 Font Size
               </span>
               <button
@@ -71,7 +71,7 @@ export default function FontSizeAdjuster({ compact = false }: FontSizeAdjusterPr
                   }}
                   className={`px-2 py-1.5 text-left rounded-xs text-xs font-semibold flex items-center justify-between transition ${
                     fontSize === s.id
-                      ? "bg-[#004b3a] text-white"
+                      ? "bg-[#1b4372] text-white"
                       : "text-slate-700 hover:bg-[#f4f1ea]"
                   }`}
                 >
@@ -89,7 +89,7 @@ export default function FontSizeAdjuster({ compact = false }: FontSizeAdjusterPr
   return (
     <div className="flex items-center bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm p-1 shadow-xs">
       <span className="px-2 text-[10px] font-bold text-[#8d734a] font-serif uppercase tracking-wider flex items-center gap-1">
-        <Type className="w-3 h-3 text-[#004b3a]" />
+        <Type className="w-3 h-3 text-[#1b4372]" />
         <span>Text</span>
       </span>
       <div className="flex items-center gap-0.5">
@@ -100,7 +100,7 @@ export default function FontSizeAdjuster({ compact = false }: FontSizeAdjusterPr
             onClick={() => setFontSize(s.id)}
             className={`px-2 py-1 rounded-xs text-xs font-mono font-bold transition ${
               fontSize === s.id
-                ? "bg-[#004b3a] text-white shadow-xs"
+                ? "bg-[#1b4372] text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
             }`}
             title={`Set text scale to ${s.scale}`}

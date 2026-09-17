@@ -9,9 +9,11 @@ import BusinessCardGenerator from "./components/BusinessCardGenerator";
 import LabDataGenerator from "./components/LabDataGenerator";
 import InstrumentReservation from "./components/InstrumentReservation";
 import ChemicalInventory from "./components/ChemicalInventory";
+import ProcurementSystem from "./components/procurement/ProcurementSystem";
 import FontSizeAdjuster from "./components/FontSizeAdjuster";
 import AuthModal, { checkIsAuthenticated, setAuthenticatedState } from "./components/AuthModal";
 import SiteGateModal, { checkIsSiteUnlocked } from "./components/SiteGateModal";
+import { getSavedMemberWebhookUrl, fetchMemberDataFromGoogle } from "./services/googleMemberSyncService";
 import { 
   Users, 
   Network, 
@@ -44,7 +46,9 @@ import {
   Layers,
   ChevronDown,
   ExternalLink,
-  HardDrive
+  HardDrive,
+  ShoppingCart,
+  TrendingUp
 } from "lucide-react";
 
 export type NavPage = 
@@ -52,6 +56,7 @@ export type NavPage =
   | "members" 
   | "instruments" 
   | "chemicals" 
+  | "procurement" 
   | "card-generator" 
   | "schedule" 
   | "archive" 
@@ -62,7 +67,10 @@ export default function App() {
   // Page Routing State (Multi-page nested view architecture)
   const [currentPage, setCurrentPage] = useState<NavPage>(() => {
     const hash = window.location.hash.replace("#/", "").replace("#", "");
-    const validPages: NavPage[] = ["home", "members", "instruments", "chemicals", "card-generator", "schedule", "archive", "studio", "contact"];
+    if (hash === "progress") {
+      return "studio";
+    }
+    const validPages: NavPage[] = ["home", "members", "instruments", "chemicals", "procurement", "card-generator", "schedule", "archive", "studio", "contact"];
     return validPages.includes(hash as NavPage) ? (hash as NavPage) : "home";
   });
 
@@ -114,6 +122,7 @@ export default function App() {
   const [isSiteUnlocked, setIsSiteUnlocked] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [studioInitialTab, setStudioInitialTab] = useState<"members" | "meetings" | "progress" | "export">("members");
 
   // Collapse status for meeting archive groups
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
@@ -125,7 +134,16 @@ export default function App() {
     // Listen to hash changes for browser forward/back navigation
     const handleHashChange = () => {
       const hash = window.location.hash.replace("#/", "").replace("#", "");
-      const validPages: NavPage[] = ["home", "members", "instruments", "chemicals", "card-generator", "schedule", "archive", "studio", "contact"];
+      if (hash === "progress") {
+        setStudioInitialTab("progress");
+        if (!checkIsAuthenticated()) {
+          setIsAuthModalOpen(true);
+        } else {
+          setCurrentPage("studio");
+        }
+        return;
+      }
+      const validPages: NavPage[] = ["home", "members", "instruments", "chemicals", "procurement", "card-generator", "schedule", "archive", "studio", "contact"];
       if (validPages.includes(hash as NavPage)) {
         setCurrentPage(hash as NavPage);
       }
@@ -133,6 +151,41 @@ export default function App() {
 
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  // Auto-sync members & meetings from Google Sheets if configured (Zero Git commits required)
+  useEffect(() => {
+    const webhookUrl = getSavedMemberWebhookUrl();
+    if (webhookUrl) {
+      fetchMemberDataFromGoogle(webhookUrl).then((res) => {
+        if (res.success && res.data) {
+          if (res.data.members && res.data.members.length > 0) {
+            setActiveMembers(res.data.members);
+            try {
+              localStorage.setItem(MEMBERS_STORAGE_KEY, JSON.stringify(res.data.members));
+            } catch (e) {}
+          }
+          if (res.data.meetings && res.data.meetings.length > 0) {
+            setActiveMeetings(res.data.meetings);
+            try {
+              localStorage.setItem(MEETINGS_STORAGE_KEY, JSON.stringify(res.data.meetings));
+            } catch (e) {}
+          }
+          if (res.data.progressEntries && res.data.progressEntries.length > 0) {
+            try {
+              localStorage.setItem("ebblab_progress_entries", JSON.stringify(res.data.progressEntries));
+            } catch (e) {}
+          }
+          if (res.data.externalMembers && res.data.externalMembers.length > 0) {
+            try {
+              localStorage.setItem("ebblab_external_members", JSON.stringify(res.data.externalMembers));
+            } catch (e) {}
+          }
+        }
+      }).catch((err) => {
+        console.warn("Background fetch from Google Sheet skipped:", err);
+      });
+    }
   }, []);
 
   // Navigate helper with smooth window scroll to top
@@ -146,7 +199,8 @@ export default function App() {
     setIsMobileMenuOpen(false);
   };
 
-  const handleOpenStudio = () => {
+  const handleOpenStudio = (tab: "members" | "meetings" | "progress" | "export" = "members") => {
+    setStudioInitialTab(tab);
     if (!isAuthenticated) {
       setIsAuthModalOpen(true);
     } else {
@@ -278,7 +332,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f1ea] text-[#1a1a1a] font-sans selection:bg-[#004b3a]/15 selection:text-[#004b3a] pb-24 xl:pb-0">
+    <div className="min-h-screen bg-[#f4f1ea] text-[#1a1a1a] font-sans selection:bg-[#1b4372]/15 selection:text-[#1b4372] pb-24 xl:pb-0">
       
       {/* -------------------- HEADER / NAVBAR (Simplified: Brand + Font Adjuster & Expand Button) -------------------- */}
       <header className="fixed top-0 right-0 left-0 h-16 z-50 flex items-center justify-between px-4 lg:px-8 glass-nav border-b border-[#e5e5e0]">
@@ -290,15 +344,15 @@ export default function App() {
           className="flex items-center gap-3 shrink-0 cursor-pointer select-none text-left group focus:outline-none"
           title="Return to Home (EBB Lab)"
         >
-          <div className="h-10 w-10 rounded-sm bg-[#004b3a] group-hover:bg-[#003328] flex items-center justify-center font-serif italic text-white shadow-sm border border-[#8d734a]/30 transition">
+          <div className="h-10 w-10 rounded-sm bg-[#1b4372] group-hover:bg-[#102844] flex items-center justify-center font-serif italic text-white shadow-sm border border-[#8d734a]/30 transition">
             E
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-serif italic font-bold tracking-tight text-[#004b3a] group-hover:text-[#003328] block text-base sm:text-lg transition">
+              <span className="font-serif italic font-bold tracking-tight text-[#1b4372] group-hover:text-[#102844] block text-base sm:text-lg transition">
                 EBB Lab
               </span>
-              <span className="text-[9px] bg-[#004b3a]/10 text-[#004b3a] px-1.5 py-0.2 rounded font-mono font-bold tracking-wider uppercase">
+              <span className="text-[9px] bg-[#1b4372]/10 text-[#1b4372] px-1.5 py-0.2 rounded font-mono font-bold tracking-wider uppercase">
                 Home
               </span>
             </div>
@@ -317,18 +371,18 @@ export default function App() {
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-slate-700 hover:text-[#004b3a] hover:bg-white/80 rounded-sm border border-[#e5e5e0] transition text-xs font-bold font-sans shadow-2xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-slate-700 hover:text-[#1b4372] hover:bg-white/80 rounded-sm border border-[#e5e5e0] transition text-xs font-bold font-sans shadow-2xs"
             aria-label="Expand Navigation Menu"
             title="Expand Navigation Menu"
           >
             {isMobileMenuOpen ? (
               <>
-                <X className="w-4 h-4 text-[#004b3a]" />
+                <X className="w-4 h-4 text-[#1b4372]" />
                 <span className="hidden sm:inline">Close</span>
               </>
             ) : (
               <>
-                <Menu className="w-4 h-4 text-[#004b3a]" />
+                <Menu className="w-4 h-4 text-[#1b4372]" />
                 <span className="hidden sm:inline">Expand Menu</span>
               </>
             )}
@@ -351,7 +405,7 @@ export default function App() {
               <button 
                 onClick={() => { navigateTo("home"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-3 p-3 rounded-sm text-sm font-semibold transition ${
-                  currentPage === "home" ? "bg-[#004b3a] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
+                  currentPage === "home" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
                 }`}
               >
                 <Home className="w-4 h-4" />
@@ -361,7 +415,7 @@ export default function App() {
               <button 
                 onClick={() => { navigateTo("members", "directory"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-3 p-3 rounded-sm text-sm font-semibold transition ${
-                  currentPage === "members" ? "bg-[#004b3a] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
+                  currentPage === "members" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
                 }`}
               >
                 <Users className="w-4 h-4" />
@@ -371,7 +425,7 @@ export default function App() {
               <button 
                 onClick={() => { navigateTo("instruments"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-3 p-3 rounded-sm text-sm font-semibold transition ${
-                  currentPage === "instruments" ? "bg-[#004b3a] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
+                  currentPage === "instruments" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
                 }`}
               >
                 <Wrench className="w-4 h-4" />
@@ -381,7 +435,7 @@ export default function App() {
               <button 
                 onClick={() => { navigateTo("chemicals"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-3 p-3 rounded-sm text-sm font-semibold transition ${
-                  currentPage === "chemicals" ? "bg-[#004b3a] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
+                  currentPage === "chemicals" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
                 }`}
               >
                 <FlaskConical className="w-4 h-4" />
@@ -389,9 +443,19 @@ export default function App() {
               </button>
 
               <button 
+                onClick={() => { navigateTo("procurement"); setIsMobileMenuOpen(false); }}
+                className={`flex items-center gap-3 p-3 rounded-sm text-sm font-semibold transition ${
+                  currentPage === "procurement" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
+                }`}
+              >
+                <ShoppingCart className="w-4 h-4" />
+                <span>Procurement System (請購)</span>
+              </button>
+
+              <button 
                 onClick={() => { navigateTo("card-generator"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-3 p-3 rounded-sm text-sm font-semibold transition ${
-                  currentPage === "card-generator" ? "bg-[#004b3a] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
+                  currentPage === "card-generator" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
                 }`}
               >
                 <IdCard className="w-4 h-4" />
@@ -401,7 +465,7 @@ export default function App() {
               <button 
                 onClick={() => { navigateTo("schedule"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-3 p-3 rounded-sm text-sm font-semibold transition ${
-                  currentPage === "schedule" ? "bg-[#004b3a] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
+                  currentPage === "schedule" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
                 }`}
               >
                 <Calendar className="w-4 h-4" />
@@ -411,7 +475,7 @@ export default function App() {
               <button 
                 onClick={() => { navigateTo("archive"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-3 p-3 rounded-sm text-sm font-semibold transition ${
-                  currentPage === "archive" ? "bg-[#004b3a] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
+                  currentPage === "archive" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
                 }`}
               >
                 <Archive className="w-4 h-4" />
@@ -419,19 +483,26 @@ export default function App() {
               </button>
 
               <button 
-                onClick={() => { handleOpenStudio(); setIsMobileMenuOpen(false); }}
-                className={`flex items-center gap-3 p-3 rounded-sm text-sm font-semibold transition ${
-                  currentPage === "studio" ? "bg-[#004b3a] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
+                onClick={() => { handleOpenStudio("members"); setIsMobileMenuOpen(false); }}
+                className={`flex items-center justify-between p-3 rounded-sm text-sm font-semibold transition ${
+                  currentPage === "studio" && studioInitialTab !== "progress" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
                 }`}
               >
-                <Database className="w-4 h-4" />
-                <span>Lab Data Studio</span>
+                <div className="flex items-center gap-3">
+                  <Database className="w-4 h-4" />
+                  <span>Lab Data Studio</span>
+                </div>
+                {isAuthenticated ? (
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <Lock className="w-4 h-4 text-amber-600" />
+                )}
               </button>
 
               <button 
                 onClick={() => { navigateTo("contact"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-3 p-3 rounded-sm text-sm font-semibold transition ${
-                  currentPage === "contact" ? "bg-[#004b3a] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
+                  currentPage === "contact" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
                 }`}
               >
                 <MapPin className="w-4 h-4" />
@@ -453,47 +524,57 @@ export default function App() {
               <button 
                 onClick={() => navigateTo("home")}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-semibold transition-all ${
-                  currentPage === "home" ? "text-[#004b3a] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
+                  currentPage === "home" ? "text-[#1b4372] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
                 }`}
               >
-                <Home className="w-4 h-4 text-[#004b3a]" /> 
+                <Home className="w-4 h-4 text-[#1b4372]" /> 
                 <span>Home</span>
               </button>
               
               <button 
                 onClick={() => navigateTo("members", "directory")}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-semibold transition-all ${
-                  currentPage === "members" ? "text-[#004b3a] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
+                  currentPage === "members" ? "text-[#1b4372] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
                 }`}
               >
-                <Users className="w-4 h-4 text-[#004b3a]" /> 
+                <Users className="w-4 h-4 text-[#1b4372]" /> 
                 <span>Members & Topics</span>
               </button>
 
               <button 
                 onClick={() => navigateTo("instruments")}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-semibold transition-all ${
-                  currentPage === "instruments" ? "text-[#004b3a] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
+                  currentPage === "instruments" ? "text-[#1b4372] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
                 }`}
               >
-                <Wrench className="w-4 h-4 text-[#004b3a]" /> 
+                <Wrench className="w-4 h-4 text-[#1b4372]" /> 
                 <span>Instrument Booking</span>
               </button>
 
               <button 
                 onClick={() => navigateTo("chemicals")}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-semibold transition-all ${
-                  currentPage === "chemicals" ? "text-[#004b3a] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
+                  currentPage === "chemicals" ? "text-[#1b4372] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
                 }`}
               >
-                <FlaskConical className="w-4 h-4 text-[#004b3a]" /> 
+                <FlaskConical className="w-4 h-4 text-[#1b4372]" /> 
                 <span>Chemical Inventory</span>
+              </button>
+
+              <button 
+                onClick={() => navigateTo("procurement")}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-semibold transition-all ${
+                  currentPage === "procurement" ? "text-[#1b4372] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
+                }`}
+              >
+                <ShoppingCart className="w-4 h-4 text-[#1b4372]" /> 
+                <span>Procurement (請購)</span>
               </button>
 
               <button 
                 onClick={() => navigateTo("card-generator")}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-semibold transition-all ${
-                  currentPage === "card-generator" ? "text-[#004b3a] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
+                  currentPage === "card-generator" ? "text-[#1b4372] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
                 }`}
               >
                 <IdCard className="w-4 h-4 text-[#8d734a]" /> 
@@ -503,30 +584,30 @@ export default function App() {
               <button 
                 onClick={() => navigateTo("schedule")}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-semibold transition-all ${
-                  currentPage === "schedule" ? "text-[#004b3a] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
+                  currentPage === "schedule" ? "text-[#1b4372] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
                 }`}
               >
-                <Calendar className="w-4 h-4 text-[#004b3a]" /> 
+                <Calendar className="w-4 h-4 text-[#1b4372]" /> 
                 <span>Meeting Schedule</span>
               </button>
 
               <button 
                 onClick={() => navigateTo("archive")}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-semibold transition-all ${
-                  currentPage === "archive" ? "text-[#004b3a] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
+                  currentPage === "archive" ? "text-[#1b4372] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
                 }`}
               >
-                <Archive className="w-4 h-4 text-[#004b3a]" /> 
+                <Archive className="w-4 h-4 text-[#1b4372]" /> 
                 <span>Journal Archive</span>
               </button>
 
               <button 
-                onClick={handleOpenStudio}
+                onClick={() => handleOpenStudio()}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-semibold transition-all ${
-                  currentPage === "studio" ? "text-[#004b3a] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
+                  currentPage === "studio" ? "text-[#1b4372] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
                 }`}
               >
-                <Database className="w-4 h-4 text-[#004b3a]" /> 
+                <Database className="w-4 h-4 text-[#1b4372]" /> 
                 <span className="flex-1 text-left">Lab Data Studio</span>
                 {isAuthenticated ? (
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
@@ -538,10 +619,10 @@ export default function App() {
               <button 
                 onClick={() => navigateTo("contact")}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-semibold transition-all ${
-                  currentPage === "contact" ? "text-[#004b3a] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
+                  currentPage === "contact" ? "text-[#1b4372] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
                 }`}
               >
-                <MapPin className="w-4 h-4 text-[#004b3a]" /> 
+                <MapPin className="w-4 h-4 text-[#1b4372]" /> 
                 <span>Contact & Location</span>
               </button>
             </nav>
@@ -562,7 +643,7 @@ export default function App() {
         <button 
           onClick={() => navigateTo("members", "directory")}
           className={`flex flex-col items-center gap-0.5 p-1 rounded-sm transition-all ${
-            currentPage === "members" ? "text-[#004b3a] bg-[#f4f1ea] font-bold" : "text-slate-600"
+            currentPage === "members" ? "text-[#1b4372] bg-[#f4f1ea] font-bold" : "text-slate-600"
           }`}
         >
           <Users className="w-4 h-4" />
@@ -572,7 +653,7 @@ export default function App() {
         <button 
           onClick={() => navigateTo("instruments")}
           className={`flex flex-col items-center gap-0.5 p-1 rounded-sm transition-all ${
-            currentPage === "instruments" ? "text-[#004b3a] bg-[#f4f1ea] font-bold" : "text-slate-600"
+            currentPage === "instruments" ? "text-[#1b4372] bg-[#f4f1ea] font-bold" : "text-slate-600"
           }`}
         >
           <Wrench className="w-4 h-4" />
@@ -582,7 +663,7 @@ export default function App() {
         <button 
           onClick={() => navigateTo("chemicals")}
           className={`flex flex-col items-center gap-0.5 p-1 rounded-sm transition-all ${
-            currentPage === "chemicals" ? "text-[#004b3a] bg-[#f4f1ea] font-bold" : "text-slate-600"
+            currentPage === "chemicals" ? "text-[#1b4372] bg-[#f4f1ea] font-bold" : "text-slate-600"
           }`}
         >
           <FlaskConical className="w-4 h-4" />
@@ -592,7 +673,7 @@ export default function App() {
         <button 
           onClick={() => navigateTo("schedule")}
           className={`flex flex-col items-center gap-0.5 p-1 rounded-sm transition-all ${
-            currentPage === "schedule" ? "text-[#004b3a] bg-[#f4f1ea] font-bold" : "text-slate-600"
+            currentPage === "schedule" ? "text-[#1b4372] bg-[#f4f1ea] font-bold" : "text-slate-600"
           }`}
         >
           <Calendar className="w-4 h-4" />
@@ -603,7 +684,7 @@ export default function App() {
         <button 
           onClick={() => navigateTo("archive")}
           className={`flex flex-col items-center gap-0.5 p-1 rounded-sm transition-all ${
-            currentPage === "archive" ? "text-[#004b3a] bg-[#f4f1ea] font-bold" : "text-slate-600"
+            currentPage === "archive" ? "text-[#1b4372] bg-[#f4f1ea] font-bold" : "text-slate-600"
           }`}
         >
           <Archive className="w-4 h-4" />
@@ -612,7 +693,7 @@ export default function App() {
 
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="flex flex-col items-center gap-0.5 p-1 rounded-sm text-slate-600 hover:text-[#004b3a]"
+          className="flex flex-col items-center gap-0.5 p-1 rounded-sm text-slate-600 hover:text-[#1b4372]"
         >
           <Layers className="w-4 h-4" />
           <span className="text-[9px] font-bold">More</span>
@@ -627,17 +708,17 @@ export default function App() {
           <div className="space-y-16 animate-in fade-in duration-200">
             {/* Hero Banner */}
             <section className="relative min-h-[60vh] flex items-center justify-center px-6 lg:px-16 overflow-hidden border-b border-[#e5e5e0]">
-              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#004b3a]/5 rounded-full blur-[120px] pointer-events-none"></div>
+              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#1b4372]/5 rounded-full blur-[120px] pointer-events-none"></div>
               
               <div className="max-w-4xl text-center z-10 space-y-6 py-12">
                 <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#e5e5e0] bg-[#fdfdfc]/80 text-[10px] uppercase tracking-[0.15em] font-bold text-[#8d734a] shadow-xs backdrop-blur-xs">
-                  <Sparkles className="w-3.5 h-3.5 text-[#004b3a]" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#1b4372]" />
                   國立中山大學 · 環境生物技術與生物精煉實驗室
                 </span>
                 
                 <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif text-[#1a1a1a] tracking-tight">
                   Environmental Biotechnology &<br/>
-                  <span className="font-serif italic text-[#004b3a]">
+                  <span className="font-serif italic text-[#1b4372]">
                     Biorefinery Laboratory
                   </span>
                 </h1>
@@ -646,59 +727,68 @@ export default function App() {
                   Advancing sustainable solutions in green catalysis, biomass valorization, bio-based polyesters (PEF), circular bioeconomy, and VOC biological treatment.
                 </p>
 
-                {/* Launchpad Navigation Buttons (6 Balanced Buttons with only Schedule Highlighted) */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 max-w-3xl mx-auto gap-3 pt-4">
+                {/* Launchpad Navigation Buttons (Clean 7-Shortcut Grid with Procurement & Schedule Highlighted) */}
+                <div className="flex flex-wrap items-center justify-center gap-2.5 max-w-4xl mx-auto pt-4">
                   {/* 1. Members */}
                   <button 
                     onClick={() => navigateTo("members", "directory")}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group hover:border-[#1b4372]"
                   >
-                    <Users className="w-4 h-4 text-[#004b3a]" />
+                    <Users className="w-4 h-4 text-[#1b4372]" />
                     <span>Members</span>
                   </button>
                   
                   {/* 2. Instrument Booking */}
                   <button 
                     onClick={() => navigateTo("instruments")}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group hover:border-[#1b4372]"
                   >
-                    <Wrench className="w-4 h-4 text-[#004b3a]" />
-                    <span>Instrument Booking</span>
+                    <Wrench className="w-4 h-4 text-[#1b4372]" />
+                    <span>Instruments</span>
                   </button>
 
                   {/* 3. Chemical Inventory */}
                   <button 
                     onClick={() => navigateTo("chemicals")}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group hover:border-[#1b4372]"
                   >
-                    <FlaskConical className="w-4 h-4 text-[#004b3a]" />
-                    <span>Chemical Inventory</span>
+                    <FlaskConical className="w-4 h-4 text-[#1b4372]" />
+                    <span>Chemicals</span>
                   </button>
 
-                  {/* 4. Card Generator */}
+                  {/* 4. Procurement System (請購系統快捷按鈕) */}
                   <button 
-                    onClick={() => navigateTo("card-generator")}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group"
+                    onClick={() => navigateTo("procurement")}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] hover:border-[#1b4372] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group"
                   >
-                    <IdCard className="w-4 h-4 text-[#8d734a]" />
-                    <span>Card Generator</span>
+                    <ShoppingCart className="w-4 h-4 text-[#1b4372] group-hover:scale-110 transition-transform" />
+                    <span>請購系統 (Procurement)</span>
                   </button>
 
                   {/* 5. Schedule (ONLY this button is highlighted) */}
                   <button 
                     onClick={() => navigateTo("schedule")}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-[#004b3a] text-white border border-[#00382b] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-md hover:bg-[#003328] active:scale-95 transition-all group ring-2 ring-[#004b3a]/25"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1b4372] text-white border border-[#122e4f] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-md hover:bg-[#102844] active:scale-95 transition-all group ring-2 ring-[#1b4372]/25"
                   >
-                    <Calendar className="w-4 h-4 text-emerald-300 animate-pulse" />
+                    <Calendar className="w-4 h-4 text-blue-200 animate-pulse" />
                     <span>Schedule</span>
                   </button>
 
-                  {/* 6. Journal Club Archive */}
+                  {/* 6. Card Generator */}
+                  <button 
+                    onClick={() => navigateTo("card-generator")}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group hover:border-[#8d734a]"
+                  >
+                    <IdCard className="w-4 h-4 text-[#8d734a]" />
+                    <span>Card Generator</span>
+                  </button>
+
+                  {/* 7. Journal Club Archive */}
                   <button 
                     onClick={() => navigateTo("archive")}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group hover:border-[#1b4372]"
                   >
-                    <Archive className="w-4 h-4 text-[#004b3a]" />
+                    <Archive className="w-4 h-4 text-[#1b4372]" />
                     <span>Journal Archive</span>
                   </button>
                 </div>
@@ -716,24 +806,24 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Portal 1: Instrument Reservation */}
                 <div 
                   onClick={() => navigateTo("instruments")}
-                  className="bg-[#fdfdfc] border border-[#e5e5e0] hover:border-[#004b3a] rounded-sm p-6 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+                  className="bg-[#fdfdfc] border border-[#e5e5e0] hover:border-[#1b4372] rounded-sm p-6 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
                 >
                   <div className="space-y-3">
-                    <div className="w-10 h-10 rounded-sm bg-[#004b3a] text-white flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-sm bg-[#1b4372] text-white flex items-center justify-center">
                       <Wrench className="w-5 h-5" />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900 font-serif group-hover:text-[#004b3a] transition">
+                    <h3 className="text-lg font-bold text-slate-900 font-serif group-hover:text-[#1b4372] transition">
                       Instrument Reservation System
                     </h3>
                     <p className="text-xs text-slate-600 leading-relaxed">
                       Instant online booking for high-precision analytical equipment, spectrophotometers, bioreactors, and ovens.
                     </p>
                   </div>
-                  <div className="pt-4 mt-4 border-t border-[#e5e5e0] flex items-center text-xs font-bold text-[#004b3a] gap-1">
+                  <div className="pt-4 mt-4 border-t border-[#e5e5e0] flex items-center text-xs font-bold text-[#1b4372] gap-1">
                     <span>Access Booking System</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                   </div>
@@ -742,13 +832,13 @@ export default function App() {
                 {/* Portal 2: Chemical Inventory */}
                 <div 
                   onClick={() => navigateTo("chemicals")}
-                  className="bg-[#fdfdfc] border border-[#e5e5e0] hover:border-[#004b3a] rounded-sm p-6 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+                  className="bg-[#fdfdfc] border border-[#e5e5e0] hover:border-[#1b4372] rounded-sm p-6 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="w-10 h-10 rounded-sm bg-[#8d734a] text-white flex items-center justify-center">
                       <FlaskConical className="w-5 h-5" />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900 font-serif group-hover:text-[#004b3a] transition">
+                    <h3 className="text-lg font-bold text-slate-900 font-serif group-hover:text-[#1b4372] transition">
                       Chemical & Reagent Inventory
                     </h3>
                     <p className="text-xs text-slate-600 leading-relaxed">
@@ -761,23 +851,45 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Portal: Lab Procurement System */}
+                <div 
+                  onClick={() => navigateTo("procurement")}
+                  className="bg-[#fdfdfc] border border-[#e5e5e0] hover:border-[#1b4372] rounded-sm p-6 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div className="w-10 h-10 rounded-sm bg-[#1b4372] text-white flex items-center justify-center shadow-xs">
+                      <ShoppingCart className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 font-serif group-hover:text-[#1b4372] transition">
+                      Procurement System (請購系統)
+                    </h3>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Chemicals, consumables & equipment requisition with multi-vendor quotes, two-stage approval, and bilingual export.
+                    </p>
+                  </div>
+                  <div className="pt-4 mt-4 border-t border-[#e5e5e0] flex items-center text-xs font-bold text-[#1b4372] gap-1">
+                    <span>Submit & Track Requisitions</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+
                 {/* Portal 3: Research Topics */}
                 <div 
                   onClick={() => navigateTo("members", "topics")}
-                  className="bg-[#fdfdfc] border border-[#e5e5e0] hover:border-[#004b3a] rounded-sm p-6 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+                  className="bg-[#fdfdfc] border border-[#e5e5e0] hover:border-[#1b4372] rounded-sm p-6 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
                 >
                   <div className="space-y-3">
-                    <div className="w-10 h-10 rounded-sm bg-[#004b3a]/15 text-[#004b3a] border border-[#004b3a]/30 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-sm bg-[#1b4372]/15 text-[#1b4372] border border-[#1b4372]/30 flex items-center justify-center">
                       <Network className="w-5 h-5" />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900 font-serif group-hover:text-[#004b3a] transition">
+                    <h3 className="text-lg font-bold text-slate-900 font-serif group-hover:text-[#1b4372] transition">
                       Research Pillars & Topics
                     </h3>
                     <p className="text-xs text-slate-600 leading-relaxed">
                       Explore our active research clusters: coastal restoration materials, PEF biopolyesters, VOC biofilters, and green composites.
                     </p>
                   </div>
-                  <div className="pt-4 mt-4 border-t border-[#e5e5e0] flex items-center text-xs font-bold text-[#004b3a] gap-1">
+                  <div className="pt-4 mt-4 border-t border-[#e5e5e0] flex items-center text-xs font-bold text-[#1b4372] gap-1">
                     <span>View Research Topics</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                   </div>
@@ -786,13 +898,13 @@ export default function App() {
                 {/* Portal 4: Journal Club Archive */}
                 <div 
                   onClick={() => navigateTo("archive")}
-                  className="bg-[#fdfdfc] border border-[#e5e5e0] hover:border-[#004b3a] rounded-sm p-6 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+                  className="bg-[#fdfdfc] border border-[#e5e5e0] hover:border-[#1b4372] rounded-sm p-6 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="w-10 h-10 rounded-sm bg-[#8d734a]/15 text-[#8d734a] border border-[#8d734a]/30 flex items-center justify-center">
                       <Archive className="w-5 h-5" />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900 font-serif group-hover:text-[#004b3a] transition">
+                    <h3 className="text-lg font-bold text-slate-900 font-serif group-hover:text-[#1b4372] transition">
                       Journal Club Archive
                     </h3>
                     <p className="text-xs text-slate-600 leading-relaxed">
@@ -830,7 +942,7 @@ export default function App() {
                   onClick={() => setMembersSubTab("directory")}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-sm transition ${
                     membersSubTab === "directory"
-                      ? "bg-[#004b3a] text-white shadow-xs"
+                      ? "bg-[#1b4372] text-white shadow-xs"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -842,7 +954,7 @@ export default function App() {
                   onClick={() => setMembersSubTab("topics")}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-sm transition ${
                     membersSubTab === "topics"
-                      ? "bg-[#004b3a] text-white shadow-xs"
+                      ? "bg-[#1b4372] text-white shadow-xs"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -858,13 +970,13 @@ export default function App() {
                 {/* Search & Role Filter Toolbar */}
                 <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
                   <div className="relative flex-1 w-full">
-                    <Search className="w-4 h-4 text-[#004b3a] absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-4 h-4 text-[#1b4372] absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search member name, role, research topic, keywords..."
-                      className="w-full pl-9 pr-4 py-2.5 bg-white border border-[#e5e5e0] rounded-sm text-xs md:text-sm font-sans focus:outline-none focus:border-[#004b3a] focus:ring-1 focus:ring-[#004b3a]"
+                      className="w-full pl-9 pr-4 py-2.5 bg-white border border-[#e5e5e0] rounded-sm text-xs md:text-sm font-sans focus:outline-none focus:border-[#1b4372] focus:ring-1 focus:ring-[#1b4372]"
                     />
                     {searchQuery && (
                       <button
@@ -884,7 +996,7 @@ export default function App() {
                       onClick={() => setMemberRoleFilter("ALL")}
                       className={`px-3 py-1.5 rounded-sm text-xs font-bold transition ${
                         memberRoleFilter === "ALL"
-                          ? "bg-[#004b3a] text-white shadow-xs"
+                          ? "bg-[#1b4372] text-white shadow-xs"
                           : "bg-white text-slate-600 border border-[#e5e5e0] hover:bg-[#f8f8f5]"
                       }`}
                     >
@@ -897,7 +1009,7 @@ export default function App() {
                         onClick={() => setMemberRoleFilter(role)}
                         className={`px-3 py-1.5 rounded-sm text-xs font-bold transition ${
                           memberRoleFilter === role
-                            ? "bg-[#004b3a] text-white shadow-xs"
+                            ? "bg-[#1b4372] text-white shadow-xs"
                             : "bg-white text-slate-600 border border-[#e5e5e0] hover:bg-[#f8f8f5]"
                         }`}
                       >
@@ -913,7 +1025,7 @@ export default function App() {
                     filteredMembers.map((m) => (
                       <div 
                         key={m.id} 
-                        className="border border-[#e5e5e0] bg-[#fdfdfc] hover:border-[#004b3a] hover:shadow-md rounded-sm p-6 flex flex-col justify-between transition-all duration-300 group"
+                        className="border border-[#e5e5e0] bg-[#fdfdfc] hover:border-[#1b4372] hover:shadow-md rounded-sm p-6 flex flex-col justify-between transition-all duration-300 group"
                       >
                         <div className="space-y-4">
                           <div className="flex items-start justify-between gap-2">
@@ -930,14 +1042,14 @@ export default function App() {
                                   : m.role}
                               </p>
                             </div>
-                            <span className="p-2 rounded-sm bg-[#f8f8f5] border border-[#e5e5e0] text-[#004b3a] shrink-0 group-hover:bg-[#fafafa] transition-colors">
+                            <span className="p-2 rounded-sm bg-[#f8f8f5] border border-[#e5e5e0] text-[#1b4372] shrink-0 group-hover:bg-[#fafafa] transition-colors">
                               <BookOpen className="w-4 h-4" />
                             </span>
                           </div>
 
                           <div className="bg-[#f8f8f5] border border-[#e5e5e0]/60 rounded-sm p-4 space-y-3">
                             <div>
-                              <span className="text-[#004b3a] font-bold text-[9px] tracking-widest uppercase block mb-0.5">
+                              <span className="text-[#1b4372] font-bold text-[9px] tracking-widest uppercase block mb-0.5">
                                 Research Topic
                               </span>
                               <span className="block text-[#1a1a1a] font-bold text-xs leading-normal font-serif">
@@ -975,7 +1087,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => handleGenerateCardForMember(m)}
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#8d734a] hover:text-[#004b3a] transition"
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#8d734a] hover:text-[#1b4372] transition"
                           >
                             <IdCard className="w-3.5 h-3.5" />
                             <span>Generate Card</span>
@@ -995,14 +1107,14 @@ export default function App() {
               /* NESTED VIEW B: Topic Bento Network */
               <div className="space-y-8">
                 <div className="relative w-full rounded-sm border border-[#e5e5e0] bg-[#fdfdfc] p-6 md:p-10 overflow-hidden shadow-xs">
-                  <div className="absolute w-72 h-72 bg-[#004b3a]/5 rounded-full blur-3xl -top-10 -left-10 pointer-events-none"></div>
+                  <div className="absolute w-72 h-72 bg-[#1b4372]/5 rounded-full blur-3xl -top-10 -left-10 pointer-events-none"></div>
                   <div className="absolute w-72 h-72 bg-[#8d734a]/5 rounded-full blur-3xl -bottom-10 -right-10 pointer-events-none"></div>
 
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-center relative z-10">
                     {/* Left Columns: Topics 1-3 */}
                     <div className="md:col-span-2 space-y-6 flex flex-col items-center w-full">
                       {/* Topic A */}
-                      <div className="group relative bg-[#f8f8f5] border border-[#e5e5e0] hover:border-[#004b3a] p-4 rounded-sm shadow-xs hover:shadow-md transition-all duration-300 w-full flex gap-4 items-start">
+                      <div className="group relative bg-[#f8f8f5] border border-[#e5e5e0] hover:border-[#1b4372] p-4 rounded-sm shadow-xs hover:shadow-md transition-all duration-300 w-full flex gap-4 items-start">
                         <div className="w-24 sm:w-28 aspect-[4/3] rounded-sm bg-white border border-[#e5e5e0] overflow-hidden shrink-0 shadow-xs mt-1">
                           <img 
                             src="https://pub-d24fef14c0074c2db6319d6319645f22.r2.dev/0701/07015.webp" 
@@ -1018,14 +1130,14 @@ export default function App() {
                             利用農業剩餘物與高鈣貝殼廢棄物，開發零水泥綠色低碳生態海岸建材。
                           </p>
                           <div className="pt-2 flex flex-wrap gap-1">
-                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#004b3a] px-2 py-0.5 rounded-sm font-medium">Kevin</span>
-                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#004b3a] px-2 py-0.5 rounded-sm font-medium">Peter</span>
+                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#1b4372] px-2 py-0.5 rounded-sm font-medium">Kevin</span>
+                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#1b4372] px-2 py-0.5 rounded-sm font-medium">Peter</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Topic B */}
-                      <div className="group relative bg-[#f8f8f5] border border-[#e5e5e0] hover:border-[#004b3a] p-4 rounded-sm shadow-xs hover:shadow-md transition-all duration-300 w-full flex gap-4 items-start">
+                      <div className="group relative bg-[#f8f8f5] border border-[#e5e5e0] hover:border-[#1b4372] p-4 rounded-sm shadow-xs hover:shadow-md transition-all duration-300 w-full flex gap-4 items-start">
                         <div className="w-24 sm:w-28 aspect-[4/3] rounded-sm bg-white border border-[#e5e5e0] overflow-hidden shrink-0 shadow-xs mt-1">
                           <img 
                             src="https://pub-d24fef14c0074c2db6319d6319645f22.r2.dev/0701/07014.webp" 
@@ -1041,14 +1153,14 @@ export default function App() {
                             專注於次世代高阻隔生物基聚酯（PEF）的合成製程優化與包裝應用。
                           </p>
                           <div className="pt-2 flex flex-wrap gap-1">
-                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#004b3a] px-2 py-0.5 rounded-sm font-medium">Kalin</span>
-                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#004b3a] px-2 py-0.5 rounded-sm font-medium">Fanny</span>
+                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#1b4372] px-2 py-0.5 rounded-sm font-medium">Kalin</span>
+                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#1b4372] px-2 py-0.5 rounded-sm font-medium">Fanny</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Topic C */}
-                      <div className="group relative bg-[#f8f8f5] border border-[#e5e5e0] hover:border-[#004b3a] p-4 rounded-sm shadow-xs hover:shadow-md transition-all duration-300 w-full flex gap-4 items-start">
+                      <div className="group relative bg-[#f8f8f5] border border-[#e5e5e0] hover:border-[#1b4372] p-4 rounded-sm shadow-xs hover:shadow-md transition-all duration-300 w-full flex gap-4 items-start">
                         <div className="w-24 sm:w-28 aspect-[4/3] rounded-sm bg-white border border-[#e5e5e0] overflow-hidden shrink-0 shadow-xs mt-1">
                           <img 
                             src="https://pub-d24fef14c0074c2db6319d6319645f22.r2.dev/0701/07016.webp" 
@@ -1064,7 +1176,7 @@ export default function App() {
                             研發先進低能耗綠能電漿技術，達成高效溫室氣體降解與綠色碳排轉化。
                           </p>
                           <div className="pt-2 flex flex-wrap gap-1">
-                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#004b3a] px-2 py-0.5 rounded-sm font-medium">Fanny</span>
+                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#1b4372] px-2 py-0.5 rounded-sm font-medium">Fanny</span>
                           </div>
                         </div>
                       </div>
@@ -1072,7 +1184,7 @@ export default function App() {
 
                     {/* Central Emblem Core Node */}
                     <div className="md:col-span-1 flex flex-col justify-center items-center py-6 md:py-0">
-                      <div className="w-36 h-36 rounded-sm bg-[#004b3a] text-white flex flex-col items-center justify-center text-center p-4 shadow-md border-2 border-[#8d734a]/30 ring-4 ring-[#f4f1ea] relative">
+                      <div className="w-36 h-36 rounded-sm bg-[#1b4372] text-white flex flex-col items-center justify-center text-center p-4 shadow-md border-2 border-[#8d734a]/30 ring-4 ring-[#f4f1ea] relative">
                         <Leaf className="w-6 h-6 mb-1 text-[#8d734a] animate-bounce" />
                         <span className="font-bold text-sm tracking-tight font-serif italic">EBB Lab</span>
                         <span className="text-[8px] uppercase tracking-widest font-mono opacity-80 mt-1">
@@ -1084,7 +1196,7 @@ export default function App() {
                     {/* Right Columns: Topics 4-6 */}
                     <div className="md:col-span-2 space-y-6 flex flex-col items-center w-full">
                       {/* Topic D */}
-                      <div className="group relative bg-[#f8f8f5] border border-[#e5e5e0] hover:border-[#004b3a] p-4 rounded-sm shadow-xs hover:shadow-md transition-all duration-300 w-full flex gap-4 items-start md:flex-row-reverse md:text-right">
+                      <div className="group relative bg-[#f8f8f5] border border-[#e5e5e0] hover:border-[#1b4372] p-4 rounded-sm shadow-xs hover:shadow-md transition-all duration-300 w-full flex gap-4 items-start md:flex-row-reverse md:text-right">
                         <div className="w-24 sm:w-28 aspect-[4/3] rounded-sm bg-white border border-[#e5e5e0] overflow-hidden shrink-0 shadow-xs mt-1">
                           <img 
                             src="https://pub-d24fef14c0074c2db6319d6319645f22.r2.dev/0701/07012.webp" 
@@ -1100,13 +1212,13 @@ export default function App() {
                             首創可完全降解之液態生質覆蓋地膜，消除傳統塑膠膜微塑膠污染。
                           </p>
                           <div className="pt-2 flex flex-wrap gap-1 md:justify-end">
-                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#004b3a] px-2 py-0.5 rounded-sm font-medium">Fanny</span>
+                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#1b4372] px-2 py-0.5 rounded-sm font-medium">Fanny</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Topic E */}
-                      <div className="group relative bg-[#f8f8f5] border border-[#e5e5e0] hover:border-[#004b3a] p-4 rounded-sm shadow-xs hover:shadow-md transition-all duration-300 w-full flex gap-4 items-start md:flex-row-reverse md:text-right">
+                      <div className="group relative bg-[#f8f8f5] border border-[#e5e5e0] hover:border-[#1b4372] p-4 rounded-sm shadow-xs hover:shadow-md transition-all duration-300 w-full flex gap-4 items-start md:flex-row-reverse md:text-right">
                         <div className="w-24 sm:w-28 aspect-[4/3] rounded-sm bg-white border border-[#e5e5e0] overflow-hidden shrink-0 shadow-xs mt-1">
                           <img 
                             src="https://pub-d24fef14c0074c2db6319d6319645f22.r2.dev/0701/07011.webp" 
@@ -1122,15 +1234,15 @@ export default function App() {
                             研發快速木質/竹材高溫液化技術，開發高強度綠色種子生質建材。
                           </p>
                           <div className="pt-2 flex flex-wrap gap-1 md:justify-end">
-                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#004b3a] px-2 py-0.5 rounded-sm font-medium">Tina</span>
-                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#004b3a] px-2 py-0.5 rounded-sm font-medium">Martin</span>
-                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#004b3a] px-2 py-0.5 rounded-sm font-medium">Nina</span>
+                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#1b4372] px-2 py-0.5 rounded-sm font-medium">Tina</span>
+                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#1b4372] px-2 py-0.5 rounded-sm font-medium">Martin</span>
+                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#1b4372] px-2 py-0.5 rounded-sm font-medium">Nina</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Topic F */}
-                      <div className="group relative bg-[#f8f8f5] border border-[#e5e5e0] hover:border-[#004b3a] p-4 rounded-sm shadow-xs hover:shadow-md transition-all duration-300 w-full flex gap-4 items-start md:flex-row-reverse md:text-right">
+                      <div className="group relative bg-[#f8f8f5] border border-[#e5e5e0] hover:border-[#1b4372] p-4 rounded-sm shadow-xs hover:shadow-md transition-all duration-300 w-full flex gap-4 items-start md:flex-row-reverse md:text-right">
                         <div className="w-24 sm:w-28 aspect-[4/3] rounded-sm bg-white border border-[#e5e5e0] overflow-hidden shrink-0 shadow-xs mt-1">
                           <img 
                             src="https://pub-d24fef14c0074c2db6319d6319645f22.r2.dev/0701/07013.webp" 
@@ -1146,8 +1258,8 @@ export default function App() {
                             建置高效生物滌慮塔技術，輔以強效微生物降解揮發性有機物與養豬場臭氣。
                           </p>
                           <div className="pt-2 flex flex-wrap gap-1 md:justify-end">
-                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#004b3a] px-2 py-0.5 rounded-sm font-medium">Chris</span>
-                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#004b3a] px-2 py-0.5 rounded-sm font-medium">Eko</span>
+                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#1b4372] px-2 py-0.5 rounded-sm font-medium">Chris</span>
+                            <span className="text-[9px] bg-white border border-[#e5e5e0] text-[#1b4372] px-2 py-0.5 rounded-sm font-medium">Eko</span>
                           </div>
                         </div>
                       </div>
@@ -1170,6 +1282,13 @@ export default function App() {
         {currentPage === "chemicals" && (
           <div className="py-12 px-6 lg:px-16 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
             <ChemicalInventory onBackToHome={() => navigateTo("home")} />
+          </div>
+        )}
+
+        {/* ================= PAGE: PROCUREMENT SYSTEM ================= */}
+        {currentPage === "procurement" && (
+          <div className="py-12 px-6 lg:px-16 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
+            <ProcurementSystem />
           </div>
         )}
 
@@ -1208,7 +1327,7 @@ export default function App() {
                     onClick={() => setCalendarView("week")}
                     className={`px-3.5 py-1.5 rounded-sm transition-all ${
                       calendarView === "week" 
-                        ? "bg-[#004b3a] text-white shadow-xs" 
+                        ? "bg-[#1b4372] text-white shadow-xs" 
                         : "text-slate-700 hover:bg-[#fafafa]"
                     }`}
                   >
@@ -1218,7 +1337,7 @@ export default function App() {
                     onClick={() => setCalendarView("month")}
                     className={`px-3.5 py-1.5 rounded-sm transition-all ${
                       calendarView === "month" 
-                        ? "bg-[#004b3a] text-white shadow-xs" 
+                        ? "bg-[#1b4372] text-white shadow-xs" 
                         : "text-slate-700 hover:bg-[#fafafa]"
                     }`}
                   >
@@ -1228,7 +1347,7 @@ export default function App() {
                     onClick={() => setCalendarView("list")}
                     className={`px-3.5 py-1.5 rounded-sm transition-all ${
                       calendarView === "list" 
-                        ? "bg-[#004b3a] text-white shadow-xs" 
+                        ? "bg-[#1b4372] text-white shadow-xs" 
                         : "text-slate-700 hover:bg-[#fafafa]"
                     }`}
                   >
@@ -1258,7 +1377,7 @@ export default function App() {
                     <span className="text-[#555]">Progress Report</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#004b3a] block"></span>
+                    <span className="w-3 h-3 rounded-full bg-[#1b4372] block"></span>
                     <span className="text-[#555]">Journal Club</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1306,23 +1425,23 @@ export default function App() {
                   href="http://140.117.64.13:5000"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#004b3a] hover:bg-[#00382b] text-white rounded-sm text-xs font-bold font-sans shadow-xs transition-all active:scale-95 group shrink-0"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold font-sans shadow-xs transition-all active:scale-95 group shrink-0"
                   title="開啟組內 NAS 網盤 (http://140.117.64.13:5000)"
                 >
-                  <HardDrive className="w-4 h-4 text-emerald-300 group-hover:scale-110 transition-transform" />
+                  <HardDrive className="w-4 h-4 text-blue-200 group-hover:scale-110 transition-transform" />
                   <span>組內 NAS 網盤</span>
                   <ExternalLink className="w-3.5 h-3.5 text-white/80 group-hover:text-white" />
                 </a>
 
                 {/* Search Bar */}
                 <div className="relative w-full sm:w-64">
-                <Search className="w-4 h-4 text-[#004b3a] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-[#1b4372] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filter papers or speaker..."
-                  className="w-full pl-9 pr-4 py-2 bg-white border border-[#e5e5e0] rounded-sm text-xs font-sans focus:outline-none focus:border-[#004b3a]"
+                  className="w-full pl-9 pr-4 py-2 bg-white border border-[#e5e5e0] rounded-sm text-xs font-sans focus:outline-none focus:border-[#1b4372]"
                 />
                 </div>
               </div>
@@ -1344,13 +1463,13 @@ export default function App() {
                       >
                         <div className="flex items-center gap-2 text-sm font-bold text-[#1a1a1a] font-serif">
                           <ChevronRight 
-                            className={`w-4 h-4 text-[#004b3a] transition-transform ${
+                            className={`w-4 h-4 text-[#1b4372] transition-transform ${
                               !isCollapsed ? "rotate-90" : ""
                             }`} 
                           />
                           <span>{groupName}</span>
                         </div>
-                        <span className="text-[10px] text-[#004b3a] font-bold font-mono bg-white px-2.5 py-1 rounded-sm border border-[#e5e5e0]">
+                        <span className="text-[10px] text-[#1b4372] font-bold font-mono bg-white px-2.5 py-1 rounded-sm border border-[#e5e5e0]">
                           {groupMeetings.length} Papers
                         </span>
                       </button>
@@ -1363,7 +1482,7 @@ export default function App() {
                               className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-[#f8f8f5]/40 rounded-sm px-2 transition-colors"
                             >
                               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 flex-1 min-w-0">
-                                <span className="text-[10px] font-bold font-mono text-[#004b3a] bg-[#f8f8f5] px-2 py-0.5 rounded-sm border border-[#e5e5e0] self-start sm:self-auto">
+                                <span className="text-[10px] font-bold font-mono text-[#1b4372] bg-[#f8f8f5] px-2 py-0.5 rounded-sm border border-[#e5e5e0] self-start sm:self-auto">
                                   {m.date}
                                 </span>
                                 <span className="text-[#1a1a1a] font-serif font-medium break-words leading-normal text-sm">
@@ -1379,13 +1498,13 @@ export default function App() {
                                       setSearchQuery(m.speaker);
                                       navigateTo("members", "directory");
                                     }}
-                                    className="text-[#004b3a] hover:underline font-bold"
+                                    className="text-[#1b4372] hover:underline font-bold"
                                   >
                                     {m.speaker}
                                   </button>
                                 </span>
                                 <span className="text-slate-300 md:inline hidden">·</span>
-                                <span className="text-[10px] text-[#004b3a] bg-[#f8f8f5] border border-[#e5e5e0] px-2 py-0.5 rounded-sm font-mono font-bold">
+                                <span className="text-[10px] text-[#1b4372] bg-[#f8f8f5] border border-[#e5e5e0] px-2 py-0.5 rounded-sm font-mono font-bold">
                                   {m.status_label}
                                 </span>
                               </div>
@@ -1432,6 +1551,7 @@ export default function App() {
 
             {isAuthenticated ? (
               <LabDataGenerator
+                initialTab={studioInitialTab}
                 initialMembers={activeMembers}
                 initialMeetings={activeMeetings}
                 onApplyData={(updatedMembers, updatedMeetings) => {
@@ -1468,7 +1588,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="px-5 py-2.5 bg-[#004b3a] hover:bg-[#003328] text-white rounded-sm text-xs font-bold uppercase tracking-wider transition"
+                  className="px-5 py-2.5 bg-[#1b4372] hover:bg-[#102844] text-white rounded-sm text-xs font-bold uppercase tracking-wider transition"
                 >
                   Unlock Lab Data Studio
                 </button>
@@ -1503,7 +1623,7 @@ export default function App() {
 
                 <div className="space-y-4 text-sm text-[#555] font-sans leading-relaxed">
                   <div className="flex items-start gap-3 bg-white p-4 rounded-sm border border-[#e5e5e0]">
-                    <MapPin className="w-5 h-5 text-[#004b3a] shrink-0 mt-0.5" />
+                    <MapPin className="w-5 h-5 text-[#1b4372] shrink-0 mt-0.5" />
                     <div>
                       <span className="block text-[#1a1a1a] font-bold">Lab Address:</span>
                       <span className="text-xs text-[#666] block mt-0.5 italic">
@@ -1513,10 +1633,10 @@ export default function App() {
                   </div>
 
                   <div className="flex items-start gap-3 bg-white p-4 rounded-sm border border-[#e5e5e0]">
-                    <Mail className="w-5 h-5 text-[#004b3a] shrink-0 mt-0.5" />
+                    <Mail className="w-5 h-5 text-[#1b4372] shrink-0 mt-0.5" />
                     <div>
                       <span className="block text-[#1a1a1a] font-bold">Email:</span>
-                      <a href="mailto:ebblab115@gmail.com" className="text-xs text-[#004b3a] font-mono hover:underline block mt-0.5">
+                      <a href="mailto:ebblab115@gmail.com" className="text-xs text-[#1b4372] font-mono hover:underline block mt-0.5">
                         ebblab115@gmail.com
                       </a>
                     </div>
@@ -1540,7 +1660,7 @@ export default function App() {
             <footer className="pt-8 border-t border-[#e5e5e0] flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-[#888] font-mono">
               <p>Copyright © 2026 EBB Lab. All Rights Reserved.</p>
               <p className="flex items-center gap-1">
-                <Code className="w-3.5 h-3.5 text-[#004b3a]" />
+                <Code className="w-3.5 h-3.5 text-[#1b4372]" />
                 <span>Environmental Biotechnology & Biorefinery</span>
               </p>
             </footer>
