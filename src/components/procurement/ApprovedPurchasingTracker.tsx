@@ -1112,7 +1112,7 @@ export default function ApprovedPurchasingTracker({
                   value={editNote}
                   onChange={(e) => setEditNote(e.target.value)}
                   rows={2}
-                  placeholder="例：淘寶順豐單號 SF123456789，預計週五前抵達實驗室..."
+                  placeholder="例：運單號：xxx，預計週五前抵達實驗室..."
                   className="w-full bg-white border border-slate-300 rounded p-2 text-xs focus:outline-none focus:border-[#1b4372]"
                 />
               </div>
