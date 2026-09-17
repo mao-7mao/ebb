@@ -156,6 +156,9 @@ export default function ProcurementSystem() {
     if (EXTERNAL_LINKS.procurementWebhookUrl && EXTERNAL_LINKS.procurementWebhookUrl.trim()) {
       return EXTERNAL_LINKS.procurementWebhookUrl.trim();
     }
+    if (EXTERNAL_LINKS.procurementSheetUrl && (EXTERNAL_LINKS.procurementSheetUrl.includes("script.google.com") || EXTERNAL_LINKS.procurementSheetUrl.includes("/exec"))) {
+      return EXTERNAL_LINKS.procurementSheetUrl.trim();
+    }
     const envUrl = typeof import.meta !== "undefined" ? (import.meta as any).env?.VITE_PROCUREMENT_GAS_WEBHOOK_URL : "";
     if (envUrl && typeof envUrl === "string" && envUrl.trim()) {
       return envUrl.trim();

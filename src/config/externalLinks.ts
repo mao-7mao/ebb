@@ -23,7 +23,7 @@ export const EXTERNAL_LINKS = {
   // 【請在此貼入】請購系統 Google Apps Script Webhook 網址 (部署為網頁應用程式後的 URL，以 /exec 結尾)
   // 範例: "https://script.google.com/macros/s/AKfycbx.../exec"
   // ==========================================================================
-  procurementWebhookUrl: ((typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_PROCUREMENT_GAS_WEBHOOK_URL) as string) || "",
+  procurementWebhookUrl: ((typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_PROCUREMENT_GAS_WEBHOOK_URL) as string) || "https://script.google.com/macros/s/AKfycbxGhaQFFh8J-fK3CA37gkAZPlrAdkHX53XQzjAHkkoXj9jCFtInROtqq4DvwuA-jRg5/exec",
 
   // 請購系統對應的 Google 試算表或 Google 表單網址 (供管理備查)
   procurementSheetUrl: "https://script.google.com/macros/s/AKfycbxGhaQFFh8J-fK3CA37gkAZPlrAdkHX53XQzjAHkkoXj9jCFtInROtqq4DvwuA-jRg5/exec",
@@ -33,7 +33,7 @@ export const EXTERNAL_LINKS = {
   // 【請在此貼入】進度報告 Google Apps Script Webhook 網址 (部署為網頁應用程式後的 URL，以 /exec 結尾)
   // 範例: "https://script.google.com/macros/s/AKfycby.../exec"
   // ==========================================================================
-  progressReportWebhookUrl: ((typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_PROGRESS_GAS_WEBHOOK_URL) as string) || "",
+  progressReportWebhookUrl: ((typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_PROGRESS_GAS_WEBHOOK_URL) as string) || "https://script.google.com/macros/s/AKfycbyQQqXMNJilRNxQjpmewgIZ3ENpHCRflRqFMyK5J2Q1L3aNrRY6USUDWkF4TPmVyFZo/exec",
 
   // 進度報告對應的 Google 試算表或 Google 表單網址 (供管理備查)
   progressReportSheetUrl: "https://script.google.com/macros/s/AKfycbyQQqXMNJilRNxQjpmewgIZ3ENpHCRflRqFMyK5J2Q1L3aNrRY6USUDWkF4TPmVyFZo/exec",

@@ -25,12 +25,52 @@ export interface GoogleSyncFetchResult {
 }
 
 /**
+ * 格式化與解析 Google Apps Script 回傳之日期字串 (包含 Date 物件轉字串、時區偏移防呆)
+ * 例如 "Mon Sep 21 2026 00:00:00 GMT+0800" -> "2026-09-21"
+ */
+export function parseGasDate(rawDate: any): string {
+  if (!rawDate) return new Date().toISOString().split("T")[0];
+  let str = String(rawDate).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return str;
+  }
+  
+  // 匹配常見的 Date.toString() 格式，例如: "Mon Sep 21 2026 00:00:00"
+  const monthMap: Record<string, string> = {
+    Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
+    Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12"
+  };
+  const match = str.match(/(?:[A-Za-z]{3}\s+)?([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/);
+  if (match) {
+    const m = monthMap[match[1]];
+    const d = match[2].padStart(2, "0");
+    const y = match[3];
+    if (m && y) return `${y}-${m}-${d}`;
+  }
+
+  // 嘗試原生解析
+  const dateObj = new Date(str);
+  if (!isNaN(dateObj.getTime())) {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const d = String(dateObj.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  return str;
+}
+
+/**
  * 取得儲存的 Google Apps Script Webhook 網址 (優先讀取後端設定檔)
  */
 export function getSavedMemberWebhookUrl(): string {
   // 1. 優先由後端配置檔讀取 (src/config/externalLinks.ts)
   if (EXTERNAL_LINKS.progressReportWebhookUrl && EXTERNAL_LINKS.progressReportWebhookUrl.trim()) {
     return EXTERNAL_LINKS.progressReportWebhookUrl.trim();
+  }
+  // 若使用者填入在 progressReportSheetUrl 中 (包含 script.google.com 或 /exec)
+  if (EXTERNAL_LINKS.progressReportSheetUrl && (EXTERNAL_LINKS.progressReportSheetUrl.includes("script.google.com") || EXTERNAL_LINKS.progressReportSheetUrl.includes("/exec"))) {
+    return EXTERNAL_LINKS.progressReportSheetUrl.trim();
   }
   // 2. 次之由環境變數讀取
   const envUrl = typeof import.meta !== "undefined" ? (import.meta as any).env?.VITE_PROGRESS_GAS_WEBHOOK_URL : "";
@@ -115,10 +155,40 @@ export async function fetchMemberDataFromGoogle(webhookUrl?: string): Promise<Go
       try {
         localStorage.setItem(STORAGE_KEY_LAST_SYNC_TIME, new Date().toISOString());
       } catch (e) {}
+
+      // 針對 Google Sheets 讀取出的進度紀錄進行正規化 (日期、標籤與布林值相容轉換)
+      const rawEntries = json.data.progressEntries || [];
+      const normalizedEntries: ProgressEntry[] = Array.isArray(rawEntries)
+        ? rawEntries.map((raw: any) => ({
+            id: String(raw.id || `prog_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`),
+            member_id: String(raw.member_id || ""),
+            date: parseGasDate(raw.date),
+            title: String(raw.title || "未命名紀錄"),
+            description: String(raw.description || ""),
+            project_name: String(raw.project_name || ""),
+            project_id: String(raw.project_id || ""),
+            category: raw.category || "update",
+            is_key_event: raw.is_key_event === true || String(raw.is_key_event).toLowerCase() === "true" || String(raw.is_key_event) === "是",
+            status: raw.status || "in_progress",
+            tags: Array.isArray(raw.tags)
+              ? raw.tags
+              : (raw.tags ? String(raw.tags).split(",").map((s: string) => s.trim()).filter(Boolean) : []),
+            attachments: Array.isArray(raw.attachments) ? raw.attachments : [],
+            created_by: String(raw.created_by || ""),
+            created_at: String(raw.created_at || new Date().toISOString()),
+            updated_at: String(raw.updated_at || new Date().toISOString())
+          }))
+        : [];
+
       return {
         success: true,
         timestamp: json.timestamp || new Date().toISOString(),
-        data: json.data
+        data: {
+          members: Array.isArray(json.data.members) ? json.data.members : [],
+          externalMembers: Array.isArray(json.data.externalMembers) ? json.data.externalMembers : [],
+          meetings: Array.isArray(json.data.meetings) ? json.data.meetings : [],
+          progressEntries: normalizedEntries
+        }
       };
     } else {
       return {

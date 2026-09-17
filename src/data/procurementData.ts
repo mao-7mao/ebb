@@ -17,6 +17,7 @@ export const DEFAULT_VENDORS = [
   "Echo Chemical 景明化工",
   "Acros Organics (賽默飛 Thermo Fisher)",
   "Alfa Aesar",
+  "科研市集",
   "友和生技 Uni-Onward",
   "伯昂興業 Ber-An",
   "巨研科技 Advantech",
@@ -31,6 +32,7 @@ export const DEFAULT_VENDORS = [
 export const DEFAULT_SHOPPING_PLATFORMS: string[] = [
   "蝦皮購物 (Shopee)",
   "京東 (JD)",
+  "科研市集",
   "淘寶 (Taobao)",
   "PChome 24h",
   "Amazon",

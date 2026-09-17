@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Member } from "../../data/labData";
 import { 
   ProgressEntry, 
@@ -39,9 +39,15 @@ import {
   Users, 
   TrendingUp, 
   Clock, 
-  SlidersHorizontal
+  SlidersHorizontal,
+  RefreshCw
 } from "lucide-react";
-import { getSavedMemberWebhookUrl, syncMemberDataToGoogle } from "../../services/googleMemberSyncService";
+import { 
+  getSavedMemberWebhookUrl, 
+  syncMemberDataToGoogle, 
+  fetchMemberDataFromGoogle, 
+  parseGasDate 
+} from "../../services/googleMemberSyncService";
 
 interface MemberProgressTrackingProps {
   systemMembers: Member[];
@@ -55,19 +61,17 @@ export default function MemberProgressTracking({
   systemMembers,
   onBackToHome
 }: MemberProgressTrackingProps) {
-  // 1. Load entries state with localStorage persistence (sample demo data removed)
+  // 1. Load entries state with localStorage persistence
   const [entries, setEntries] = useState<ProgressEntry[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_ENTRIES);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Purge legacy hardcoded demo items
-          const cleaned = parsed.filter((it: any) => !it.id?.startsWith("prog_"));
-          if (cleaned.length !== parsed.length) {
-            localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(cleaned));
-          }
-          return cleaned;
+          return parsed.map((it: any) => ({
+            ...it,
+            date: parseGasDate(it.date)
+          }));
         }
       }
     } catch (e) {
@@ -76,18 +80,14 @@ export default function MemberProgressTracking({
     return initialProgressEntries;
   });
 
-  // 2. Load external non-system members with localStorage persistence (sample demo data removed)
+  // 2. Load external non-system members with localStorage persistence
   const [externalMembers, setExternalMembers] = useState<ExternalMember[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_EXTERNAL_MEMBERS);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const cleaned = parsed.filter((m: any) => !["parttime_chen_yr", "alumni_dr_wu", "visitor_prof_satoh"].includes(m.id));
-          if (cleaned.length !== parsed.length) {
-            localStorage.setItem(STORAGE_KEY_EXTERNAL_MEMBERS, JSON.stringify(cleaned));
-          }
-          return cleaned;
+          return parsed;
         }
       }
     } catch (e) {
@@ -95,6 +95,48 @@ export default function MemberProgressTracking({
     }
     return initialExternalMembers;
   });
+
+  // Cloud Sync State
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncStatus, setLastSyncStatus] = useState<string>("");
+
+  // Auto-fetch latest progress records and external members from Google Sheets
+  const refreshFromGoogle = useCallback(async (isManual = false) => {
+    const webhookUrl = getSavedMemberWebhookUrl();
+    if (!webhookUrl) return;
+    setIsSyncing(true);
+    try {
+      const res = await fetchMemberDataFromGoogle(webhookUrl);
+      if (res.success && res.data) {
+        if (Array.isArray(res.data.progressEntries)) {
+          setEntries(res.data.progressEntries);
+          try {
+            localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(res.data.progressEntries));
+          } catch (e) {}
+        }
+        if (Array.isArray(res.data.externalMembers) && res.data.externalMembers.length > 0) {
+          setExternalMembers(res.data.externalMembers);
+          try {
+            localStorage.setItem(STORAGE_KEY_EXTERNAL_MEMBERS, JSON.stringify(res.data.externalMembers));
+          } catch (e) {}
+        }
+        const timeStr = new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+        setLastSyncStatus(`已自雲端試算表同步 (${timeStr})`);
+      } else if (res.error) {
+        setLastSyncStatus(`雲端提示: ${res.error}`);
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch data from Google Apps Script", err);
+      setLastSyncStatus(`同步失敗: ${err?.message || "請檢查網路"}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, []);
+
+  // Fetch on mount
+  useEffect(() => {
+    refreshFromGoogle(false);
+  }, [refreshFromGoogle]);
 
   // Persist entries
   useEffect(() => {
@@ -263,13 +305,35 @@ export default function MemberProgressTracking({
   };
 
   const handleDeleteEntry = (id: string) => {
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+    setEntries((prev) => {
+      const updated = prev.filter((e) => e.id !== id);
+      const webhookUrl = getSavedMemberWebhookUrl();
+      if (webhookUrl) {
+        syncMemberDataToGoogle(
+          { progressEntries: updated, externalMembers },
+          "sync_progress",
+          webhookUrl
+        ).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const handleUpdateStatus = (id: string, newStatus: ProgressStatus) => {
-    setEntries((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: newStatus, updated_at: new Date().toISOString() } : e))
-    );
+    setEntries((prev) => {
+      const updated = prev.map((e) =>
+        e.id === id ? { ...e, status: newStatus, updated_at: new Date().toISOString() } : e
+      );
+      const webhookUrl = getSavedMemberWebhookUrl();
+      if (webhookUrl) {
+        syncMemberDataToGoogle(
+          { progressEntries: updated, externalMembers },
+          "sync_progress",
+          webhookUrl
+        ).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const handleViewDetail = (entry: ProgressEntry) => {
@@ -279,7 +343,18 @@ export default function MemberProgressTracking({
 
   // Handlers for External Members
   const handleSaveExternalMember = (newMember: ExternalMember) => {
-    setExternalMembers((prev) => [...prev, newMember]);
+    setExternalMembers((prev) => {
+      const updated = [...prev, newMember];
+      const webhookUrl = getSavedMemberWebhookUrl();
+      if (webhookUrl) {
+        syncMemberDataToGoogle(
+          { progressEntries: entries, externalMembers: updated },
+          "sync_all",
+          webhookUrl
+        ).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   // Clear data handler
@@ -297,13 +372,19 @@ export default function MemberProgressTracking({
       {/* Module Header Banner */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#e5e5e0] pb-6">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="text-xs font-bold text-[#8d734a] tracking-[0.2em] uppercase font-serif italic">
               Lab Progress Tracking
             </span>
             <span className="text-[10.5px] px-2 py-0.2 bg-[#1b4372]/10 text-[#1b4372] font-mono font-bold rounded-xs border border-[#1b4372]/20">
               即時追蹤
             </span>
+            {lastSyncStatus && (
+              <span className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-800 font-mono rounded-xs border border-emerald-200 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {lastSyncStatus}
+              </span>
+            )}
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] font-serif tracking-tight">
             實驗室成員進度追蹤
@@ -315,6 +396,18 @@ export default function MemberProgressTracking({
 
         {/* Top Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Cloud Sync / Refresh Button */}
+          <button
+            type="button"
+            onClick={() => refreshFromGoogle(true)}
+            disabled={isSyncing}
+            className="px-3.5 py-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm font-bold text-xs flex items-center gap-1.5 transition shadow-2xs cursor-pointer disabled:opacity-60"
+            title="從 Google 試算表立即同步最新進度紀錄"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-[#1b4372] ${isSyncing ? "animate-spin" : ""}`} />
+            <span>{isSyncing ? "同步中..." : "重新整理 / 雲端同步"}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setIsReportModalOpen(true)}
