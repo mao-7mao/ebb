@@ -5,11 +5,9 @@ import {
   ProcurementItemLine,
   VendorQuote, 
   HistoricalCatalogItem, 
-  BudgetProject,
   CurrencyCode
 } from "../../types/procurement";
 import { 
-  DEFAULT_BUDGET_PROJECTS, 
   DEFAULT_VENDORS, 
   DEFAULT_HISTORICAL_CATALOG,
   DEFAULT_SHOPPING_PLATFORMS,
@@ -17,7 +15,6 @@ import {
   convertToTwdEstimate,
   formatPriceWithCurrency
 } from "../../data/procurementData";
-import AddBudgetProjectModal from "./AddBudgetProjectModal";
 import { 
   X, 
   FlaskConical, 
@@ -76,8 +73,6 @@ interface ProcurementFormModalProps {
   historicalCatalog?: HistoricalCatalogItem[];
   defaultApplicantName?: string;
   defaultApplicantEmail?: string;
-  budgetProjects?: BudgetProject[];
-  onAddBudgetProject?: (project: BudgetProject) => void;
   savedPlatforms?: string[];
   onSaveNewPlatform?: (platform: string) => void;
 }
@@ -90,8 +85,6 @@ export default function ProcurementFormModal({
   historicalCatalog = DEFAULT_HISTORICAL_CATALOG,
   defaultApplicantName = "",
   defaultApplicantEmail = "",
-  budgetProjects = DEFAULT_BUDGET_PROJECTS,
-  onAddBudgetProject,
   savedPlatforms = DEFAULT_SHOPPING_PLATFORMS,
   onSaveNewPlatform
 }: ProcurementFormModalProps) {
@@ -99,19 +92,12 @@ export default function ProcurementFormModal({
   const [applicantName, setApplicantName] = useState(defaultApplicantName);
   const [applicantEmail, setApplicantEmail] = useState(defaultApplicantEmail);
   const [department, setDepartment] = useState("EBB Lab");
-  const [budgetProject, setBudgetProject] = useState(""); // 請購時免填，由審批時指派
   const [overallPurpose, setOverallPurpose] = useState("");
   const [description, setDescription] = useState("");
   const [notifyProfessor, setNotifyProfessor] = useState(false); // 低於3000元預設不需要，申請人可自行勾選
-  const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
 
-  // Local available budget projects & platforms
-  const [availableBudgetProjects, setAvailableBudgetProjects] = useState<BudgetProject[]>(budgetProjects);
+  // Local available platforms
   const [availablePlatforms, setAvailablePlatforms] = useState<string[]>(savedPlatforms);
-
-  useEffect(() => {
-    setAvailableBudgetProjects(budgetProjects);
-  }, [budgetProjects]);
 
   useEffect(() => {
     setAvailablePlatforms(savedPlatforms);
@@ -381,7 +367,6 @@ export default function ProcurementFormModal({
       estimatedUnitPrice: items.length === 1 ? primaryItem.estimatedUnitPrice : grandTotal,
       currency: primaryItem.currency || "TWD",
       estimatedTotalPrice: grandTotal,
-      budgetProject: budgetProject.trim() || undefined, // 選填，審批時可由教授/助理指派
       purpose: overallPurpose.trim(),
       description: description.trim(),
       vendorName: primaryItem.platform ? `${primaryItem.platform} (${primaryItem.vendorName})` : primaryItem.vendorName,
@@ -392,8 +377,8 @@ export default function ProcurementFormModal({
       chemicalDetails: primaryItem.category === "chemical" ? lineItems[0].chemicalDetails : undefined,
       consumableDetails: primaryItem.category === "consumable" ? lineItems[0].consumableDetails : undefined,
       equipmentDetails: primaryItem.category === "equipment" ? lineItems[0].equipmentDetails : undefined,
-      requiresProfessorApproval,
-      notifyProfessor: requiresProfessorApproval ? true : notifyProfessor
+      requiresProfessorApproval: true,
+      notifyProfessor: true
     });
 
     onClose();
@@ -434,19 +419,14 @@ export default function ProcurementFormModal({
             </div>
           )}
 
-          {/* Section 1: Applicant & Budget Source Info */}
+          {/* Section 1: Applicant Info */}
           <div className="bg-[#fbfbfa] p-4 rounded-sm border border-[#e5e5e0] space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-800 text-xs font-serif flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-[#1b4372]" />
-                <span>{lang === "zh" ? "1. 申請人與經費來源 (Applicant Info)" : "1. Applicant & Funding Information"}</span>
-              </h3>
-              <span className="text-[11px] text-slate-400 font-mono">
-                {lang === "zh" ? "經費來源於請購時免填，審批時核定" : "Budget source is optional, assigned at review"}
-              </span>
-            </div>
+            <h3 className="font-bold text-slate-800 text-xs font-serif flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-[#1b4372]" />
+              <span>{lang === "zh" ? "1. 申請人資料 (Applicant Info)" : "1. Applicant Information"}</span>
+            </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-slate-600 font-medium mb-1">
                   {lang === "zh" ? "申請人姓名 *" : "Applicant Name *"}
@@ -456,6 +436,7 @@ export default function ProcurementFormModal({
                   required
                   value={applicantName}
                   onChange={(e) => setApplicantName(e.target.value)}
+                  placeholder={lang === "zh" ? "請輸入申請人姓名" : "Enter applicant name"}
                   className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs focus:border-[#1b4372] focus:outline-none"
                 />
               </div>
@@ -468,35 +449,9 @@ export default function ProcurementFormModal({
                   required
                   value={applicantEmail}
                   onChange={(e) => setApplicantEmail(e.target.value)}
+                  placeholder="name@mail.nsysu.edu.tw"
                   className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs focus:border-[#1b4372] focus:outline-none"
                 />
-              </div>
-              <div>
-                <label className="block text-slate-600 font-medium mb-1 flex items-center justify-between">
-                  <span>{lang === "zh" ? "經費來源計畫 (選填)" : "Budget Project (Optional)"}</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddBudgetModal(true)}
-                    className="text-[11px] text-[#1b4372] hover:text-[#122e4f] font-bold hover:underline flex items-center gap-1"
-                    title="教授可在此新增計畫，並儲存供下次直接點選"
-                  >
-                    <span>+ 教授新增計畫</span>
-                  </button>
-                </label>
-                <select
-                  value={budgetProject}
-                  onChange={(e) => setBudgetProject(e.target.value)}
-                  className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs focus:border-[#1b4372] focus:outline-none font-mono"
-                >
-                  <option value="">
-                    {lang === "zh" ? "— 待實驗室主持人審批時指派 (建議) —" : "— To be assigned by PI upon approval —"}
-                  </option>
-                  {availableBudgetProjects.map((bp) => (
-                    <option key={bp.code} value={bp.code}>
-                      {bp.code} ({bp.nameZh.slice(0, 24)}...)
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
           </div>
@@ -702,7 +657,7 @@ export default function ProcurementFormModal({
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-slate-800 font-bold flex items-center gap-1.5 text-xs">
                       <Store className="w-3.5 h-3.5 text-amber-700" />
-                      <span>{lang === "zh" ? "購物平台 (科研市集/蝦皮/淘寶等，可自行輸入或點選歷史)" : "Shopping Platform (Custom input or click saved)"}</span>
+                      <span>{lang === "zh" ? "購物平台 (可自行輸入或點選歷史)" : "Shopping Platform (Custom input or click saved)"}</span>
                     </label>
                     <span className="text-[10px] text-slate-500">
                       {lang === "zh" ? "輸入新平台會自動記錄，下次可直接點選" : "New platforms will be remembered"}
@@ -1140,7 +1095,7 @@ export default function ProcurementFormModal({
             />
           </div>
 
-          {/* 3000 TWD Approval Threshold & Workflow Routing Policy Card */}
+          {/* 3000 TWD Approval Threshold & Multi-vendor Comparison Policy Card */}
           {(() => {
             const hasOver3000Item = items.some(it => convertToTwdEstimate(it.estimatedUnitPrice, it.currency || "TWD") >= 3000);
             const isOverThreshold = grandTotal >= 3000 || hasOver3000Item;
@@ -1151,19 +1106,21 @@ export default function ProcurementFormModal({
                   <div className="flex items-center justify-between">
                     <div className="font-bold text-amber-900 text-xs flex items-center gap-1.5 font-serif">
                       <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
-                      <span>{lang === "zh" ? "實驗室核銷規範：單價或總價超過 3,000 元（需三家詢價與教授簽可）" : "Policy: Unit/Total price exceeds 3,000 TWD (Requires 3 quotes & PI approval)"}</span>
+                      <span>{lang === "zh" ? "實驗室採購規範：單價或總額達 3,000 元（含）以上 · 需附多家廠商比價" : "Policy: Unit/Total price ≥ 3,000 TWD (Requires multi-vendor quotes & PI approval)"}</span>
                     </div>
                     <span className="text-[10px] font-mono font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded">
                       NT$ {grandTotal.toLocaleString()} ≥ 3,000
                     </span>
                   </div>
                   <p className="text-[11px] text-amber-800 leading-relaxed">
-                    依實驗室採購規定：單價或總額超過 3,000 元，需事先詢價三家廠商並徵得老師同意簽可後始可購買。
+                    {lang === "zh"
+                      ? "依實驗室採購規定：單價或總額達 3,000 元以上，需事先詢價多家廠商（建議檢附 2~3 家報價比價）。由 Admin 完成初審確認後，系統將一併呈送教授審核核定。"
+                      : "Items with unit or total price reaching 3,000 TWD require 2-3 vendor price comparisons. Admin will review before forwarding to PI for final approval."}
                   </p>
                   <div className="bg-white/80 p-2.5 rounded border border-amber-200 text-[11px] text-slate-700 space-y-1">
                     <div className="font-semibold text-slate-900 flex items-center gap-1">
                       <span>審核流程：</span>
-                      <span className="font-mono text-amber-800">請購人提交 ➔ 通知助理 ➔ 助理確認 ➔ 通知教授 ➔ 教授確認回傳請購人</span>
+                      <span className="font-mono text-amber-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過後購買</span>
                     </div>
                   </div>
                 </div>
@@ -1174,40 +1131,22 @@ export default function ProcurementFormModal({
                   <div className="flex items-center justify-between">
                     <div className="font-bold text-emerald-950 text-xs flex items-center gap-1.5 font-serif">
                       <Check className="w-4 h-4 text-emerald-700 shrink-0" />
-                      <span>{lang === "zh" ? "小額採購（總額未滿 3,000 元）· 預設免教授審核" : "Small Requisition (< 3,000 TWD) · PI Approval Optional"}</span>
+                      <span>{lang === "zh" ? "小額採購（總額未滿 3,000 元）· 免附多家比價，初審後呈送教授審核" : "Small Requisition (< 3,000 TWD) · Single Vendor Allowed & Forwarded to PI"}</span>
                     </div>
                     <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
                       NT$ {grandTotal.toLocaleString()} &lt; 3,000
                     </span>
                   </div>
-                  <div className="bg-white/80 p-2.5 rounded border border-emerald-200 text-[11px] text-slate-700 space-y-1.5">
-                    <div className="flex items-center gap-1">
-                      <span className="font-semibold text-slate-900">審核流程：</span>
-                      <span className="font-mono text-emerald-900">
-                        {notifyProfessor
-                          ? "請購人提交 ➔ 通知助理 ➔ 助理確認 ➔通知教授 ➔ 教授確認回傳請購人"
-                          : "請購人提交 ➔ 通知助理 ➔ 助理確認回傳給請購人"}
-                      </span>
+                  <p className="text-[11px] text-emerald-800 leading-relaxed">
+                    {lang === "zh"
+                      ? "總額未滿 3,000 元之小額請購，可由單一廠商直接採購，免附多家廠商比價。Admin 初審確認後，一樣會發送通知信呈送教授審核簽可。"
+                      : "Requisitions under 3,000 TWD allow single-vendor purchase without comparison quotes. Admin will forward to PI for review and approval."}
+                  </p>
+                  <div className="bg-white/80 p-2.5 rounded border border-emerald-200 text-[11px] text-slate-700 space-y-1">
+                    <div className="font-semibold text-slate-900 flex items-center gap-1">
+                      <span>審核流程：</span>
+                      <span className="font-mono text-emerald-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過後購買</span>
                     </div>
-
-                    <label className="pt-2 border-t border-emerald-200 flex items-start gap-2.5 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={notifyProfessor}
-                        onChange={(e) => setNotifyProfessor(e.target.checked)}
-                        className="mt-0.5 rounded border-slate-300 text-[#1b4372] focus:ring-[#1b4372]"
-                      />
-                      <div>
-                        <span className="font-bold text-slate-900">
-                          {lang === "zh" ? "我也希望教授知悉並參與審批（選填）" : "Also notify PI for approval review (Optional)"}
-                        </span>
-                        <span className="block text-[10px] text-slate-500">
-                          {lang === "zh" 
-                            ? "部分請購人希望教授知悉；勾選後助理確認時將再轉呈寄信給教授核可。"
-                            : "Check this if you want the PI to be formally notified and approve via email."}
-                        </span>
-                      </div>
-                    </label>
                   </div>
                 </div>
               );
@@ -1218,13 +1157,10 @@ export default function ProcurementFormModal({
           <div className="p-4 bg-[#f4f1ea] border border-[#e5e5e0] rounded-sm flex items-center justify-between">
             <div className="text-xs text-slate-700 space-y-0.5">
               <div>
-                <span className="font-bold">{applicantName}</span> 送出請購單
+                <span className="font-bold">{applicantName || (lang === "zh" ? "申請人" : "Applicant")}</span> 送出請購單
                 <span className="ml-2 font-mono font-bold bg-[#1b4372] text-white px-2 py-0.5 rounded text-[11px]">
                   共 {items.length} 筆品項
                 </span>
-              </div>
-              <div className="text-[11px] text-slate-500">
-                經費來源: {budgetProject || "待審批時由教授核定指派"}
               </div>
             </div>
             <div className="text-right">
@@ -1253,23 +1189,6 @@ export default function ProcurementFormModal({
           </div>
         </form>
       </div>
-
-      {/* Add Budget Project Modal for Professor */}
-      <AddBudgetProjectModal
-        isOpen={showAddBudgetModal}
-        onClose={() => setShowAddBudgetModal(false)}
-        lang={lang}
-        onAddProject={(newProj) => {
-          const updated = [...availableBudgetProjects, newProj];
-          setAvailableBudgetProjects(updated);
-          setBudgetProject(newProj.code);
-          if (onAddBudgetProject) {
-            onAddBudgetProject(newProj);
-          }
-          setAutoFilledNotice(lang === "zh" ? `已成功建立計畫：${newProj.code}，並自動選取！` : `Project ${newProj.code} created & selected!`);
-          setTimeout(() => setAutoFilledNotice(null), 4000);
-        }}
-      />
     </div>
   );
 }

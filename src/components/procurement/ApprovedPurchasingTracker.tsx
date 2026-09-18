@@ -3,8 +3,8 @@ import {
   ProcurementItem, 
   ProcurementItemLine, 
   PurchaseProgressStatus, 
+  PurchaserType,
   UserRole,
-  BudgetProject,
   CurrencyCode 
 } from "../../types/procurement";
 import { formatPriceWithCurrency, CURRENCY_CONFIG } from "../../data/procurementData";
@@ -40,7 +40,6 @@ export interface FlatApprovedItem {
   createdAt: string;
   applicantName: string;
   applicantEmail: string;
-  budgetProject?: string;
   lineId: string;
   itemName: string;
   category: "chemical" | "consumable" | "equipment";
@@ -54,7 +53,7 @@ export interface FlatApprovedItem {
   productUrl?: string;
   vendorName?: string;
   purpose?: string;
-  designatedPurchaser: "student" | "professor" | "unassigned";
+  designatedPurchaser: PurchaserType;
   
   // Progress Info
   purchaseProgress: PurchaseProgressStatus;
@@ -73,7 +72,6 @@ interface ApprovedPurchasingTrackerProps {
   onUpdateItem: (updatedItem: ProcurementItem) => void;
   lang: "zh" | "en";
   currentRole: UserRole;
-  budgetProjects: BudgetProject[];
   onViewRequisitionDetail: (item: ProcurementItem) => void;
   onTriggerWebhook?: (action: string, item: ProcurementItem, extra?: any) => void;
 }
@@ -83,7 +81,6 @@ export default function ApprovedPurchasingTracker({
   onUpdateItem,
   lang,
   currentRole,
-  budgetProjects,
   onViewRequisitionDetail,
   onTriggerWebhook
 }: ApprovedPurchasingTrackerProps) {
@@ -91,7 +88,6 @@ export default function ApprovedPurchasingTracker({
   const [searchQuery, setSearchQuery] = useState("");
   const [progressFilter, setProgressFilter] = useState<"ALL" | PurchaseProgressStatus>("ALL");
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | "chemical" | "consumable" | "equipment">("ALL");
-  const [projectFilter, setProjectFilter] = useState<string>("ALL");
 
   // Date Range Filtering
   // Presets: "ALL" | "TODAY" | "7DAYS" | "30DAYS" | "THIS_MONTH" | "CUSTOM"
@@ -158,7 +154,6 @@ export default function ApprovedPurchasingTracker({
             createdAt: req.createdAt,
             applicantName: req.applicantName,
             applicantEmail: req.applicantEmail,
-            budgetProject: req.budgetProject,
             lineId: sub.id || `${req.id}_line_${idx}`,
             itemName: sub.itemName,
             category: sub.category || req.category || "consumable",
@@ -191,7 +186,6 @@ export default function ApprovedPurchasingTracker({
           createdAt: req.createdAt,
           applicantName: req.applicantName,
           applicantEmail: req.applicantEmail,
-          budgetProject: req.budgetProject,
           lineId: `${req.id}_main`,
           itemName: req.itemName || "未命名品項",
           category: req.category || "consumable",
@@ -219,7 +213,7 @@ export default function ApprovedPurchasingTracker({
     return list;
   }, [items]);
 
-  // 2. Apply Filters (Date Range + Keywords + Category + Progress + Project)
+  // 2. Apply Filters (Date Range + Keywords + Category + Progress)
   const filteredEntries = useMemo(() => {
     return allApprovedEntries.filter((entry) => {
       // Keyword filter
@@ -231,7 +225,6 @@ export default function ApprovedPurchasingTracker({
           entry.applicantName.toLowerCase().includes(q) ||
           (entry.vendorName && entry.vendorName.toLowerCase().includes(q)) ||
           (entry.platform && entry.platform.toLowerCase().includes(q)) ||
-          (entry.budgetProject && entry.budgetProject.toLowerCase().includes(q)) ||
           (entry.invoiceNumber && entry.invoiceNumber.toLowerCase().includes(q));
         if (!match) return false;
       }
@@ -243,11 +236,6 @@ export default function ApprovedPurchasingTracker({
 
       // Category Filter
       if (categoryFilter !== "ALL" && entry.category !== categoryFilter) {
-        return false;
-      }
-
-      // Project Filter
-      if (projectFilter !== "ALL" && entry.budgetProject !== projectFilter) {
         return false;
       }
 
@@ -278,13 +266,14 @@ export default function ApprovedPurchasingTracker({
 
       return true;
     });
-  }, [allApprovedEntries, searchQuery, progressFilter, categoryFilter, projectFilter, datePreset, customStartDate, customEndDate]);
+  }, [allApprovedEntries, searchQuery, progressFilter, categoryFilter, datePreset, customStartDate, customEndDate]);
 
   // Statistics
   const stats = useMemo(() => {
     let pendingCount = 0;
     let studentPurchasedCount = 0;
     let profPurchasedCount = 0;
+    let postpaymentCount = 0;
     let completedCount = 0;
     let totalEstPrice = 0;
 
@@ -293,6 +282,7 @@ export default function ApprovedPurchasingTracker({
       if (e.purchaseProgress === "pending_purchase") pendingCount++;
       else if (e.purchaseProgress === "student_purchased") studentPurchasedCount++;
       else if (e.purchaseProgress === "professor_purchased") profPurchasedCount++;
+      else if (e.purchaseProgress === "postpayment") postpaymentCount++;
       else if (e.purchaseProgress === "completed" || e.purchaseProgress === "delivered") completedCount++;
     });
 
@@ -301,6 +291,7 @@ export default function ApprovedPurchasingTracker({
       pendingCount,
       studentPurchasedCount,
       profPurchasedCount,
+      postpaymentCount,
       completedCount,
       totalEstPrice
     };
@@ -439,7 +430,7 @@ export default function ApprovedPurchasingTracker({
     });
   };
 
-  // Export to CSV
+  // Export to CSV with Date Range awareness
   const handleExportApprovedCSV = () => {
     const headers = [
       "請購單號",
@@ -451,9 +442,12 @@ export default function ApprovedPurchasingTracker({
       "幣別",
       "預估單價",
       "預估總額 (NT$)",
+      "實際決標總額 (NT$)",
       "購買進程狀態",
       "實際採購人",
       "採購日期",
+      "發票/收據號碼",
+      "備註說明",
       "購物平台/廠商",
       "商品規格連結",
       "申請人",
@@ -470,9 +464,12 @@ export default function ApprovedPurchasingTracker({
       `"${e.currency}"`,
       e.estimatedUnitPrice,
       e.estimatedTotalPrice,
+      e.actualPrice !== undefined ? e.actualPrice : "",
       `"${getProgressLabel(e.purchaseProgress).label}"`,
       `"${e.purchasedBy || ""}"`,
       `"${e.purchaseDate || ""}"`,
+      `"${e.invoiceNumber || ""}"`,
+      `"${(e.note || "").replace(/"/g, '""')}"`,
       `"${(e.platform || e.vendorName || "").replace(/"/g, '""')}"`,
       `"${(e.productUrl || "").replace(/"/g, '""')}"`,
       `"${e.applicantName}"`,
@@ -484,7 +481,16 @@ export default function ApprovedPurchasingTracker({
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `EBB_Lab_Approved_Purchasing_List_${new Date().toISOString().split("T")[0]}.csv`;
+
+    // Date range tag in filename
+    let dateRangeTag = "All";
+    if (datePreset === "TODAY") dateRangeTag = "Today";
+    else if (datePreset === "7DAYS") dateRangeTag = "Past_7Days";
+    else if (datePreset === "30DAYS") dateRangeTag = "Past_30Days";
+    else if (datePreset === "THIS_MONTH") dateRangeTag = `Month_${new Date().toISOString().substring(0, 7)}`;
+    else if (datePreset === "CUSTOM") dateRangeTag = `${customStartDate || "start"}_to_${customEndDate || "now"}`;
+
+    link.download = `EBB_Lab_Approved_Purchasing_${dateRangeTag}_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -512,7 +518,7 @@ export default function ApprovedPurchasingTracker({
         };
       case "postpayment":
         return {
-          label: "🏢 貨到後計畫付款",
+          label: "🏢 貨到後付款 (廠商請款)",
           badgeClass: "bg-blue-50 text-blue-900 border-blue-300 font-bold",
           dotColor: "bg-blue-600"
         };
@@ -528,13 +534,19 @@ export default function ApprovedPurchasingTracker({
           badgeClass: "bg-slate-100 text-slate-900 border-slate-300 font-bold",
           dotColor: "bg-slate-600"
         };
+      default:
+        return {
+          label: "⏳ 待處理",
+          badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
+          dotColor: "bg-slate-400"
+        };
     }
   };
 
   return (
     <div className="space-y-4">
       {/* 1. Summary Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
         <div className="bg-[#fdfdfc] border border-[#e5e5e0] p-3 rounded-sm shadow-2xs">
           <span className="text-[11px] font-bold text-slate-500 block">已核准品項總數</span>
           <div className="flex items-baseline justify-between mt-1">
@@ -569,6 +581,14 @@ export default function ApprovedPurchasingTracker({
           <div className="flex items-baseline justify-between mt-1">
             <span className="text-xl font-bold font-serif text-purple-900">{stats.profPurchasedCount} 項</span>
             <span className="text-[10px] text-purple-700 font-medium">老師已統購</span>
+          </div>
+        </div>
+
+        <div className="bg-blue-50/70 border border-blue-200/80 p-3 rounded-sm shadow-2xs">
+          <span className="text-[11px] font-bold text-blue-900 block">🏢 貨到後付款</span>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-xl font-bold font-serif text-blue-900">{stats.postpaymentCount} 項</span>
+            <span className="text-[10px] text-blue-700 font-medium">廠商請款免先付</span>
           </div>
         </div>
 
@@ -633,6 +653,14 @@ export default function ApprovedPurchasingTracker({
                 </button>
                 <button
                   type="button"
+                  onClick={() => handleBatchUpdateProgress("postpayment", "貨到後付款 (免先付)")}
+                  className="px-2 py-1 bg-blue-700 text-white rounded text-[11px] font-bold hover:bg-blue-800"
+                  title="標記為貨到後計畫付款"
+                >
+                  🏢 貨到後付款
+                </button>
+                <button
+                  type="button"
                   onClick={() => handleBatchUpdateProgress("delivered")}
                   className="px-2 py-1 bg-teal-700 text-white rounded text-[11px] font-bold hover:bg-teal-800"
                   title="標記為已到貨"
@@ -658,9 +686,10 @@ export default function ApprovedPurchasingTracker({
               type="button"
               onClick={handleExportApprovedCSV}
               className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-2xs"
+              title={`依目前選定之時間範圍匯出 ${filteredEntries.length} 筆資料為 Excel (CSV)`}
             >
               <Download className="w-3.5 h-3.5" />
-              <span>匯出 Excel (CSV)</span>
+              <span>匯出 Excel (CSV) ({filteredEntries.length} 筆)</span>
             </button>
           </div>
         </div>
@@ -746,7 +775,7 @@ export default function ApprovedPurchasingTracker({
               <option value="pending_purchase">⏳ 尚未購買 (待採購)</option>
               <option value="student_purchased">🛒 請購人已購買 (學生自購)</option>
               <option value="professor_purchased">🎓 教授已購買 (老師統購)</option>
-              <option value="postpayment">🏢 貨到後計畫付款</option>
+              <option value="postpayment">🏢 貨到後付款 (廠商請款)</option>
               <option value="delivered">📦 已到貨 / 已收訖</option>
               <option value="completed">✅ 採購驗收完成</option>
             </select>
@@ -1015,7 +1044,7 @@ export default function ApprovedPurchasingTracker({
                     { id: "pending_purchase", label: "⏳ 尚未購買 (待採購)", desc: "尚未下單" },
                     { id: "student_purchased", label: "🛒 請購人已購買", desc: "申請學生已下訂自購" },
                     { id: "professor_purchased", label: "🎓 教授已購買", desc: "教授/PI 統一採購" },
-                    { id: "postpayment", label: "🏢 貨到後計畫付款", desc: "廠商先行寄送" },
+                    { id: "postpayment", label: "🏢 貨到後付款 (廠商請款)", desc: "廠商先行寄送，後續報帳付款" },
                     { id: "delivered", label: "📦 已到貨 / 已收訖", desc: "物品送達實驗室" },
                     { id: "completed", label: "✅ 採購驗收完成", desc: "物品驗收完成結案" }
                   ].map((opt) => (
@@ -1072,6 +1101,14 @@ export default function ApprovedPurchasingTracker({
                       className="text-[10px] text-purple-700 underline hover:text-purple-900"
                     >
                       帶入教授
+                    </button>
+                    <span className="text-slate-300">·</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditPurchasedBy("貨到後計畫付款 (廠商請款)")}
+                      className="text-[10px] text-blue-700 underline hover:text-blue-900"
+                    >
+                      貨到後付款
                     </button>
                   </div>
                 </div>

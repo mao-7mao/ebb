@@ -309,7 +309,7 @@ export default function BusinessCardGenerator() {
         titleEn: matched.role_en || defaultTitle,
         topicEn: matched.research_topic.title_en,
         // Keep existing contact details unless empty
-        email: prev.email || "klchang@mail.nsysu.edu.tw",
+        email: prev.email || "advise1874@gmail.com",
         tel: prev.tel || "+886-7-525-2000 ext. 4400"
       }));
     }

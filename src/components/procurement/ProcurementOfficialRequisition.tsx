@@ -259,7 +259,7 @@ export default function ProcurementOfficialRequisition({
               </h2>
             </td>
             <td style="border:none; text-align:right; width:90px; vertical-align:middle;">
-              <img src="https://www.nsysu.edu.tw/var/file/0/1000/msys_1000_5682857_38476.png" width="75" height="75" alt="國立中山大學校徽" />
+              <img src="https://www.nsysu.edu.tw/var/file/0/1000/msys_1000_5682857_38476.png" width="75" height="75" alt="中山大學校徽" />
             </td>
           </tr>
         </table>

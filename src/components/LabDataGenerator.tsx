@@ -5,6 +5,7 @@ import {
   Database, 
   UserPlus, 
   CalendarPlus, 
+  Calendar,
   Code, 
   Copy, 
   Download, 
@@ -26,11 +27,12 @@ import {
   TrendingUp,
   Lock
 } from "lucide-react";
+import CalendarLogModule from "./calendar/CalendarLogModule";
 
 interface LabDataGeneratorProps {
   initialMembers: Member[];
   initialMeetings: Meeting[];
-  initialTab?: "members" | "meetings" | "progress" | "export";
+  initialTab?: "members" | "meetings" | "progress" | "calendar" | "export";
   onApplyData?: (updatedMembers: Member[], updatedMeetings: Meeting[]) => void;
   onResetToDefault?: () => void;
   onLogout?: () => void;
@@ -44,7 +46,7 @@ export default function LabDataGenerator({
   onResetToDefault,
   onLogout
 }: LabDataGeneratorProps) {
-  const [activeTab, setActiveTab] = useState<"members" | "meetings" | "progress" | "export">(initialTab || "members");
+  const [activeTab, setActiveTab] = useState<"members" | "meetings" | "progress" | "calendar" | "export">(initialTab || "members");
 
   useEffect(() => {
     if (initialTab) {
@@ -499,6 +501,18 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
         >
           <TrendingUp className="w-4 h-4" />
           <span>成員進度追蹤 (Progress Tracking)</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("calendar")}
+          className={`px-4 py-2 rounded-sm transition flex items-center gap-2 ${
+            activeTab === "calendar"
+              ? "bg-[#1b4372] text-white shadow-sm"
+              : "bg-[#f8f8f5] text-slate-700 hover:bg-[#fafafa]"
+          }`}
+        >
+          <Calendar className="w-4 h-4 text-amber-300" />
+          <span>月曆事項與週報 (Work Log & PPTX)</span>
         </button>
 
         <button
@@ -1129,6 +1143,13 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
       {activeTab === "progress" && (
         <div className="pt-2 animate-in fade-in duration-200">
           <MemberProgressTracking systemMembers={membersList} />
+        </div>
+      )}
+
+      {/* ==================== TAB 4: CALENDAR WORK LOG & WEEKLY REPORT (ADMIN ONLY) ==================== */}
+      {activeTab === "calendar" && (
+        <div className="pt-2 animate-in fade-in duration-200">
+          <CalendarLogModule />
         </div>
       )}
     </div>

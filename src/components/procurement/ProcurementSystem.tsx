@@ -11,9 +11,7 @@ import {
 } from "../../types/procurement";
 import { 
   INITIAL_PROCUREMENT_ITEMS, 
-  DEFAULT_HISTORICAL_CATALOG, 
-  DEFAULT_BUDGET_PROJECTS,
-  BudgetProjectOption 
+  DEFAULT_HISTORICAL_CATALOG 
 } from "../../data/procurementData";
 import ProcurementHeader from "./ProcurementHeader";
 import ProcurementFormModal from "./ProcurementFormModal";
@@ -21,6 +19,7 @@ import ProcurementDetailModal from "./ProcurementDetailModal";
 import ProcurementOfficialRequisition from "./ProcurementOfficialRequisition";
 import RolePasswordModal from "./RolePasswordModal";
 import ApprovedPurchasingTracker from "./ApprovedPurchasingTracker";
+import ExportDateRangeModal from "./ExportDateRangeModal";
 import { EXTERNAL_LINKS } from "../../config/externalLinks";
 import { 
   Search, 
@@ -44,14 +43,16 @@ import {
   Trash2,
   ClipboardList,
   PackageCheck,
-  Cloud
+  Cloud,
+  Calendar,
+  CalendarRange,
+  X
 } from "lucide-react";
 
 const STORAGE_KEY_ITEMS = "ebblab_procurement_items_v2";
 const STORAGE_KEY_CATALOG = "ebblab_procurement_catalog_v2";
 const STORAGE_KEY_WEBHOOK = "ebblab_procurement_gas_webhook";
 const STORAGE_KEY_PASSWORDS = "ebblab_procurement_role_passwords";
-const STORAGE_KEY_BUDGET_PROJECTS = "ebblab_procurement_budget_projects";
 const STORAGE_KEY_PLATFORMS = "ebblab_procurement_saved_platforms";
 const STORAGE_KEY_AUTH_ROLES = "ebblab_procurement_auth_roles";
 
@@ -59,8 +60,16 @@ export default function ProcurementSystem() {
   // Global Language: zh (繁中) or en (English)
   const [lang, setLang] = useState<"zh" | "en">("zh");
 
-  // Active Role Simulation (student / assistant / professor / admin)
-  const [currentRole, setCurrentRole] = useState<UserRole>("student");
+  // Active Role State: default to applicant (student). If admin logs in with password, switches to admin.
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem("ebblab_procurement_is_admin") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const currentRole: UserRole = isAdmin ? "admin" : "student";
 
   // Active Navigation Tab: "requisitions" (審核單據總表) or "approved_purchasing" (已核准採購進程追蹤)
   const [activeTab, setActiveTab] = useState<"requisitions" | "approved_purchasing">("requisitions");
@@ -179,28 +188,20 @@ export default function ProcurementSystem() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | ProcurementCategory>("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | ProcurementStatus>("ALL");
-  const [projectFilter, setProjectFilter] = useState<string>("ALL");
+  const [dateFilterPreset, setDateFilterPreset] = useState<string>("ALL");
+  const [customFilterStartDate, setCustomFilterStartDate] = useState<string>("");
+  const [customFilterEndDate, setCustomFilterEndDate] = useState<string>("");
 
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ProcurementItem | null>(null);
   const [printItems, setPrintItems] = useState<ProcurementItem[] | null>(null);
+  const [isExportDateRangeModalOpen, setIsExportDateRangeModalOpen] = useState(false);
 
   // Bulk selection for batch export / print
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // Role Authentication State (Separate passwords for Assistant, Professor, Admin)
-  const [authenticatedRoles, setAuthenticatedRoles] = useState<Set<UserRole>>(() => {
-    try {
-      const saved = sessionStorage.getItem(STORAGE_KEY_AUTH_ROLES);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return new Set<UserRole>(parsed);
-      }
-    } catch (e) {}
-    return new Set<UserRole>(["student"]);
-  });
-
+  // Admin Password Management
   const [rolePasswords, setRolePasswords] = useState<Record<"assistant" | "professor" | "admin", string>>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_PASSWORDS);
@@ -213,33 +214,7 @@ export default function ProcurementSystem() {
     };
   });
 
-  const [pendingRoleTarget, setPendingRoleTarget] = useState<UserRole | null>(null);
   const [isRolePasswordModalOpen, setIsRolePasswordModalOpen] = useState(false);
-
-  // Sync authenticated roles to sessionStorage
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(STORAGE_KEY_AUTH_ROLES, JSON.stringify(Array.from(authenticatedRoles)));
-    } catch (e) {}
-  }, [authenticatedRoles]);
-
-  // Saved Budget Projects (editable, additions saved for future reuse)
-  const [budgetProjects, setBudgetProjects] = useState<BudgetProjectOption[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_BUDGET_PROJECTS);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
-    return DEFAULT_BUDGET_PROJECTS;
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_BUDGET_PROJECTS, JSON.stringify(budgetProjects));
-    } catch (e) {}
-  }, [budgetProjects]);
 
   // Saved Shopping Platforms (editable, additions saved for future reuse)
   const [savedPlatforms, setSavedPlatforms] = useState<string[]>(() => {
@@ -267,63 +242,29 @@ export default function ProcurementSystem() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  // Role Access Handlers
-  const handleRequestRoleChange = (newRole: UserRole) => {
-    if (newRole === "student" || authenticatedRoles.has(newRole)) {
-      setCurrentRole(newRole);
-    } else {
-      setPendingRoleTarget(newRole);
-      setIsRolePasswordModalOpen(true);
-    }
-  };
-
-  const handleRoleVerifySuccess = (role: UserRole) => {
-    setAuthenticatedRoles(prev => {
-      const next = new Set(prev);
-      next.add(role);
-      return next;
-    });
-    setCurrentRole(role);
+  // Admin Login / Logout Handlers
+  const handleAdminLoginSuccess = () => {
+    setIsAdmin(true);
+    try {
+      sessionStorage.setItem("ebblab_procurement_is_admin", "true");
+    } catch (e) {}
     showToast(
-      lang === "zh" 
-        ? `身分密碼驗證成功！已解鎖並切換至「${role === "assistant" ? "研究助理" : role === "professor" ? "教授/PI" : "系統管理者"}」權限。` 
-        : `Verified! Switched to ${role} role.`
+      lang === "zh"
+        ? "Admin 密碼驗證成功！已開啟審批與請購管理權限。"
+        : "Admin verified successfully! Review actions unlocked."
     );
   };
 
-  const handleLockRole = (role: UserRole) => {
-    setAuthenticatedRoles(prev => {
-      const next = new Set(prev);
-      next.delete(role);
-      return next;
-    });
-    if (currentRole === role) {
-      setCurrentRole("student");
-    }
+  const handleAdminLogout = () => {
+    setIsAdmin(false);
+    try {
+      sessionStorage.removeItem("ebblab_procurement_is_admin");
+    } catch (e) {}
     showToast(
-      lang === "zh" 
-        ? `已鎖定並登出「${role === "assistant" ? "研究助理" : role === "professor" ? "教授/PI" : "系統管理者"}」身分，切換回學生模式。` 
-        : `Locked ${role} and returned to student view.`
+      lang === "zh"
+        ? "已登出 Admin 審批身分，切換回一般請購申請模式。"
+        : "Logged out from Admin. Returned to applicant view."
     );
-  };
-
-  const handleUpdateRolePassword = (role: "assistant" | "professor" | "admin", newPass: string) => {
-    setRolePasswords(prev => {
-      const updated = { ...prev, [role]: newPass };
-      try {
-        localStorage.setItem(STORAGE_KEY_PASSWORDS, JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
-    showToast(lang === "zh" ? "安全密碼已成功更新！" : "Security password updated successfully!");
-  };
-
-  const handleAddBudgetProject = (newProject: BudgetProjectOption) => {
-    setBudgetProjects(prev => {
-      if (prev.some(p => p.code === newProject.code)) return prev;
-      return [...prev, newProject];
-    });
-    showToast(lang === "zh" ? `已成功新增經費計畫：${newProject.code}（已保存供下次選取）` : `Added budget project: ${newProject.code}`);
   };
 
   const handleSaveNewPlatform = (newPlatform: string) => {
@@ -382,7 +323,6 @@ export default function ProcurementSystem() {
       lastUnitPrice: data.estimatedUnitPrice,
       currency: "NTD",
       brand: data.chemicalDetails?.brand,
-      budgetProject: data.budgetProject,
       specModel: data.consumableDetails?.specModel || data.equipmentDetails?.modelNumber
     };
 
@@ -403,36 +343,23 @@ export default function ProcurementSystem() {
     );
   };
 
-  // Assistant Review Handler
+  // Admin Initial Review Handler (merged Assistant & Admin)
   const handleAssistantReview = (id: string, approved: boolean, comment: string) => {
     const now = new Date().toISOString().split("T")[0];
     const targetItem = items.find(i => i.id === id);
-    const needProfReview = targetItem 
-      ? (targetItem.requiresProfessorApproval || targetItem.notifyProfessor || targetItem.estimatedTotalPrice >= 3000) 
-      : true;
+    if (!targetItem) return;
 
     const updated = items.map(item => {
       if (item.id === id) {
-        let nextStatus: ProcurementStatus;
-        let designatedPurchaser = item.purchaser;
-
-        if (!approved) {
-          nextStatus = "rejected";
-        } else if (needProfReview) {
-          // > 3000 TWD or user opted in: Forward to professor review
-          nextStatus = "pending_professor";
-        } else {
-          // < 3000 TWD and no professor review needed: Directly approved!
-          nextStatus = "approved";
-          designatedPurchaser = "student"; // Default to student self-purchasing
-        }
+        // When Admin approves: forward to professor for all amounts (<3000 and >=3000)
+        // When Admin rejects: status becomes rejected directly
+        const nextStatus: ProcurementStatus = approved ? "pending_professor" : "rejected";
 
         return {
           ...item,
           status: nextStatus,
-          purchaser: designatedPurchaser,
           assistantReview: {
-            reviewerName: "Research Assistant (林助理 Fanny)",
+            reviewerName: "Lab Admin (系統管理者/助理)",
             reviewedAt: now,
             approved,
             comment
@@ -449,15 +376,12 @@ export default function ProcurementSystem() {
     }
 
     if (!approved) {
-      showToast(lang === "zh" ? "已退回請購單。" : "Request rejected.");
-    } else if (needProfReview) {
-      // Send webhook for professor notification
-      if (updatedTarget) triggerGasWebhook("assistant_approved_forward_professor", updatedTarget);
-      showToast(lang === "zh" ? "助理初審合格！已轉呈教授終審，並寄發通知信給教授。" : "Assistant review approved. Forwarded to PI.");
+      if (updatedTarget) triggerGasWebhook("admin_rejected", updatedTarget);
+      showToast(lang === "zh" ? `初審未通過：已直接寄發退件說明通知給請購人 (${updatedTarget?.applicantEmail})。` : "Requisition returned to applicant with comments.");
     } else {
-      // Directly approved for < 3000 items
-      if (updatedTarget) triggerGasWebhook("assistant_approved_direct", updatedTarget);
-      showToast(lang === "zh" ? `助理審核確認！總額未達 3,000 元已核准可直接購買，已回傳 Mail 通知請購人 (${targetItem?.applicantEmail})。` : "Requisition approved! Applicant notified.");
+      // Send webhook for professor notification with standard doc & checkbox reply
+      if (updatedTarget) triggerGasWebhook("admin_approved_forward_professor", updatedTarget);
+      showToast(lang === "zh" ? "Admin 初審合格！已發送附標準文檔與核簽複選模板之簽呈信給教授終審。" : "Admin review passed. Forwarded to PI with standard requisition doc & reply options.");
     }
   };
 
@@ -493,9 +417,10 @@ export default function ProcurementSystem() {
 
     if (approved && updatedTarget) {
       triggerGasWebhook("approve_request", updatedTarget);
-      showToast(lang === "zh" ? `教授終審核准！已發送通知信至申請人信箱 (${updatedTarget.applicantEmail})。` : `Final approval granted! Applicant notified via email.`);
-    } else {
-      showToast(lang === "zh" ? "教授已退回此請購單。" : "Request rejected by PI.");
+      showToast(lang === "zh" ? `教授核定准予採購！回覆通知信已寄達請購人 (${updatedTarget.applicantEmail})，並同步抄送助理。` : `Final approval granted! Notified applicant with CC to Admin.`);
+    } else if (updatedTarget) {
+      triggerGasWebhook("professor_rejected", updatedTarget);
+      showToast(lang === "zh" ? `教授已退回請購單，說明已寄送至請購人 (${updatedTarget.applicantEmail}) 並抄送助理。` : "Request rejected by PI; applicant and Admin notified.");
     }
   };
 
@@ -537,6 +462,28 @@ export default function ProcurementSystem() {
   const filteredItems = items.filter(item => {
     if (categoryFilter !== "ALL" && item.category !== categoryFilter) return false;
     if (statusFilter !== "ALL" && item.status !== statusFilter) return false;
+
+    // Date range filter
+    const itemDate = (item.createdAt || "").split(" ")[0];
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    if (dateFilterPreset === "TODAY") {
+      if (itemDate !== todayStr) return false;
+    } else if (dateFilterPreset === "7DAYS") {
+      const d7 = new Date();
+      d7.setDate(d7.getDate() - 7);
+      if (itemDate < d7.toISOString().split("T")[0]) return false;
+    } else if (dateFilterPreset === "30DAYS") {
+      const d30 = new Date();
+      d30.setDate(d30.getDate() - 30);
+      if (itemDate < d30.toISOString().split("T")[0]) return false;
+    } else if (dateFilterPreset === "THIS_MONTH") {
+      const ym = todayStr.substring(0, 7);
+      if (!itemDate.startsWith(ym)) return false;
+    } else if (dateFilterPreset === "CUSTOM") {
+      if (customFilterStartDate && itemDate < customFilterStartDate) return false;
+      if (customFilterEndDate && itemDate > customFilterEndDate) return false;
+    }
 
     // In student mode, users can view all lab items or focus on their own
     const q = searchQuery.trim().toLowerCase();
@@ -713,17 +660,16 @@ export default function ProcurementSystem() {
       )}
 
       {/* Header with Role Switcher & Lang Toggle */}
+      {/* Header with Admin Review Login & Fill Requisition Action */}
       <ProcurementHeader
-        currentRole={currentRole}
-        onRoleChange={handleRequestRoleChange}
+        isAdmin={isAdmin}
+        onOpenAdminLogin={() => setIsRolePasswordModalOpen(true)}
+        onAdminLogout={handleAdminLogout}
         lang={lang}
         onToggleLang={() => setLang(lang === "zh" ? "en" : "zh")}
         onOpenCreateModal={() => setIsCreateModalOpen(true)}
-        authenticatedRoles={authenticatedRoles}
-        onLockRole={handleLockRole}
         totalCount={items.length}
         pendingCount={pendingReviewsCount}
-        hasGasWebhook={Boolean(gasWebhookUrl)}
       />
 
       {/* Navigation View Switcher Tabs */}
@@ -818,52 +764,125 @@ export default function ProcurementSystem() {
 
             <button
               type="button"
+              onClick={() => setIsExportDateRangeModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-xs active:scale-95"
+              title="依時間段或自訂日期範圍匯出 Excel (CSV)"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
+              <span>{lang === "zh" ? "依時間段匯出 Excel" : "Export by Date Range"}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => handleExportCSV(filteredItems)}
               className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-xs"
-              title="匯出目前篩選之全部資料"
+              title="匯出目前列表篩選後之資料"
             >
               <Download className="w-3.5 h-3.5 text-slate-600" />
-              <span className="hidden sm:inline">{lang === "zh" ? "匯出全部 Excel" : "Export All CSV"}</span>
+              <span className="hidden sm:inline">{lang === "zh" ? "匯出當前視圖" : "Export View"}</span>
             </button>
           </div>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#e5e5e0] text-xs">
-          {/* Category Filter */}
-          <div className="flex items-center gap-1">
-            <span className="text-slate-400 font-medium">{lang === "zh" ? "類別:" : "Category:"}</span>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value as any)}
-              className="bg-white border border-[#e5e5e0] rounded-sm py-1 px-2 text-xs font-medium focus:outline-none"
-            >
-              <option value="ALL">{lang === "zh" ? "全部類別" : "All Categories"}</option>
-              <option value="chemical">{lang === "zh" ? "藥品試劑" : "Chemicals"}</option>
-              <option value="consumable">{lang === "zh" ? "雜物耗材" : "Consumables"}</option>
-              <option value="equipment">{lang === "zh" ? "儀器設備" : "Equipment"}</option>
-            </select>
+        {/* Filter Pills & Date Range */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 pt-2.5 border-t border-[#e5e5e0] text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Category Filter */}
+            <div className="flex items-center gap-1">
+              <span className="text-slate-400 font-medium">{lang === "zh" ? "類別:" : "Category:"}</span>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value as any)}
+                className="bg-white border border-[#e5e5e0] rounded-sm py-1 px-2 text-xs font-medium focus:outline-none"
+              >
+                <option value="ALL">{lang === "zh" ? "全部類別" : "All Categories"}</option>
+                <option value="chemical">{lang === "zh" ? "藥品試劑" : "Chemicals"}</option>
+                <option value="consumable">{lang === "zh" ? "雜物耗材" : "Consumables"}</option>
+                <option value="equipment">{lang === "zh" ? "儀器設備" : "Equipment"}</option>
+              </select>
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex items-center gap-1">
+              <span className="text-slate-400 font-medium">{lang === "zh" ? "狀態:" : "Status:"}</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="bg-white border border-[#e5e5e0] rounded-sm py-1 px-2 text-xs font-medium focus:outline-none"
+              >
+                <option value="ALL">{lang === "zh" ? "全部狀態" : "All Status"}</option>
+                <option value="pending_assistant">{lang === "zh" ? "待 Admin/助理初審" : "Pending Admin"}</option>
+                <option value="pending_professor">{lang === "zh" ? "待教授終審" : "Pending PI"}</option>
+                <option value="approved">{lang === "zh" ? "已核准 (待採購)" : "Approved"}</option>
+                <option value="partially_approved">{lang === "zh" ? "部分審核通過" : "Partially Approved"}</option>
+                <option value="purchased">{lang === "zh" ? "已採購完成" : "Purchased"}</option>
+                <option value="rejected">{lang === "zh" ? "已退回" : "Rejected"}</option>
+              </select>
+            </div>
+
+            {/* Date Presets */}
+            <div className="flex flex-wrap items-center gap-1 border-l border-slate-200 pl-2">
+              <span className="text-slate-400 font-medium flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-[#1b4372]" />
+                {lang === "zh" ? "時間:" : "Time:"}
+              </span>
+              {[
+                { id: "ALL", label: lang === "zh" ? "全部" : "All" },
+                { id: "TODAY", label: lang === "zh" ? "今日" : "Today" },
+                { id: "7DAYS", label: lang === "zh" ? "近7天" : "7 Days" },
+                { id: "30DAYS", label: lang === "zh" ? "近30天" : "30 Days" },
+                { id: "THIS_MONTH", label: lang === "zh" ? "本月" : "Month" },
+                { id: "CUSTOM", label: lang === "zh" ? "自訂" : "Custom" }
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setDateFilterPreset(p.id)}
+                  className={`px-2 py-0.5 rounded-xs text-[11px] font-medium transition border ${
+                    dateFilterPreset === p.id
+                      ? "bg-[#1b4372] text-white border-[#1b4372]"
+                      : "bg-white text-slate-600 border-[#e5e5e0] hover:bg-slate-50"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Range Picker */}
+            {dateFilterPreset === "CUSTOM" && (
+              <div className="flex items-center gap-1 bg-amber-50/70 p-1 rounded border border-amber-200 text-[11px]">
+                <CalendarRange className="w-3 h-3 text-[#1b4372]" />
+                <input
+                  type="date"
+                  value={customFilterStartDate}
+                  onChange={(e) => setCustomFilterStartDate(e.target.value)}
+                  className="bg-white border border-slate-300 rounded px-1 py-0.5 text-[10px] font-mono"
+                />
+                <span>~</span>
+                <input
+                  type="date"
+                  value={customFilterEndDate}
+                  onChange={(e) => setCustomFilterEndDate(e.target.value)}
+                  className="bg-white border border-slate-300 rounded px-1 py-0.5 text-[10px] font-mono"
+                />
+                {(customFilterStartDate || customFilterEndDate) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustomFilterStartDate("");
+                      setCustomFilterEndDate("");
+                    }}
+                    className="text-slate-400 hover:text-slate-700 p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Status Filter */}
-          <div className="flex items-center gap-1">
-            <span className="text-slate-400 font-medium">{lang === "zh" ? "狀態:" : "Status:"}</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="bg-white border border-[#e5e5e0] rounded-sm py-1 px-2 text-xs font-medium focus:outline-none"
-            >
-              <option value="ALL">{lang === "zh" ? "全部狀態" : "All Status"}</option>
-              <option value="pending_assistant">{lang === "zh" ? "待助理初審" : "Pending Assistant"}</option>
-              <option value="pending_professor">{lang === "zh" ? "待教授終審" : "Pending PI"}</option>
-              <option value="approved">{lang === "zh" ? "已核准 (待採購)" : "Approved"}</option>
-              <option value="partially_approved">{lang === "zh" ? "部分審核通過" : "Partially Approved"}</option>
-              <option value="purchased">{lang === "zh" ? "已採購完成" : "Purchased"}</option>
-              <option value="rejected">{lang === "zh" ? "已退回" : "Rejected"}</option>
-            </select>
-          </div>
-
-          <div className="ml-auto text-slate-400 text-[11px] font-mono">
+          <div className="text-slate-400 text-[11px] font-mono shrink-0">
             {lang === "zh" ? `共 ${filteredItems.length} 筆請購單` : `${filteredItems.length} Requisitions`}
           </div>
         </div>
@@ -1023,7 +1042,6 @@ export default function ProcurementSystem() {
       }}
       lang={lang}
       currentRole={currentRole}
-      budgetProjects={budgetProjects}
       onViewRequisitionDetail={(item) => setSelectedItem(item)}
       onTriggerWebhook={triggerGasWebhook}
     />
@@ -1042,8 +1060,7 @@ export default function ProcurementSystem() {
       onUpdateItem={handleUpdateItem}
       onOpenPrintView={(item) => setPrintItems([item])}
       onSendEmailNotification={(type, item) => triggerGasWebhook(type === "approved" ? "approve_request" : "create_request", item)}
-      budgetProjects={budgetProjects}
-      onAddBudgetProject={handleAddBudgetProject}
+      onOpenAdminLogin={() => setIsRolePasswordModalOpen(true)}
     />
   )}
 
@@ -1054,8 +1071,6 @@ export default function ProcurementSystem() {
     onSubmit={handleCreateItem}
     lang={lang}
     historicalCatalog={historicalCatalog}
-    budgetProjects={budgetProjects}
-    onAddBudgetProject={handleAddBudgetProject}
     savedPlatforms={savedPlatforms}
     onSaveNewPlatform={handleSaveNewPlatform}
   />
@@ -1070,17 +1085,20 @@ export default function ProcurementSystem() {
     />
   )}
 
-  {/* Role Authentication Password Modal */}
+  {/* Export CSV by Date Range Modal */}
+  <ExportDateRangeModal
+    isOpen={isExportDateRangeModalOpen}
+    onClose={() => setIsExportDateRangeModalOpen(false)}
+    items={items}
+    lang={lang}
+  />
+
+  {/* Admin Review Password Modal */}
   <RolePasswordModal
     isOpen={isRolePasswordModalOpen}
-    targetRole={pendingRoleTarget}
-    onClose={() => {
-      setIsRolePasswordModalOpen(false);
-      setPendingRoleTarget(null);
-    }}
-    onVerifySuccess={handleRoleVerifySuccess}
-    rolePasswords={rolePasswords}
-    onUpdatePassword={handleUpdateRolePassword}
+    onClose={() => setIsRolePasswordModalOpen(false)}
+    onVerifySuccess={handleAdminLoginSuccess}
+    adminPassword={rolePasswords.admin}
     lang={lang}
   />
 </div>

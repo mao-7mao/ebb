@@ -67,7 +67,7 @@ export default function App() {
   // Page Routing State (Multi-page nested view architecture)
   const [currentPage, setCurrentPage] = useState<NavPage>(() => {
     const hash = window.location.hash.replace("#/", "").replace("#", "");
-    if (hash === "progress") {
+    if (hash === "progress" || hash === "calendar-log" || hash === "weekly-report") {
       return "studio";
     }
     const validPages: NavPage[] = ["home", "members", "instruments", "chemicals", "procurement", "card-generator", "schedule", "archive", "studio", "contact"];
@@ -122,10 +122,78 @@ export default function App() {
   const [isSiteUnlocked, setIsSiteUnlocked] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [studioInitialTab, setStudioInitialTab] = useState<"members" | "meetings" | "progress" | "export">("members");
+  const [studioInitialTab, setStudioInitialTab] = useState<"members" | "meetings" | "progress" | "calendar" | "export">("members");
 
   // Collapse status for meeting archive groups
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+  // Bottom Nav Visibility: Auto-hide on Web / Desktop, Always show on Mobile
+  const [isMobileView, setIsMobileView] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth < 768;
+  });
+  const [isBottomNavVisibleOnWeb, setIsBottomNavVisibleOnWeb] = useState(false);
+  const [isHoveringBottomNav, setIsHoveringBottomNav] = useState(false);
+
+  useEffect(() => {
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastScrollY = window.scrollY;
+
+    const checkIsMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobileView(mobile);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (window.innerWidth < 768) return; // Mobile is always visible
+      
+      // When cursor approaches the bottom 75px of the viewport
+      if (e.clientY >= window.innerHeight - 75) {
+        setIsBottomNavVisibleOnWeb(true);
+        if (hideTimer) clearTimeout(hideTimer);
+      } else if (!isHoveringBottomNav) {
+        if (hideTimer) clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => {
+          setIsBottomNavVisibleOnWeb(false);
+        }, 1800);
+      }
+    };
+
+    const handleScroll = () => {
+      if (window.innerWidth < 768) return; // Mobile is always visible
+      const currentScrollY = window.scrollY;
+
+      // Scrolling down -> auto hide on web
+      if (currentScrollY > lastScrollY && currentScrollY > 60) {
+        if (!isHoveringBottomNav) {
+          setIsBottomNavVisibleOnWeb(false);
+        }
+      } else if (currentScrollY < lastScrollY && Math.abs(currentScrollY - lastScrollY) > 5) {
+        // Scrolling up -> temporarily reveal on web, then auto-hide
+        setIsBottomNavVisibleOnWeb(true);
+        if (hideTimer) clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => {
+          if (!isHoveringBottomNav) {
+            setIsBottomNavVisibleOnWeb(false);
+          }
+        }, 2500);
+      }
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener("resize", checkIsMobile);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    checkIsMobile();
+
+    return () => {
+      if (hideTimer) clearTimeout(hideTimer);
+      window.removeEventListener("resize", checkIsMobile);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [isHoveringBottomNav]);
 
   useEffect(() => {
     setIsSiteUnlocked(checkIsSiteUnlocked());
@@ -136,6 +204,15 @@ export default function App() {
       const hash = window.location.hash.replace("#/", "").replace("#", "");
       if (hash === "progress") {
         setStudioInitialTab("progress");
+        if (!checkIsAuthenticated()) {
+          setIsAuthModalOpen(true);
+        } else {
+          setCurrentPage("studio");
+        }
+        return;
+      }
+      if (hash === "calendar-log" || hash === "weekly-report") {
+        setStudioInitialTab("calendar");
         if (!checkIsAuthenticated()) {
           setIsAuthModalOpen(true);
         } else {
@@ -199,7 +276,7 @@ export default function App() {
     setIsMobileMenuOpen(false);
   };
 
-  const handleOpenStudio = (tab: "members" | "meetings" | "progress" | "export" = "members") => {
+  const handleOpenStudio = (tab: "members" | "meetings" | "progress" | "calendar" | "export" = "members") => {
     setStudioInitialTab(tab);
     if (!isAuthenticated) {
       setIsAuthModalOpen(true);
@@ -449,7 +526,7 @@ export default function App() {
                 }`}
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span>Procurement System (請購)</span>
+                <span>Procurement System</span>
               </button>
 
               <button 
@@ -468,7 +545,7 @@ export default function App() {
                   currentPage === "schedule" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
                 }`}
               >
-                <Calendar className="w-4 h-4" />
+                <Calendar className="w-4 h-4 text-[#1b4372]" />
                 <span>Meeting Schedule</span>
               </button>
 
@@ -485,7 +562,7 @@ export default function App() {
               <button 
                 onClick={() => { handleOpenStudio("members"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center justify-between p-3 rounded-sm text-sm font-semibold transition ${
-                  currentPage === "studio" && studioInitialTab !== "progress" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
+                  currentPage === "studio" && studioInitialTab !== "progress" && studioInitialTab !== "calendar" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -588,7 +665,7 @@ export default function App() {
                 }`}
               >
                 <Calendar className="w-4 h-4 text-[#1b4372]" /> 
-                <span>Meeting Schedule</span>
+                <span className="flex-1 text-left">Meeting Schedule</span>
               </button>
 
               <button 
@@ -638,8 +715,33 @@ export default function App() {
         </div>
       </aside>
 
-      {/* -------------------- MOBILE STICKY BOTTOM NAV -------------------- */}
-      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-lg bg-[#fdfdfc]/95 backdrop-blur-lg border border-[#e5e5e0] rounded-sm shadow-md flex items-center justify-around py-1.5 px-1 xl:hidden">
+      {/* -------------------- WEB BOTTOM HOVER TRIGGER ZONE -------------------- */}
+      {!isMobileView && (
+        <div 
+          className="fixed bottom-0 left-0 right-0 h-4 z-30 pointer-events-auto cursor-pointer"
+          onMouseEnter={() => setIsBottomNavVisibleOnWeb(true)}
+          title="移至此處浮現快速導覽列"
+        />
+      )}
+
+      {/* -------------------- STICKY BOTTOM NAV (AUTO-HIDE ON WEB, ALWAYS VISIBLE ON MOBILE) -------------------- */}
+      <div 
+        onMouseEnter={() => {
+          setIsHoveringBottomNav(true);
+          setIsBottomNavVisibleOnWeb(true);
+        }}
+        onMouseLeave={() => {
+          setIsHoveringBottomNav(false);
+          if (!isMobileView) {
+            setTimeout(() => setIsBottomNavVisibleOnWeb(false), 1500);
+          }
+        }}
+        className={`fixed bottom-3 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-lg bg-[#fdfdfc]/95 backdrop-blur-lg border border-[#e5e5e0] rounded-sm shadow-md flex items-center justify-around py-1.5 px-1 xl:hidden transition-all duration-300 ease-in-out ${
+          isMobileView || isBottomNavVisibleOnWeb || isHoveringBottomNav
+            ? "translate-y-0 opacity-100 pointer-events-auto"
+            : "translate-y-24 opacity-0 pointer-events-none"
+        }`}
+      >
         <button 
           onClick={() => navigateTo("members", "directory")}
           className={`flex flex-col items-center gap-0.5 p-1 rounded-sm transition-all ${
@@ -762,16 +864,16 @@ export default function App() {
                     className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] hover:border-[#1b4372] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group"
                   >
                     <ShoppingCart className="w-4 h-4 text-[#1b4372] group-hover:scale-110 transition-transform" />
-                    <span>請購系統 (Procurement)</span>
+                    <span>Procurement</span>
                   </button>
 
-                  {/* 5. Schedule (ONLY this button is highlighted) */}
+                  {/* 5. Meeting Schedule */}
                   <button 
                     onClick={() => navigateTo("schedule")}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1b4372] text-white border border-[#122e4f] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-md hover:bg-[#102844] active:scale-95 transition-all group ring-2 ring-[#1b4372]/25"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group hover:border-[#1b4372]"
                   >
-                    <Calendar className="w-4 h-4 text-blue-200 animate-pulse" />
-                    <span>Schedule</span>
+                    <Calendar className="w-4 h-4 text-[#1b4372]" />
+                    <span>Meeting Schedule</span>
                   </button>
 
                   {/* 6. Card Generator */}
@@ -1307,7 +1409,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ================= PAGE 6: SCHEDULE ================= */}
+        {/* ================= PAGE 6: SCHEDULE (PUBLIC LAB CALENDAR) ================= */}
         {currentPage === "schedule" && (
           <div className="py-12 px-6 lg:px-16 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-200">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#e5e5e0] pb-6">

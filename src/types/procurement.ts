@@ -12,13 +12,13 @@ export type ProcurementStatus =
 
 export type UserRole = "student" | "assistant" | "professor" | "admin";
 
-export type PurchaserType = "student" | "professor" | "unassigned";
+export type PurchaserType = "student" | "professor" | "postpayment" | "unassigned";
 
 export type PurchaseProgressStatus = 
   | "pending_purchase"     // 待採購 (尚未購買)
   | "student_purchased"    // 請購人已購買 (學生自購)
   | "professor_purchased"  // 教授已購買 (老師統購)
-  | "postpayment"  // 貨到後計畫付款 (廠商先行寄送)
+  | "postpayment"          // 貨到後計畫付款 (廠商送貨後報帳請款)
   | "delivered"            // 已到貨 / 已收訖
   | "completed";           // 已填發票 / 結案核銷
 
@@ -91,7 +91,6 @@ export interface ProcurementItem {
   applicantName: string;
   applicantEmail: string;
   department: string;
-  budgetProject?: string; // 計畫編號 / 經費來源 (請購時免填，由助理/教授於審批時核定，支援教授新增)
   purpose: string;       // 請購總體目的 / 專案說明
   description?: string;  // 詳細用途/說明
   status: ProcurementStatus;
@@ -161,15 +160,7 @@ export interface HistoricalCatalogItem {
   lastUnitPrice: number;
   currency: string;
   brand?: string;
-  budgetProject?: string;
   specModel?: string;
   productUrl?: string; // 常用購買連結
 }
 
-export interface BudgetProject {
-  code: string;
-  nameZh: string;
-  nameEn: string;
-  pi: string;
-  validPeriod: string;
-}
