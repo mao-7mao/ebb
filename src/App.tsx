@@ -645,7 +645,7 @@ export default function App() {
                 }`}
               >
                 <ShoppingCart className="w-4 h-4 text-[#1b4372]" /> 
-                <span>Procurement (請購)</span>
+                <span>Procurement</span>
               </button>
 
               <button 
