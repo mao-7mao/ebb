@@ -24,7 +24,7 @@ const CONFIG = {
   SHEET_NAME_REQUESTS: "請購總表",
   SHEET_NAME_PURCHASED: "已核准採購進程",
   ADMIN_EMAIL: "ebblab115@gmail.com", // 系統管理員 / 助理
-  PROFESSOR_EMAIL: "advise1874@gmail.com", // 教授
+  PROFESSOR_EMAIL: "klchang@mail.nsysu.edu.tw", // 教授
   LAB_NAME: "EBB Lab",
   WEB_APP_URL: "https://ai.studio/build" // 線上請購系統網址
 };
