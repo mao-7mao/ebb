@@ -91,7 +91,7 @@ const CONFIG = {
   SHEET_NAME_PURCHASED: "已核准採購進程",
   ADMIN_EMAIL: "ebblab115@gmail.com",
   PROFESSOR_EMAIL: "klchang@mail.nsysu.edu.tw",
-  LAB_NAME: "EBB Lab (海洋永續與生物精煉實驗室)",
+  LAB_NAME: "EBB Lab",
   WEB_APP_URL: "https://ai.studio/build"
 };
 
