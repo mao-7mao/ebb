@@ -414,12 +414,12 @@ export default function ProcurementSystem() {
     } catch (e) {}
 
     triggerGasWebhook("create_request", newItem);
-    const requiresProf = newItem.requiresProfessorApproval || newItem.notifyProfessor;
+    const isOver3000 = newItem.estimatedTotalPrice >= 3000;
     showToast(
       lang === "zh" 
-        ? (requiresProf 
-            ? `請購單 ${requisitionNo} 已建立！單價/總額達 3,000 元或已勾選通知教授，將進行二階審批 (助理初審 ➔ 教授終審)。`
-            : `請購單 ${requisitionNo} 已建立！小額請購 (< 3,000 元)，已寄發通知信至助理信箱初審。`)
+        ? (isOver3000 
+            ? `請購單 ${requisitionNo} 已建立！總額達 3,000 元（需附比價紀錄），將由 Admin 初審後呈送教授終審。`
+            : `請購單 ${requisitionNo} 已建立！未滿 3,000 元小額請購（免附比價），將由 Admin 初審後呈送教授終審。`)
         : `Requisition ${requisitionNo} submitted!`
     );
   };

@@ -115,7 +115,7 @@ export interface ProcurementItem {
   consumableDetails?: ProcurementItemLine["consumableDetails"];
   equipmentDetails?: ProcurementItemLine["equipmentDetails"];
 
-  // Approval Threshold & Routing (< 3000 TWD: assistant review only unless notifyProfessor is selected; >= 3000 TWD: assistant review -> professor final approval)
+  // Approval Threshold & Routing: 不論金額皆須助理初審後送教授終審；≥ 3000 TWD 需附比價紀錄，< 3000 TWD 免比價
   requiresProfessorApproval?: boolean;
   notifyProfessor?: boolean;
 

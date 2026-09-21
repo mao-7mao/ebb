@@ -175,7 +175,7 @@ export default function ProcurementDetailModal({
         to: item.applicantEmail,
         cc: "ebblab115@gmail.com",
         subject: `[EBB Lab 請購核准通知] 單號 ${item.requisitionNo} - 已獲核准，可執行採購`,
-        body: `親愛的 ${item.applicantName} 您好：\n\n您於線上請購系統申請之品項（單號：${item.requisitionNo}，總額預估 NT$ ${item.estimatedTotalPrice.toLocaleString()}）已完成審核核准！\n\n【審核核定結果】\n• 審核狀態：已核准 (Approved)\n• 指定採購人 / 付款方式：${item.purchaser === "student" ? "由請購人自行採購" : item.purchaser === "professor" ? "由教授本人統籌採購" : item.purchaser === "postpayment" ? "貨到後付款 (廠商請款 / 免先付款)" : "待定"}\n• 審定意見：${item.professorReview?.comment || item.assistantReview?.comment || "准予採購"}\n\n【請購品項標準清單】\n${docItemsTable}\n\n請依照指定廠商或平台辦理採購。採購完成並取得統一發票或收據後，請前往請購系統「採購進程追蹤」回填實際金額與發票號碼，以利辦理後續核銷。\n\nEBB Lab 實驗室請購系統\n國立中山大學 環境工程研究所`
+        body: ` ${item.applicantName} 您好：\n\n您於線上請購系統申請之品項（單號：${item.requisitionNo}，總額預估 NT$ ${item.estimatedTotalPrice.toLocaleString()}）已完成審核核准！\n\n【審核核定結果】\n• 審核狀態：已核准 (Approved)\n• 指定採購人 / 付款方式：${item.purchaser === "student" ? "由請購人自行採購" : item.purchaser === "professor" ? "由教授本人統籌採購" : item.purchaser === "postpayment" ? "貨到後付款 (廠商請款 / 免先付款)" : "待定"}\n• 審定意見：${item.professorReview?.comment || item.assistantReview?.comment || "准予採購"}\n\n【請購品項標準清單】\n${docItemsTable}\n\n請依照指定廠商或平台辦理採購。採購完成並取得統一發票或收據後，請前往請購系統「採購進程追蹤」回填實際金額與發票號碼，以利辦理後續核銷。\n\nEBB Lab 實驗室請購系統\n國立中山大學 環境工程研究所`
       };
     }
 
@@ -186,7 +186,7 @@ export default function ProcurementDetailModal({
         to: item.applicantEmail,
         cc: "ebblab115@gmail.com",
         subject: `[EBB Lab 請購退回通知] 單號 ${item.requisitionNo} - 請購單審核未通過說明`,
-        body: `親愛的 ${item.applicantName} 您好：\n\n您於系統填寫之請購單（單號：${item.requisitionNo}，品項：${item.itemName}，總額 NT$ ${item.estimatedTotalPrice.toLocaleString()}）經審核暫不通過，退回原因說明如下：\n\n【退回審核意見】\n${rejectReason}\n\n【原請購單明細】\n${docItemsTable}\n\n請依據上述意見進行規格調整或補件後，再次於系統提出請購申請。\n\nEBB Lab 實驗室請購系統`
+        body: ` ${item.applicantName} 您好：\n\n您於系統填寫之請購單（單號：${item.requisitionNo}，品項：${item.itemName}，總額 NT$ ${item.estimatedTotalPrice.toLocaleString()}）經審核暫不通過，退回原因說明如下：\n\n【退回審核意見】\n${rejectReason}\n\n【原請購單明細】\n${docItemsTable}\n\n請依據上述意見進行規格調整或補件後，再次於系統提出請購申請。\n\nEBB Lab 實驗室請購系統`
       };
     }
 
@@ -196,7 +196,7 @@ export default function ProcurementDetailModal({
       const rejectionReplyBody = `【教授請購審核回覆 - 不予通過】\n請購單號：${item.requisitionNo}\n申請人：${item.applicantName}\n預估總額：NT$ ${item.estimatedTotalPrice.toLocaleString()}\n\n■ 教授核定決策：\n[ ] 【核准通過】 (Approved)\n\n[x] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：請補充詳細規格或經費不足暫不採購\n\n※ 本回信自動同時抄送實驗室 Admin (ebblab115@gmail.com) 與請購人 (${item.applicantEmail})。`;
 
       return {
-        to: "advise1874@gmail.com",
+        to: "klchang@mail.nsysu.edu.tw",
         cc: `ebblab115@gmail.com, ${item.applicantEmail}`,
         subject: `[EBB Lab 請購簽核] 單號 ${item.requisitionNo} - ${item.applicantName} 申請 ${item.itemName} (預估 NT$ ${item.estimatedTotalPrice.toLocaleString()})`,
         approvalMailto: `mailto:ebblab115@gmail.com?cc=${encodeURIComponent(item.applicantEmail)}&subject=${encodeURIComponent(`Re: [EBB Lab 請購簽核回覆] 單號 ${item.requisitionNo} - 教授核准通過`)}&body=${encodeURIComponent(approvalReplyBody)}`,
@@ -372,24 +372,18 @@ export default function ProcurementDetailModal({
             <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-sm text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-slate-700">審批適用規則：</span>
-                {item.estimatedTotalPrice >= 3000 || item.requiresProfessorApproval ? (
+                {item.estimatedTotalPrice >= 3000 ? (
                   <span className="text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded text-[11px]">
-                    總價/單價 ≥ 3,000 元（需三家詢價並經教授簽可）
-                  </span>
-                ) : item.notifyProfessor ? (
-                  <span className="text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded text-[11px]">
-                    未滿 3,000 元（申請人主動勾選通知教授審核）
+                    總價/單價 ≥ 3,000 元（需附比價紀錄 · 教授終審）
                   </span>
                 ) : (
-                  <span className="text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded text-[11px]">
-                    未滿 3,000 元（助理確認後核定，免教授審核）
+                  <span className="text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded text-[11px]">
+                    未滿 3,000 元（免附比價 · 均需教授終審）
                   </span>
                 )}
               </div>
               <span className="text-[11px] text-slate-500 font-mono">
-                {item.estimatedTotalPrice >= 3000 || item.requiresProfessorApproval || item.notifyProfessor
-                  ? "流程: 提交 ➔ 助理初審 ➔ 教授終審 ➔ Mail通知"
-                  : "流程: 提交 ➔ 助理確認回傳Mail ➔ 系統查看進程"}
+                流程: 提交 ➔ Admin 初審 ➔ 教授終審 ➔ Mail通知
               </span>
             </div>
           </div>

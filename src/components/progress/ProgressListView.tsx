@@ -68,7 +68,7 @@ export default function ProgressListView({
   };
 
   const handleSendReminder = (member: CombinedMember, daysStale: number) => {
-    const text = `【EBB Lab 進度更新提醒】親愛的 ${member.name_zh} (${member.name_en})，您已有 ${daysStale} 天尚未更新研究進度，請至 LabData Studio 填寫最新進展或實驗數據，以利組會研討與進度彙整！謝謝！`;
+    const text = `【EBB Lab 進度更新提醒】 ${member.name_zh} (${member.name_en})，您已有 ${daysStale} 天尚未更新研究進度，請至 LabData Studio 填寫最新進展或實驗數據，以利組會研討與進度彙整！謝謝！`;
     navigator.clipboard.writeText(text);
     setRemindedMemberId(member.id);
     setTimeout(() => setRemindedMemberId(null), 2500);

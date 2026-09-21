@@ -288,7 +288,7 @@ function sendRejectionEmailToApplicant(item, reason) {
     const body = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <h2 style="color: #b91c1c;">EBB Lab 請購單初審退回通知</h2>
-        <p>親愛的 <strong>${item.applicantName}</strong> 您好：</p>
+        <p> <strong>${item.applicantName}</strong> 您好：</p>
         <p>您於系統申請之請購單 <strong>${item.requisitionNo} (${item.itemName})</strong> 經 Admin 初審未通過，原因說明如下：</p>
         <div style="background-color: #fef2f2; border-left: 4px solid #b91c1c; padding: 10px 14px; margin: 12px 0;">
           <strong>退回原因：</strong> ${reason}
@@ -437,7 +437,7 @@ function sendApprovalEmailToApplicantAndAdmin(item) {
     const body = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <h2 style="color: #1b4372;">EBB Lab 請購單審批通過</h2>
-        <p>親愛的 <strong>${item.applicantName}</strong> 您好：</p>
+        <p> <strong>${item.applicantName}</strong> 您好：</p>
         <p>您的請購單 <strong>${item.requisitionNo} (${item.itemName})</strong> 已獲教授終審簽可通過！</p>
         <div style="background-color: #e8f5e9; border-left: 4px solid #2e7d32; padding: 10px 14px; margin: 12px 0;">
           <strong>採購指派：</strong> ${purchaserText}<br/>
@@ -467,7 +467,7 @@ function sendProfessorRejectionEmail(item) {
     const body = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <h2 style="color: #b91c1c;">EBB Lab 請購單退回通知</h2>
-        <p>親愛的 <strong>${item.applicantName}</strong> 您好：</p>
+        <p> <strong>${item.applicantName}</strong> 您好：</p>
         <p>您的請購單 <strong>${item.requisitionNo} (${item.itemName})</strong> 經教授審核暫不通過，退回原因說明如下：</p>
         <div style="background-color: #fef2f2; border-left: 4px solid #b91c1c; padding: 10px 14px; margin: 12px 0;">
           <strong>退回原因：</strong> ${item.professorReview?.comment || "經費考量或規格不符暫不採購。"}
