@@ -93,6 +93,7 @@ export interface ProcurementItem {
   department: string;
   purpose: string;       // 請購總體目的 / 專案說明
   description?: string;  // 詳細用途/說明
+  budgetProject?: string; // 經費計畫 / 會計科目
   status: ProcurementStatus;
   
   // 多品項清單 (一張請購單可含多筆樣品、耗材或設備)

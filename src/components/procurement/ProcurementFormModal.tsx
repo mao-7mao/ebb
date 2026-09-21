@@ -657,7 +657,7 @@ export default function ProcurementFormModal({
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-slate-800 font-bold flex items-center gap-1.5 text-xs">
                       <Store className="w-3.5 h-3.5 text-amber-700" />
-                      <span>{lang === "zh" ? "購物平台 (可自行輸入或點選歷史)" : "Shopping Platform (Custom input or click saved)"}</span>
+                      <span>{lang === "zh" ? "購物平台 (科研市集/蝦皮/淘寶等，可自行輸入或點選歷史)" : "Shopping Platform (Custom input or click saved)"}</span>
                     </label>
                     <span className="text-[10px] text-slate-500">
                       {lang === "zh" ? "輸入新平台會自動記錄，下次可直接點選" : "New platforms will be remembered"}
@@ -953,8 +953,8 @@ export default function ProcurementFormModal({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <div className="relative w-full">
-                      <span className="absolute left-2.5 top-2 text-xs font-bold text-slate-400 font-mono">
+                    <div className="flex items-stretch w-full rounded-sm border border-[#e5e5e0] bg-white focus-within:border-[#1b4372] focus-within:ring-1 focus-within:ring-[#1b4372] shadow-2xs overflow-hidden">
+                      <span className="inline-flex items-center justify-center px-3 bg-slate-100/80 border-r border-[#e5e5e0] text-xs font-bold font-mono text-slate-600 select-none shrink-0 tracking-wider">
                         {CURRENCY_CONFIG[currentItem.currency || "TWD"].symbol}
                       </span>
                       <input
@@ -962,9 +962,12 @@ export default function ProcurementFormModal({
                         min="0"
                         step="any"
                         required
-                        value={currentItem.estimatedUnitPrice}
-                        onChange={(e) => handleUpdateActiveItem("estimatedUnitPrice", Math.max(0, parseFloat(e.target.value) || 0))}
-                        className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 pl-7 text-xs font-mono font-bold text-[#1b4372]"
+                        value={currentItem.estimatedUnitPrice === 0 ? "" : currentItem.estimatedUnitPrice}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          handleUpdateActiveItem("estimatedUnitPrice", val === "" ? 0 : Math.max(0, parseFloat(val) || 0));
+                        }}
+                        className="w-full bg-white px-3 py-2 text-xs font-mono font-bold text-[#1b4372] placeholder:text-slate-300 focus:outline-none"
                         placeholder="0"
                       />
                     </div>
@@ -1120,7 +1123,7 @@ export default function ProcurementFormModal({
                   <div className="bg-white/80 p-2.5 rounded border border-amber-200 text-[11px] text-slate-700 space-y-1">
                     <div className="font-semibold text-slate-900 flex items-center gap-1">
                       <span>審核流程：</span>
-                      <span className="font-mono text-amber-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過後購買</span>
+                      <span className="font-mono text-amber-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過（回覆抄送助理與請購人）</span>
                     </div>
                   </div>
                 </div>
@@ -1145,7 +1148,7 @@ export default function ProcurementFormModal({
                   <div className="bg-white/80 p-2.5 rounded border border-emerald-200 text-[11px] text-slate-700 space-y-1">
                     <div className="font-semibold text-slate-900 flex items-center gap-1">
                       <span>審核流程：</span>
-                      <span className="font-mono text-emerald-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過後購買</span>
+                      <span className="font-mono text-emerald-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過（回覆抄送助理與請購人）</span>
                     </div>
                   </div>
                 </div>

@@ -32,7 +32,29 @@
 
 ---
 
-### 3. 如何在 Cloudflare Dashboard 設定環境變數？
+### 3. 常見建置錯誤排解 (Build Error Troubleshooting)
+
+#### 🔴 錯誤：`error: lockfile had changes, but lockfile is frozen`
+* **原因**：Cloudflare 預設執行 `bun install --frozen-lockfile`。當 `package.json` 有新增或更動套件時，若倉庫內的 `bun.lock` 未同步更新，Bun 就會強制中斷建置以防套件漂移。
+* **解決方案 A（最推薦，一勞永逸）**：刪除 `bun.lock`，讓 Cloudflare 使用穩定的 Node.js / npm 安裝：
+  ```bash
+  git rm bun.lock
+  git commit -m "Remove bun.lock to use standard npm install"
+  git push origin main
+  ```
+  並到 Cloudflare Dashboard -> **Settings** -> **Build variables** 中，刪除 `BUN_VERSION` 變數。
+
+* **解決方案 B（若仍想使用 Bun）**：提交本地重新同步後的 `bun.lock`：
+  ```bash
+  bun install
+  git add bun.lock package.json
+  git commit -m "Update bun.lock to sync with package.json"
+  git push origin main
+  ```
+
+---
+
+### 4. 如何在 Cloudflare Dashboard 設定環境變數？
 
 請重新將程式碼 Git Push 到 GitHub 後，Cloudflare 會自動觸發新一輪 Deploy。Deploy 成功後：
 

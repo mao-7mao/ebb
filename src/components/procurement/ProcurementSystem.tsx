@@ -20,6 +20,11 @@ import ProcurementOfficialRequisition from "./ProcurementOfficialRequisition";
 import RolePasswordModal from "./RolePasswordModal";
 import ApprovedPurchasingTracker from "./ApprovedPurchasingTracker";
 import ExportDateRangeModal from "./ExportDateRangeModal";
+import { 
+  fetchItemsFromGasWebhook, 
+  fetchItemsFromGoogleSheetCsv, 
+  mergeProcurementItems 
+} from "../../services/procurementSyncService";
 import { EXTERNAL_LINKS } from "../../config/externalLinks";
 import { 
   Search, 
@@ -52,6 +57,7 @@ import {
 const STORAGE_KEY_ITEMS = "ebblab_procurement_items_v2";
 const STORAGE_KEY_CATALOG = "ebblab_procurement_catalog_v2";
 const STORAGE_KEY_WEBHOOK = "ebblab_procurement_gas_webhook";
+const STORAGE_KEY_SHEET_URL = "ebblab_procurement_sheet_url";
 const STORAGE_KEY_PASSWORDS = "ebblab_procurement_role_passwords";
 const STORAGE_KEY_PLATFORMS = "ebblab_procurement_saved_platforms";
 const STORAGE_KEY_AUTH_ROLES = "ebblab_procurement_auth_roles";
@@ -161,7 +167,7 @@ export default function ProcurementSystem() {
   });
 
   // Google Apps Script Webhook URL (優先讀取後端設定檔 EXTERNAL_LINKS)
-  const [gasWebhookUrl] = useState<string>(() => {
+  const [gasWebhookUrl, setGasWebhookUrl] = useState<string>(() => {
     if (EXTERNAL_LINKS.procurementWebhookUrl && EXTERNAL_LINKS.procurementWebhookUrl.trim()) {
       return EXTERNAL_LINKS.procurementWebhookUrl.trim();
     }
@@ -174,6 +180,81 @@ export default function ProcurementSystem() {
     }
     return localStorage.getItem(STORAGE_KEY_WEBHOOK) || "";
   });
+
+  // Google 試算表共用網址 (供備援 CSV 直接解析讀取)
+  const [gasSheetUrl, setGasSheetUrl] = useState<string>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_SHEET_URL);
+    if (saved && saved.trim()) return saved.trim();
+    if (EXTERNAL_LINKS.procurementSheetUrl && EXTERNAL_LINKS.procurementSheetUrl.includes("spreadsheets/d")) {
+      return EXTERNAL_LINKS.procurementSheetUrl.trim();
+    }
+    return "";
+  });
+
+  // 雲端同步狀態
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+
+  // 雲端資料同步核心函數 (向 Webhook doGet 或 Google Sheet CSV 請求最新資料)
+  const syncWithCloud = async (isAuto = false): Promise<{ success: boolean; count?: number; message?: string }> => {
+    setIsSyncing(true);
+    let allFetchedItems: ProcurementItem[] = [];
+    let fetchSource = "";
+
+    try {
+      // 1. 優先嘗試從 Google Apps Script Webhook (doGet) 讀取試算表資料
+      if (gasWebhookUrl && gasWebhookUrl.trim()) {
+        const gasRes = await fetchItemsFromGasWebhook(gasWebhookUrl);
+        if (gasRes.success && gasRes.items && gasRes.items.length > 0) {
+          allFetchedItems = gasRes.items.map(normalizeProcurementItem);
+          fetchSource = "Google Apps Script 雲端試算表";
+        }
+      }
+
+      // 2. 若 Webhook 未能讀取到項目，且有設定 Google 試算表共用連結，則嘗試 CSV 模式直接下載
+      if (allFetchedItems.length === 0 && gasSheetUrl && gasSheetUrl.trim()) {
+        const sheetRes = await fetchItemsFromGoogleSheetCsv(gasSheetUrl);
+        if (sheetRes.success && sheetRes.items && sheetRes.items.length > 0) {
+          allFetchedItems = sheetRes.items.map(normalizeProcurementItem);
+          fetchSource = "Google 試算表 (CSV 模式)";
+        }
+      }
+
+      if (allFetchedItems.length > 0) {
+        setItems(prevItems => {
+          const merged = mergeProcurementItems(prevItems, allFetchedItems);
+          try {
+            localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(merged));
+          } catch (e) {}
+          return merged;
+        });
+
+        const timeStr = new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+        setLastSyncTime(timeStr);
+
+        const msg = `已成功從 ${fetchSource} 同步 ${allFetchedItems.length} 筆請購資料！`;
+        if (!isAuto) showToast(msg);
+        return { success: true, count: allFetchedItems.length, message: msg };
+      }
+
+      const msg = "已成功連線至雲端試算表，目前表內暫無新請購記錄。";
+      if (!isAuto) showToast(msg);
+      return { success: true, count: 0, message: msg };
+    } catch (err: any) {
+      const errMsg = `同步雲端資料失敗：${err.message || err}`;
+      if (!isAuto) showToast(errMsg);
+      return { success: false, message: errMsg };
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // 組件載入或網址設定變更時，自動從雲端同步一次，確保 Admin 與所有成員皆看到最新請購清單
+  useEffect(() => {
+    if ((gasWebhookUrl && gasWebhookUrl.trim()) || (gasSheetUrl && gasSheetUrl.trim())) {
+      syncWithCloud(true);
+    }
+  }, [gasWebhookUrl, gasSheetUrl]);
 
   // Save to localStorage whenever items change
   useEffect(() => {
@@ -670,6 +751,9 @@ export default function ProcurementSystem() {
         onOpenCreateModal={() => setIsCreateModalOpen(true)}
         totalCount={items.length}
         pendingCount={pendingReviewsCount}
+        onSyncNow={() => syncWithCloud(false)}
+        isSyncing={isSyncing}
+        lastSyncTime={lastSyncTime}
       />
 
       {/* Navigation View Switcher Tabs */}

@@ -6,7 +6,9 @@ import {
   Lock, 
   ShieldCheck, 
   LogOut,
-  SlidersHorizontal
+  SlidersHorizontal,
+  RefreshCw,
+  Cloud
 } from "lucide-react";
 
 interface ProcurementHeaderProps {
@@ -18,6 +20,9 @@ interface ProcurementHeaderProps {
   onOpenCreateModal: () => void;
   totalCount: number;
   pendingCount: number;
+  onSyncNow?: () => void;
+  isSyncing?: boolean;
+  lastSyncTime?: string | null;
 }
 
 export default function ProcurementHeader({
@@ -28,7 +33,10 @@ export default function ProcurementHeader({
   onToggleLang,
   onOpenCreateModal,
   totalCount,
-  pendingCount
+  pendingCount,
+  onSyncNow,
+  isSyncing = false,
+  lastSyncTime
 }: ProcurementHeaderProps) {
   return (
     <div className="bg-[#fdfdfc] border border-[#e5e5e0] rounded-sm p-5 md:p-6 shadow-xs space-y-4">
@@ -51,13 +59,27 @@ export default function ProcurementHeader({
           </h1>
           <p className="text-xs md:text-sm text-slate-500 max-w-2xl font-sans">
             {lang === "zh"
-              ? "點選「+ 填寫請購」送出藥品試劑、實驗耗材或設備請購。管理者可於右方登入審批。"
-              : "Submit chemical, consumable, or equipment requisitions. Admin can log in to review."}
+              ? "點選「+ 填寫請購」送出藥品試劑、實驗耗材或設備請購。全站資料即時雙向連動 Google 試算表。"
+              : "Submit chemical, consumable, or equipment requisitions. Synchronized two-way with Google Sheets."}
           </p>
         </div>
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          {/* Cloud Sync Button */}
+          {onSyncNow && (
+            <button
+              type="button"
+              onClick={onSyncNow}
+              disabled={isSyncing}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-sm text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-60"
+              title={lastSyncTime ? `上次同步：${lastSyncTime}` : "立即同步 Google 試算表最新請購資料"}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-emerald-700 ${isSyncing ? "animate-spin" : ""}`} />
+              <span>{isSyncing ? (lang === "zh" ? "同步中..." : "Syncing...") : (lang === "zh" ? "同步雲端" : "Sync Cloud")}</span>
+            </button>
+          )}
+
           {/* Language Toggle */}
           <button
             type="button"
