@@ -704,11 +704,12 @@ export default function ApprovedPurchasingTracker({
             </span>
 
             {[
-              { id: "ALL", label: "全部時間" },
+              
               { id: "TODAY", label: "今日" },
               { id: "7DAYS", label: "最近 7 天" },
               { id: "30DAYS", label: "最近 30 天" },
               { id: "THIS_MONTH", label: "本月份" },
+              { id: "ALL", label: "全部時間" },
               { id: "CUSTOM", label: "📅 自訂日期範圍 (Range)" }
             ].map((p) => (
               <button

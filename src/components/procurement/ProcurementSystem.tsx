@@ -923,11 +923,12 @@ export default function ProcurementSystem() {
                 {lang === "zh" ? "時間:" : "Time:"}
               </span>
               {[
-                { id: "ALL", label: lang === "zh" ? "全部" : "All" },
+               
                 { id: "TODAY", label: lang === "zh" ? "今日" : "Today" },
                 { id: "7DAYS", label: lang === "zh" ? "近7天" : "7 Days" },
                 { id: "30DAYS", label: lang === "zh" ? "近30天" : "30 Days" },
                 { id: "THIS_MONTH", label: lang === "zh" ? "本月" : "Month" },
+                { id: "ALL", label: lang === "zh" ? "全部" : "All" },
                 { id: "CUSTOM", label: lang === "zh" ? "自訂" : "Custom" }
               ].map((p) => (
                 <button
