@@ -1122,7 +1122,7 @@ export default function ProcurementFormModal({
                   <div className="bg-white/80 p-2.5 rounded border border-amber-200 text-[11px] text-slate-700 space-y-1">
                     <div className="font-semibold text-slate-900 flex items-center gap-1">
                       <span>審核流程：</span>
-                      <span className="font-mono text-amber-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過（回覆抄送助理與請購人）</span>
+                      <span className="font-mono text-amber-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過</span>
                     </div>
                   </div>
                 </div>
@@ -1141,13 +1141,13 @@ export default function ProcurementFormModal({
                   </div>
                   <p className="text-[11px] text-emerald-800 leading-relaxed">
                     {lang === "zh"
-                      ? "總額未滿 3,000 元之小額請購，可由單一廠商直接採購，免附多家廠商比價。Admin 初審確認後，一樣會發送通知信呈送教授審核簽可。"
+                      ? "總額未滿 3,000 元之小額請購，可由單一廠商直接採購，免附多家廠商比價。"
                       : "Requisitions under 3,000 TWD allow single-vendor purchase without comparison quotes. Admin will forward to PI for review and approval."}
                   </p>
                   <div className="bg-white/80 p-2.5 rounded border border-emerald-200 text-[11px] text-slate-700 space-y-1">
                     <div className="font-semibold text-slate-900 flex items-center gap-1">
                       <span>審核流程：</span>
-                      <span className="font-mono text-emerald-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過（回覆抄送助理與請購人）</span>
+                      <span className="font-mono text-emerald-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過</span>
                     </div>
                   </div>
                 </div>
