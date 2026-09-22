@@ -77,7 +77,7 @@ export const GOOGLE_APPS_SCRIPT_SAMPLE = `/**
  * 1. 支援接收請購系統前端網頁的 POST 請求 (doPost)。
  * 2. 支援前端 (Admin 或 任何使用者) GET 請求 (doGet)，即時回傳試算表中的請購資料清單。
  * 3. 自動在 Google Sheets 中記錄請購清單與採購進程。
- * 4. 自動透過 Gmail 寄送審批通知與採購進度更新給助理、教授與申請學生。
+ * 4. 自動透過 Gmail 寄送審批通知與採購進度更新給admin、教授與申請學生。
  * 
  * 設定步驟：
  * 1. 開啟您的 Google 試算表（例如「EBB Lab 請購與採購紀錄表」）。
@@ -187,6 +187,13 @@ function doPost(e) {
         updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, item.status, progressStatus, item);
       }
       return responseJSON({ success: true, message: "Progress updated." });
+    }
+
+    if (action === "delete_request") {
+      const targetReqNo = (item && item.requisitionNo) || data.requisitionNo;
+      deleteSheetRowByRequisitionNo(ss, CONFIG.SHEET_NAME_REQUESTS, targetReqNo);
+      deleteSheetRowByRequisitionNo(ss, CONFIG.SHEET_NAME_PURCHASED, targetReqNo);
+      return responseJSON({ success: true, message: "Requisition " + targetReqNo + " deleted from Google Sheets." });
     }
 
     return responseJSON({ success: false, error: "Unknown action" });
@@ -380,6 +387,20 @@ function updateProgressSheet(ss, reqNo, progress, purchaser, invoiceNo, note) {
   }
 }
 
+function deleteSheetRowByRequisitionNo(ss, sheetName, reqNo) {
+  if (!reqNo) return false;
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return false;
+  const data = sheet.getDataRange().getValues();
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][0] || "").trim() === String(reqNo).trim()) {
+      sheet.deleteRow(i + 1);
+      return true;
+    }
+  }
+  return false;
+}
+
 function sendMailToAdminOnSubmit(item, itemSummary, isOver3000) {
   try {
     const subject = \`[\${CONFIG.LAB_NAME}] 新請購單待審：\${item.requisitionNo} - \${item.applicantName}\`;
@@ -397,7 +418,7 @@ function sendRejectionEmailToApplicant(item, reason) {
 
 function sendMailToProfessorOnForward(item) {
   try {
-    MailApp.sendEmail({ to: CONFIG.PROFESSOR_EMAIL, cc: \`\${CONFIG.ADMIN_EMAIL},\${item.applicantEmail || ""}\`, subject: \`[\${CONFIG.LAB_NAME}] 請購簽核：單號 \${item.requisitionNo} - \${item.applicantName}\`, body: \`請購單 \${item.requisitionNo} 經 Admin 初審合格轉呈核定。\` });
+    MailApp.sendEmail({ to: CONFIG.PROFESSOR_EMAIL, cc: \`\${CONFIG.ADMIN_EMAIL},\${item.applicantEmail || ""}\`, subject: \`[\${CONFIG.LAB_NAME}] 請購簽核：單號 \${item.requisitionNo} - \${item.applicantName}\`, body: \`請購單 \${item.requisitionNo} 經 初審合格轉呈核定。\` });
   } catch (err) {}
 }
 

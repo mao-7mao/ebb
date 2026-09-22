@@ -23,7 +23,8 @@ import ExportDateRangeModal from "./ExportDateRangeModal";
 import { 
   fetchItemsFromGasWebhook, 
   fetchItemsFromGoogleSheetCsv, 
-  mergeProcurementItems 
+  mergeProcurementItems,
+  deleteRequisitionInGasWebhook
 } from "../../services/procurementSyncService";
 import { 
   normalizeProcurementDate, 
@@ -428,8 +429,8 @@ export default function ProcurementSystem() {
     showToast(
       lang === "zh" 
         ? (isOver3000 
-            ? `請購單 ${requisitionNo} 已建立！總額達 3,000 元（需附比價紀錄），將由 Admin 初審後呈送教授終審。`
-            : `請購單 ${requisitionNo} 已建立！未滿 3,000 元小額請購（免附比價），將由 Admin 初審後呈送教授終審。`)
+            ? `請購單 ${requisitionNo} 已建立！總額達 3,000 元（需附比價紀錄），將由 初審後呈送教授終審。`
+            : `請購單 ${requisitionNo} 已建立！未滿 3,000 元小額請購（免附比價），將由 初審後呈送教授終審。`)
         : `Requisition ${requisitionNo} submitted!`
     );
   };
@@ -450,7 +451,7 @@ export default function ProcurementSystem() {
           ...item,
           status: nextStatus,
           assistantReview: {
-            reviewerName: "Lab Admin (系統管理者/助理)",
+            reviewerName: "Lab Admin (系統管理者/admin)",
             reviewedAt: now,
             approved,
             comment
@@ -472,7 +473,7 @@ export default function ProcurementSystem() {
     } else {
       // Send webhook for professor notification with standard doc & checkbox reply
       if (updatedTarget) triggerGasWebhook("admin_approved_forward_professor", updatedTarget);
-      showToast(lang === "zh" ? "Admin 初審合格！已發送附標準文檔與核簽複選模板之簽呈信給教授終審。" : "Admin review passed. Forwarded to PI with standard requisition doc & reply options.");
+      showToast(lang === "zh" ? "初審合格！已發送附標準文檔與核簽複選模板之簽呈信給教授終審。" : "Admin review passed. Forwarded to PI with standard requisition doc & reply options.");
     }
   };
 
@@ -508,10 +509,10 @@ export default function ProcurementSystem() {
 
     if (approved && updatedTarget) {
       triggerGasWebhook("approve_request", updatedTarget);
-      showToast(lang === "zh" ? `教授核定准予採購！回覆通知信已寄達請購人 (${updatedTarget.applicantEmail})，並同步抄送助理。` : `Final approval granted! Notified applicant with CC to Admin.`);
+      showToast(lang === "zh" ? `教授核定准予採購！回覆通知信已寄達請購人 (${updatedTarget.applicantEmail})，並同步抄送admin。` : `Final approval granted! Notified applicant with CC to Admin.`);
     } else if (updatedTarget) {
       triggerGasWebhook("professor_rejected", updatedTarget);
-      showToast(lang === "zh" ? `教授已退回請購單，說明已寄送至請購人 (${updatedTarget.applicantEmail}) 並抄送助理。` : "Request rejected by PI; applicant and Admin notified.");
+      showToast(lang === "zh" ? `教授已退回請購單，說明已寄送至請購人 (${updatedTarget.applicantEmail}) 並抄送admin。` : "Request rejected by PI; applicant and Admin notified.");
     }
   };
 
@@ -539,13 +540,30 @@ export default function ProcurementSystem() {
     showToast(lang === "zh" ? "已標記採購完成！購買進程已更新。" : "Marked as purchased! Purchase progress updated.");
   };
 
-  // Delete Request (Admin only)
-  const handleDeleteRequest = (id: string, e: React.MouseEvent) => {
+  // Delete Request (Admin only) with bi-directional sync to Google Sheet
+  const handleDeleteRequest = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm(lang === "zh" ? "確定要刪除這筆請購單嗎？" : "Are you sure you want to delete this requisition?")) {
-      setItems(items.filter(i => i.id !== id));
+    const target = items.find(i => i.id === id);
+    if (!target) return;
+
+    if (confirm(lang === "zh" ? `確定要刪除請購單【${target.requisitionNo}】嗎？\n此操作將同步自系統及 Google 試算表中徹底刪除。` : `Are you sure you want to delete requisition ${target.requisitionNo}?`)) {
+      const updated = items.filter(i => i.id !== id);
+      setItems(updated);
+      try {
+        localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(updated));
+      } catch (err) {}
       if (selectedItem?.id === id) setSelectedItem(null);
-      showToast(lang === "zh" ? "請購單已刪除。" : "Requisition deleted.");
+
+      // 雙向同步刪除 Google Sheet 後端記錄
+      if (gasWebhookUrl && gasWebhookUrl.trim()) {
+        try {
+          await deleteRequisitionInGasWebhook(gasWebhookUrl, target.requisitionNo, target.id);
+        } catch (err) {
+          console.warn("GAS webhook delete error", err);
+        }
+      }
+
+      showToast(lang === "zh" ? `請購單【${target.requisitionNo}】已雙向同步刪除。` : `Requisition ${target.requisitionNo} deleted.`);
     }
   };
 
@@ -697,7 +715,7 @@ export default function ProcurementSystem() {
   const getStatusBadge = (status: ProcurementStatus) => {
     switch (status) {
       case "pending_assistant":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold"><Clock className="w-3 h-3" />待助理初審</span>;
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold"><Clock className="w-3 h-3" />待初審</span>;
       case "pending_professor":
         return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-blue-50 text-blue-800 border border-blue-200 text-[10px] font-bold"><Clock className="w-3 h-3" />待教授終審</span>;
       case "approved":
@@ -835,49 +853,51 @@ export default function ProcurementSystem() {
             />
           </div>
 
-          {/* Batch Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            {selectedIds.size > 0 && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setPrintItems(items.filter(i => selectedIds.has(i.id)))}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1b4372] text-white rounded-sm text-xs font-bold transition shadow-xs active:scale-95"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>{lang === "zh" ? `批次列印單據 (${selectedIds.size})` : `Batch Print (${selectedIds.size})`}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleExportCSV(items.filter(i => selectedIds.has(i.id)))}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-xs"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>{lang === "zh" ? `匯出 Excel (${selectedIds.size})` : `Export CSV (${selectedIds.size})`}</span>
-                </button>
-              </>
-            )}
+          {/* Batch Actions & Order Exports (Admin Only) */}
+          {isAdmin && (
+            <div className="flex items-center gap-2 shrink-0">
+              {selectedIds.size > 0 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setPrintItems(items.filter(i => selectedIds.has(i.id)))}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1b4372] text-white rounded-sm text-xs font-bold transition shadow-xs active:scale-95"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>{lang === "zh" ? `批次列印單據 (${selectedIds.size})` : `Batch Print (${selectedIds.size})`}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExportCSV(items.filter(i => selectedIds.has(i.id)))}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-xs"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>{lang === "zh" ? `匯出 Excel (${selectedIds.size})` : `Export CSV (${selectedIds.size})`}</span>
+                  </button>
+                </>
+              )}
 
-            <button
-              type="button"
-              onClick={() => setIsExportDateRangeModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-xs active:scale-95"
-              title="依時間段或自訂日期範圍匯出 Excel (CSV)"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
-              <span>{lang === "zh" ? "依時間段匯出 Excel" : "Export by Date Range"}</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsExportDateRangeModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-xs active:scale-95"
+                title="依時間段或自訂日期範圍匯出 Excel (CSV)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
+                <span>{lang === "zh" ? "依時間段匯出 Excel" : "Export by Date Range"}</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => handleExportCSV(filteredItems)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-xs"
-              title="匯出目前列表篩選後之資料"
-            >
-              <Download className="w-3.5 h-3.5 text-slate-600" />
-              <span className="hidden sm:inline">{lang === "zh" ? "匯出當前視圖" : "Export View"}</span>
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => handleExportCSV(filteredItems)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-xs"
+                title="匯出目前列表篩選後之資料"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-600" />
+                <span className="hidden sm:inline">{lang === "zh" ? "匯出當前視圖" : "Export View"}</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Filter Pills & Date Range */}
@@ -907,7 +927,7 @@ export default function ProcurementSystem() {
                 className="bg-white border border-[#e5e5e0] rounded-sm py-1 px-2 text-xs font-medium focus:outline-none"
               >
                 <option value="ALL">{lang === "zh" ? "全部狀態" : "All Status"}</option>
-                <option value="pending_assistant">{lang === "zh" ? "待 Admin/助理初審" : "Pending Admin"}</option>
+                <option value="pending_assistant">{lang === "zh" ? "待 Admin/初審" : "Pending Admin"}</option>
                 <option value="pending_professor">{lang === "zh" ? "待教授終審" : "Pending PI"}</option>
                 <option value="approved">{lang === "zh" ? "已核准 (待採購)" : "Approved"}</option>
                 <option value="partially_approved">{lang === "zh" ? "部分審核通過" : "Partially Approved"}</option>
@@ -923,7 +943,6 @@ export default function ProcurementSystem() {
                 {lang === "zh" ? "時間:" : "Time:"}
               </span>
               {[
-               
                 { id: "TODAY", label: lang === "zh" ? "今日" : "Today" },
                 { id: "7DAYS", label: lang === "zh" ? "近7天" : "7 Days" },
                 { id: "30DAYS", label: lang === "zh" ? "近30天" : "30 Days" },
@@ -991,19 +1010,21 @@ export default function ProcurementSystem() {
           <table className="w-full text-xs font-sans">
             <thead className="bg-[#f8f8f5] text-slate-700 font-bold border-b border-[#e5e5e0]">
               <tr>
-                <th className="p-3 text-center w-10">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.size > 0 && selectedIds.size === filteredItems.length}
-                    onChange={handleSelectAll}
-                    className="rounded text-[#1b4372]"
-                  />
-                </th>
+                {isAdmin && (
+                  <th className="p-3 text-center w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.size > 0 && selectedIds.size === filteredItems.length}
+                      onChange={handleSelectAll}
+                      className="rounded text-[#1b4372]"
+                    />
+                  </th>
+                )}
                 <th className="p-3 text-left w-32">請購單號 / 申請日</th>
                 <th className="p-3 text-left">品項名稱與規格規格</th>
                 <th className="p-3 text-left w-24">類別</th>
                 <th className="p-3 text-right w-24">數量金額 (NT$)</th>
-                <th className="p-3 text-left w-36">廠商 / 平台</th>
+                <th className="p-3 text-left w-36">建議廠商 / 平台</th>
                 <th className="p-3 text-left w-28">申請人</th>
                 <th className="p-3 text-center w-36">審核狀態</th>
                 <th className="p-3 text-center w-28">操作</th>
@@ -1021,14 +1042,16 @@ export default function ProcurementSystem() {
                       onClick={() => setSelectedItem(item)}
                       className={`hover:bg-[#fbfbfa] transition cursor-pointer ${isChecked ? "bg-blue-50/30" : ""}`}
                     >
-                      <td className="p-3 text-center" onClick={(e) => toggleSelectId(item.id, e)}>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => {}}
-                          className="rounded text-[#1b4372]"
-                        />
-                      </td>
+                      {isAdmin && (
+                        <td className="p-3 text-center" onClick={(e) => toggleSelectId(item.id, e)}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}}
+                            className="rounded text-[#1b4372]"
+                          />
+                        </td>
+                      )}
                       <td className="p-3 font-mono">
                         <span className="font-bold text-[#1b4372] block">{item.requisitionNo}</span>
                         <span className="text-[10px] text-slate-400 block">{extractDateOnly(item.createdAt, item.requisitionNo)}</span>
@@ -1094,7 +1117,7 @@ export default function ProcurementSystem() {
                             type="button"
                             onClick={() => setPrintItems([item])}
                             className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-sm"
-                            title="產生合規請購單"
+                            title="產生請購單"
                           >
                             <Printer className="w-4 h-4 text-[#8d734a]" />
                           </button>
@@ -1115,7 +1138,7 @@ export default function ProcurementSystem() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={9} className="p-10 text-center text-slate-400 bg-[#fdfdfc]">
+                  <td colSpan={isAdmin ? 9 : 8} className="p-10 text-center text-slate-400 bg-[#fdfdfc]">
                     <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                     <p className="text-sm font-medium">查無符合條件的請購單</p>
                     <p className="text-xs text-slate-400 mt-1">請調整篩選條件或點擊上方「+ 填寫新請購單」</p>
@@ -1139,6 +1162,7 @@ export default function ProcurementSystem() {
       }}
       lang={lang}
       currentRole={currentRole}
+      isAdmin={isAdmin}
       onViewRequisitionDetail={(item) => setSelectedItem(item)}
       onTriggerWebhook={triggerGasWebhook}
     />
@@ -1150,6 +1174,7 @@ export default function ProcurementSystem() {
       item={selectedItem}
       currentRole={currentRole}
       lang={lang}
+      isAdmin={isAdmin}
       onClose={() => setSelectedItem(null)}
       onAssistantReview={handleAssistantReview}
       onProfessorReview={handleProfessorReview}
@@ -1177,6 +1202,7 @@ export default function ProcurementSystem() {
     <ProcurementOfficialRequisition
       items={printItems}
       lang={lang}
+      isAdmin={isAdmin}
       onClose={() => setPrintItems(null)}
       onExportCSV={handleExportCSV}
     />

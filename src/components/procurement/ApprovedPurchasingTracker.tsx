@@ -73,6 +73,7 @@ interface ApprovedPurchasingTrackerProps {
   onUpdateItem: (updatedItem: ProcurementItem) => void;
   lang: "zh" | "en";
   currentRole: UserRole;
+  isAdmin?: boolean;
   onViewRequisitionDetail: (item: ProcurementItem) => void;
   onTriggerWebhook?: (action: string, item: ProcurementItem, extra?: any) => void;
 }
@@ -82,9 +83,12 @@ export default function ApprovedPurchasingTracker({
   onUpdateItem,
   lang,
   currentRole,
+  isAdmin,
   onViewRequisitionDetail,
   onTriggerWebhook
 }: ApprovedPurchasingTrackerProps) {
+  const isUserAdmin = isAdmin ?? (currentRole === "admin" || currentRole === "assistant" || currentRole === "professor");
+
   // Filters State
   const [searchQuery, setSearchQuery] = useState("");
   const [progressFilter, setProgressFilter] = useState<"ALL" | PurchaseProgressStatus>("ALL");
@@ -549,11 +553,17 @@ export default function ApprovedPurchasingTracker({
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
         <div className="bg-[#fdfdfc] border border-[#e5e5e0] p-3 rounded-sm shadow-2xs">
           <span className="text-[11px] font-bold text-slate-500 block">已核准品項總數</span>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-xl font-bold font-serif text-slate-800">{stats.totalCount} 項</span>
-            <span className="text-[10px] text-slate-400 font-mono">
-              NT$ {stats.totalEstPrice.toLocaleString()}
-            </span>
+          <div className="flex items-baseline justify-between mt-1 gap-1.5">
+            <span className="text-xl font-bold font-serif text-slate-800 shrink-0">{stats.totalCount} 項</span>
+            {isUserAdmin ? (
+              <span className="text-xs font-bold font-mono text-slate-700 whitespace-nowrap leading-none text-right" title={`核准總金額 NT$ ${stats.totalEstPrice.toLocaleString()}`}>
+                NT$ {stats.totalEstPrice.toLocaleString()}
+              </span>
+            ) : (
+              <span className="text-[10px] text-slate-400 font-sans whitespace-nowrap text-right" title="總金額僅限 Admin / 教授 權限檢視">
+                訪客模式
+              </span>
+            )}
           </div>
         </div>
 
@@ -572,7 +582,7 @@ export default function ApprovedPurchasingTracker({
           <span className="text-[11px] font-bold text-emerald-900 block">🛒 請購人已購買</span>
           <div className="flex items-baseline justify-between mt-1">
             <span className="text-xl font-bold font-serif text-emerald-900">{stats.studentPurchasedCount} 項</span>
-            <span className="text-[10px] text-emerald-700 font-medium">學生已自購/下訂</span>
+            <span className="text-[10px] text-emerald-700 font-medium">已自購/下訂</span>
           </div>
         </div>
 
@@ -627,71 +637,73 @@ export default function ApprovedPurchasingTracker({
             )}
           </div>
 
-          {/* Action buttons */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            {/* Batch actions if items selected */}
-            {selectedKeys.size > 0 && (
-              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-sm border border-slate-300">
-                <span className="text-[11px] font-bold text-slate-700 px-1.5">
-                  已選 {selectedKeys.size} 項：
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleBatchUpdateProgress("student_purchased")}
-                  className="px-2 py-1 bg-emerald-700 text-white rounded text-[11px] font-bold hover:bg-emerald-800"
-                  title="標記為請購人已購買"
-                >
-                  🛒 請購人已買
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleBatchUpdateProgress("professor_purchased", "Prof. K.L. Chang")}
-                  className="px-2 py-1 bg-purple-700 text-white rounded text-[11px] font-bold hover:bg-purple-800"
-                  title="標記為教授已購買"
-                >
-                  🎓 教授已買
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleBatchUpdateProgress("postpayment", "貨到後付款 (免先付)")}
-                  className="px-2 py-1 bg-blue-700 text-white rounded text-[11px] font-bold hover:bg-blue-800"
-                  title="標記為貨到後計畫付款"
-                >
-                  🏢 貨到後付款
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleBatchUpdateProgress("delivered")}
-                  className="px-2 py-1 bg-teal-700 text-white rounded text-[11px] font-bold hover:bg-teal-800"
-                  title="標記為已到貨"
-                >
-                  📦 已到貨
-                </button>
-              </div>
-            )}
+          {/* Action buttons (Admin only for bulk export & batch progress) */}
+          {isUserAdmin && (
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              {/* Batch actions if items selected */}
+              {selectedKeys.size > 0 && (
+                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-sm border border-slate-300">
+                  <span className="text-[11px] font-bold text-slate-700 px-1.5">
+                    已選 {selectedKeys.size} 項：
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleBatchUpdateProgress("student_purchased")}
+                    className="px-2 py-1 bg-emerald-700 text-white rounded text-[11px] font-bold hover:bg-emerald-800"
+                    title="標記為請購人已購買"
+                  >
+                    🛒 請購人已買
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBatchUpdateProgress("professor_purchased", "Prof. K.L. Chang")}
+                    className="px-2 py-1 bg-purple-700 text-white rounded text-[11px] font-bold hover:bg-purple-800"
+                    title="標記為教授已購買"
+                  >
+                    🎓 教授已買
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBatchUpdateProgress("postpayment", "貨到後付款 (免先付)")}
+                    className="px-2 py-1 bg-blue-700 text-white rounded text-[11px] font-bold hover:bg-blue-800"
+                    title="標記為貨到後計畫付款"
+                  >
+                    🏢 貨到後付款
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBatchUpdateProgress("delivered")}
+                    className="px-2 py-1 bg-teal-700 text-white rounded text-[11px] font-bold hover:bg-teal-800"
+                    title="標記為已到貨"
+                  >
+                    📦 已到貨
+                  </button>
+                </div>
+              )}
 
-            {/* Print shopping list */}
-            <button
-              type="button"
-              onClick={() => setIsPrintChecklistOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs"
-              title="列印或檢視採購採買清單"
-            >
-              <Printer className="w-3.5 h-3.5 text-[#8d734a]" />
-              <span>採購待購清單 ({filteredEntries.filter(e => e.purchaseProgress === "pending_purchase").length})</span>
-            </button>
+              {/* Print shopping list */}
+              <button
+                type="button"
+                onClick={() => setIsPrintChecklistOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs"
+                title="列印或檢視採購採買清單"
+              >
+                <Printer className="w-3.5 h-3.5 text-[#8d734a]" />
+                <span>採購待購清單 ({filteredEntries.filter(e => e.purchaseProgress === "pending_purchase").length})</span>
+              </button>
 
-            {/* Export CSV */}
-            <button
-              type="button"
-              onClick={handleExportApprovedCSV}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-2xs"
-              title={`依目前選定之時間範圍匯出 ${filteredEntries.length} 筆資料為 Excel (CSV)`}
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>匯出 Excel (CSV) ({filteredEntries.length} 筆)</span>
-            </button>
-          </div>
+              {/* Export CSV */}
+              <button
+                type="button"
+                onClick={handleExportApprovedCSV}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-2xs"
+                title={`依目前選定之時間範圍匯出 ${filteredEntries.length} 筆資料為 Excel (CSV)`}
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>匯出 Excel (CSV) ({filteredEntries.length} 筆)</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Date Filtering Section with Range Picker */}
@@ -704,13 +716,13 @@ export default function ApprovedPurchasingTracker({
             </span>
 
             {[
-              
+             
               { id: "TODAY", label: "今日" },
               { id: "7DAYS", label: "最近 7 天" },
               { id: "30DAYS", label: "最近 30 天" },
               { id: "THIS_MONTH", label: "本月份" },
-              { id: "ALL", label: "全部時間" },
-              { id: "CUSTOM", label: "📅 自訂日期範圍 (Range)" }
+               { id: "ALL", label: "全部時間" },
+              { id: "CUSTOM", label: "📅 自訂日期範圍" }
             ].map((p) => (
               <button
                 key={p.id}
@@ -810,19 +822,21 @@ export default function ApprovedPurchasingTracker({
           <table className="w-full text-xs font-sans">
             <thead className="bg-[#f8f8f5] text-slate-700 font-bold border-b border-[#e5e5e0]">
               <tr>
-                <th className="p-3 text-center w-10">
-                  <input
-                    type="checkbox"
-                    checked={selectedKeys.size > 0 && selectedKeys.size === filteredEntries.length}
-                    onChange={handleSelectAll}
-                    className="rounded text-[#1b4372]"
-                  />
-                </th>
+                {isUserAdmin && (
+                  <th className="p-3 text-center w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedKeys.size > 0 && selectedKeys.size === filteredEntries.length}
+                      onChange={handleSelectAll}
+                      className="rounded text-[#1b4372]"
+                    />
+                  </th>
+                )}
                 <th className="p-3 text-left w-32">請購單號 / 申請日</th>
                 <th className="p-3 text-left min-w-[220px]">核准品項規格與購物連結</th>
                 <th className="p-3 text-left w-20">類別</th>
                 <th className="p-3 text-right w-24">數量金額 (NT$)</th>
-                <th className="p-3 text-left w-32">廠商 / 通路</th>
+                <th className="p-3 text-left w-32">建議廠商 / 通路</th>
                 <th className="p-3 text-left w-24">請購人</th>
                 <th className="p-3 text-center min-w-[180px]">購買進程 (點擊更新)</th>
                 <th className="p-3 text-center w-28">操作</th>
@@ -839,15 +853,17 @@ export default function ApprovedPurchasingTracker({
                       key={entry.key}
                       className={`hover:bg-[#fbfbfa] transition ${isChecked ? "bg-blue-50/30" : ""}`}
                     >
-                      {/* Checkbox */}
-                      <td className="p-3 text-center" onClick={(e) => toggleSelectKey(entry.key, e)}>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => {}}
-                          className="rounded text-[#1b4372]"
-                        />
-                      </td>
+                      {/* Checkbox (Admin only) */}
+                      {isUserAdmin && (
+                        <td className="p-3 text-center" onClick={(e) => toggleSelectKey(entry.key, e)}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}}
+                            className="rounded text-[#1b4372]"
+                          />
+                        </td>
+                      )}
 
                       {/* Requisition No & Date */}
                       <td className="p-3 font-mono">
@@ -988,7 +1004,7 @@ export default function ApprovedPurchasingTracker({
                 })
               ) : (
                 <tr>
-                  <td colSpan={9} className="p-12 text-center text-slate-400 font-sans">
+                  <td colSpan={isUserAdmin ? 9 : 8} className="p-12 text-center text-slate-400 font-sans">
                     <div className="max-w-sm mx-auto space-y-2">
                       <ShoppingCart className="w-8 h-8 mx-auto text-slate-300" />
                       <p className="text-xs font-bold text-slate-600">查無符合條件之已核准品項</p>

@@ -466,7 +466,7 @@ export default function ProcurementFormModal({
               rows={2}
               value={overallPurpose}
               onChange={(e) => setOverallPurpose(e.target.value)}
-              placeholder={lang === "zh" ? "請敘明本次請購品項之總體研究用途、進行之實驗主題或必要性 (作為助理初審與教授核定依據)..." : "State the overall research purpose and experiment justification..."}
+              placeholder={lang === "zh" ? "請敘明本次請購品項之總體研究用途、進行之實驗主題或必要性 (作為初審與教授核定依據)..." : "State the overall research purpose and experiment justification..."}
               className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2.5 text-xs focus:border-[#1b4372] focus:outline-none"
             />
           </div>
@@ -1123,7 +1123,7 @@ export default function ProcurementFormModal({
                   <div className="bg-white/80 p-2.5 rounded border border-amber-200 text-[11px] text-slate-700 space-y-1">
                     <div className="font-semibold text-slate-900 flex items-center gap-1">
                       <span>審核流程：</span>
-                      <span className="font-mono text-amber-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過</span>
+                      <span className="font-mono text-amber-900">請購人提交 ➔ 初審 ➔ 發送教授審核 ➔ 教授核定通過</span>
                     </div>
                   </div>
                 </div>
@@ -1134,7 +1134,7 @@ export default function ProcurementFormModal({
                   <div className="flex items-center justify-between">
                     <div className="font-bold text-emerald-950 text-xs flex items-center gap-1.5 font-serif">
                       <Check className="w-4 h-4 text-emerald-700 shrink-0" />
-                      <span>{lang === "zh" ? "小額採購（總額未滿 3,000 元）· 免附多家比價，初審後呈送教授審核" : "Small Requisition (< 3,000 TWD) · Single Vendor Allowed & Forwarded to PI"}</span>
+                      <span>{lang === "zh" ? "小額採購（總額未滿 3,000 元）" : "Small Requisition (< 3,000 TWD) · Single Vendor Allowed & Forwarded to PI"}</span>
                     </div>
                     <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
                       NT$ {grandTotal.toLocaleString()} &lt; 3,000
@@ -1148,7 +1148,7 @@ export default function ProcurementFormModal({
                   <div className="bg-white/80 p-2.5 rounded border border-emerald-200 text-[11px] text-slate-700 space-y-1">
                     <div className="font-semibold text-slate-900 flex items-center gap-1">
                       <span>審核流程：</span>
-                      <span className="font-mono text-emerald-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過</span>
+                      <span className="font-mono text-emerald-900">請購人提交 ➔ 初審 ➔ 發送教授審核 ➔ 教授核定通過</span>
                     </div>
                   </div>
                 </div>

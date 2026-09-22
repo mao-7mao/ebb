@@ -3,7 +3,7 @@ export type ProcurementCategory = "chemical" | "consumable" | "equipment";
 export type CurrencyCode = "TWD" | "USD" | "CNY";
 
 export type ProcurementStatus = 
-  | "pending_assistant"  // 待助理初審
+  | "pending_assistant"  // 待初審
   | "pending_professor"  // 待教授終審
   | "partially_approved" // 部分通過 (部分品項核准、部分品項退回)
   | "approved"           // 全部核准 (待採購)
@@ -115,7 +115,7 @@ export interface ProcurementItem {
   consumableDetails?: ProcurementItemLine["consumableDetails"];
   equipmentDetails?: ProcurementItemLine["equipmentDetails"];
 
-  // Approval Threshold & Routing: 不論金額皆須助理初審後送教授終審；≥ 3000 TWD 需附比價紀錄，< 3000 TWD 免比價
+  // Approval Threshold & Routing: 不論金額皆須初審後送教授終審；≥ 3000 TWD 需附比價紀錄，< 3000 TWD 免比價
   requiresProfessorApproval?: boolean;
   notifyProfessor?: boolean;
 

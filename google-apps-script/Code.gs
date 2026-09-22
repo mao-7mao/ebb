@@ -7,7 +7,7 @@
  * 1. 支援接收請購系統前端網頁的 POST 請求 (doPost)。
  * 2. 自動在 Google Sheets 中記錄請購清單與採購進程。
  * 3. 支援連動 Google 表單 (Google Forms) 自動記錄之試算表。
- * 4. 自動透過 Gmail 寄送審批通知與採購進度更新給助理、教授與申請學生。
+ * 4. 自動透過 Gmail 寄送審批通知與採購進度更新給admin、教授與申請學生。
  * 
  * 設定步驟：
  * 1. 新建 Google Sheets 試算表（例如命名為「EBB Lab 請購與採購紀錄表」）。
@@ -23,7 +23,7 @@
 const CONFIG = {
   SHEET_NAME_REQUESTS: "請購總表",
   SHEET_NAME_PURCHASED: "已核准採購進程",
-  ADMIN_EMAIL: "ebblab115@gmail.com", // 系統管理員 / 助理
+  ADMIN_EMAIL: "ebblab115@gmail.com", // 系統管理員 / admin
   PROFESSOR_EMAIL: "klchang@mail.nsysu.edu.tw", // 教授
   LAB_NAME: "EBB Lab",
   WEB_APP_URL: "https://ai.studio/build" // 線上請購系統網址
@@ -86,7 +86,7 @@ function doPost(e) {
         modeLabel
       ]);
 
-      // 請購人提交一律發 Mail 通知 Admin 初審
+      // 請購人提交一律發 Mail 通知 初審
       sendMailToAdminOnSubmit(item, itemSummary, isOver3000);
 
       return responseJSON({ success: true, message: "Request logged to Google Sheets and Admin notified." });
@@ -99,21 +99,21 @@ function doPost(e) {
       return responseJSON({ success: true, message: "Admin rejected request and notified applicant directly." });
     }
 
-    // 2.2 Admin 初審通過 -> 轉呈教授終審 (附標準文檔與核簽複選模板)
+    // 2.2 初審通過 -> 轉呈教授終審 (附標準文檔與核簽複選模板)
     if (action === "admin_approved_forward_professor" || action === "assistant_approved_forward_professor") {
       updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, "待教授終審 (pending_professor)", "待審核 (未購買)");
       sendMailToProfessorOnForward(item);
       return responseJSON({ success: true, message: "Admin approved and forwarded requisition with standard document to professor." });
     }
 
-    // 3. 教授終審 (核准或退回，回覆同時抄送助理與請購人)
+    // 3. 教授終審 (核准或退回，回覆同時抄送admin與請購人)
     if (action === "approve_request" || action === "professor_approved") {
       updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, "已核准待採購", item.purchaser === "student" ? "待請購人採購" : "待教授採購");
 
       // 同步寫入「已核准採購進程」分頁
       logApprovedItemToProgressSheet(ss, item);
 
-      // 教授核准回覆：同時發送給請購人並抄送助理 (CC)
+      // 教授核准回覆：同時發送給請購人並抄送admin (CC)
       sendApprovalEmailToApplicantAndAdmin(item);
 
       return responseJSON({ success: true, message: "Professor approved; applicant and admin notified." });
@@ -245,7 +245,7 @@ function updateProgressSheet(ss, reqNo, progress, purchaser, invoiceNo, note) {
   }
 }
 
-// 輔助函式：1. 請購人提交 -> 發信通知 Admin 初審
+// 輔助函式：1. 請購人提交 -> 發信通知 初審
 function sendMailToAdminOnSubmit(item, itemSummary, isOver3000) {
   try {
     const policyDesc = isOver3000
@@ -255,7 +255,7 @@ function sendMailToAdminOnSubmit(item, itemSummary, isOver3000) {
     const subject = `[${CONFIG.LAB_NAME}] 新請購單待審：${item.requisitionNo} - ${item.applicantName} (${isOver3000 ? "≥3000元" : "小額"})`;
     const body = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <h2 style="color: #1b4372;">EBB Lab 新請購申請通知 (Admin 初審)</h2>
+        <h2 style="color: #1b4372;">EBB Lab 新請購申請通知 (初審)</h2>
         <p>實驗室成員 <strong>${item.applicantName}</strong> (${item.applicantEmail}) 已提交請購申請：</p>
         <div style="background-color: #f8f9fa; border-left: 4px solid #1b4372; padding: 10px 14px; margin: 12px 0;">
           <strong>採購規範路徑：</strong> ${policyDesc}
@@ -289,7 +289,7 @@ function sendRejectionEmailToApplicant(item, reason) {
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <h2 style="color: #b91c1c;">EBB Lab 請購單初審退回通知</h2>
         <p> <strong>${item.applicantName}</strong> 您好：</p>
-        <p>您於系統申請之請購單 <strong>${item.requisitionNo} (${item.itemName})</strong> 經 Admin 初審未通過，原因說明如下：</p>
+        <p>您於系統申請之請購單 <strong>${item.requisitionNo} (${item.itemName})</strong> 經 初審未通過，原因說明如下：</p>
         <div style="background-color: #fef2f2; border-left: 4px solid #b91c1c; padding: 10px 14px; margin: 12px 0;">
           <strong>退回原因：</strong> ${reason}
         </div>
@@ -307,7 +307,7 @@ function sendRejectionEmailToApplicant(item, reason) {
   }
 }
 
-// 輔助函式：3. Admin 初審通過 -> 發送 Mail 給教授終審 (含標準文檔 + 複選框模式 + 同時抄送助理與請購人)
+// 輔助函式：3. 初審通過 -> 發送 Mail 給教授終審 (含標準文檔 + 複選框模式 + 同時抄送admin與請購人)
 function sendMailToProfessorOnForward(item) {
   try {
     const isOver3000 = (item.estimatedTotalPrice >= 3000);
@@ -331,7 +331,7 @@ function sendMailToProfessorOnForward(item) {
     const rejectionReplySubject = encodeURIComponent(`Re: [EBB Lab 請購簽核回覆] 單號 ${item.requisitionNo} - 教授不予通過`);
 
     const approvalReplyBody = encodeURIComponent(
-      `【教授請購審核回覆 - 核准通過】\n請購單號：${item.requisitionNo}\n申請人：${item.applicantName}\n預估總額：NT$ ${Number(item.estimatedTotalPrice).toLocaleString()}\n\n■ 教授核定決策：\n[x] 【核准通過】 (Approved)\n    指定採購人：[x] 請購人自購   [ ] 貨到後由計畫付款   [ ] 教授統購\n    核定經費計畫：${item.budgetProject || "由助理依案號辦理"}\n    簽核意見：准予採購\n\n[ ] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：\n\n※ 本回信自動同時抄送實驗室 Admin (${CONFIG.ADMIN_EMAIL}) 與請購人 (${item.applicantEmail})。`
+      `【教授請購審核回覆 - 核准通過】\n請購單號：${item.requisitionNo}\n申請人：${item.applicantName}\n預估總額：NT$ ${Number(item.estimatedTotalPrice).toLocaleString()}\n\n■ 教授核定決策：\n[x] 【核准通過】 (Approved)\n    指定採購人：[x] 請購人自購   [ ] 貨到後由計畫付款   [ ] 教授統購\n    核定經費計畫：${item.budgetProject || "由admin依案號辦理"}\n    簽核意見：准予採購\n\n[ ] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：\n\n※ 本回信自動同時抄送實驗室 Admin (${CONFIG.ADMIN_EMAIL}) 與請購人 (${item.applicantEmail})。`
     );
 
     const rejectionReplyBody = encodeURIComponent(
@@ -353,13 +353,13 @@ function sendMailToProfessorOnForward(item) {
         <!-- Content -->
         <div style="padding: 20px;">
           <p style="margin-top: 0;">張教授您好：</p>
-          <p>實驗室成員 <strong>${item.applicantName}</strong> (${item.applicantEmail}) 已提交請購單，經 Admin 初審合格轉呈您終審核定：</p>
+          <p>實驗室成員 <strong>${item.applicantName}</strong> (${item.applicantEmail}) 已提交請購單，經 初審合格轉呈您終審核定：</p>
           
           <div style="background-color: #f8fafc; border-left: 4px solid #1b4372; padding: 10px 14px; margin: 14px 0; font-size: 13px;">
             <strong>採購規範：</strong> ${policyDesc}<br/>
             <strong>請購目的：</strong> ${item.purpose || "無"}<br/>
             <strong>建議經費計畫：</strong> ${item.budgetProject || "待教授指定"}<br/>
-            <strong>Admin 初審意見：</strong> ${item.assistantReview?.comment || "初審合格，轉呈教授終審。"}
+            <strong>初審意見：</strong> ${item.assistantReview?.comment || "初審合格，轉呈教授終審。"}
           </div>
 
           <!-- Standard Document Items Table -->
@@ -388,22 +388,22 @@ function sendMailToProfessorOnForward(item) {
               【教授請購審核核定表 (複選框回覆模式)】
             </h3>
             <p style="font-size: 12px; color: #1e3a8a; margin-bottom: 10px;">
-              為提高簽核效率，您可直接點擊下方按鈕一鍵回覆（將自動同時抄送助理與請購人）：
+              為提高簽核效率，您可直接點擊下方按鈕一鍵回覆（將自動同時抄送admin與請購人）：
             </p>
 
             <div style="display: flex; gap: 12px; margin: 14px 0;">
               <a href="${approvalMailtoUrl}" style="display: inline-block; background-color: #15803d; color: #ffffff; padding: 10px 18px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 13px;">
-                ☑️ 一鍵以【核准通過】回覆 (CC 請購人與助理)
+                ☑️ 一鍵以【核准通過】回覆 (CC 請購人與admin)
               </a>
               <a href="${rejectionMailtoUrl}" style="display: inline-block; background-color: #b91c1c; color: #ffffff; padding: 10px 18px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 13px;">
-                ❌ 一鍵以【不通過/退回】回覆 (CC 請購人與助理)
+                ❌ 一鍵以【不通過/退回】回覆 (CC 請購人與admin)
               </a>
             </div>
 
             <div style="background-color: #ffffff; border: 1px solid #e2e8f0; padding: 10px; font-family: monospace; font-size: 11px; line-height: 1.5; color: #334155; margin-top: 10px;">
               [x] 【核准通過】 (Approved)<br/>
               &nbsp;&nbsp;&nbsp;&nbsp;指定採購人：[x] 請購人自購 &nbsp;&nbsp; [ ] 貨到後由計畫付款 &nbsp;&nbsp; [ ] 教授統購<br/>
-              &nbsp;&nbsp;&nbsp;&nbsp;核定經費計畫：${item.budgetProject || "_________________（由助理依案號辦理）"}<br/>
+              &nbsp;&nbsp;&nbsp;&nbsp;核定經費計畫：${item.budgetProject || "_________________（由admin依案號辦理）"}<br/>
               &nbsp;&nbsp;&nbsp;&nbsp;教授意見：准予採購<br/><br/>
               [ ] 【不予通過 / 退回修正】 (Rejected)<br/>
               &nbsp;&nbsp;&nbsp;&nbsp;退回原因：________________________________________
@@ -428,7 +428,7 @@ function sendMailToProfessorOnForward(item) {
   }
 }
 
-// 輔助函式：4. 教授核准回覆 -> 發信給請購人，同時抄送助理 (CC)
+// 輔助函式：4. 教授核准回覆 -> 發信給請購人，同時抄送admin (CC)
 function sendApprovalEmailToApplicantAndAdmin(item) {
   if (!item.applicantEmail) return;
   try {
@@ -459,7 +459,7 @@ function sendApprovalEmailToApplicantAndAdmin(item) {
   }
 }
 
-// 輔助函式：5. 教授退回回覆 -> 發信給請購人，同時抄送助理 (CC)
+// 輔助函式：5. 教授退回回覆 -> 發信給請購人，同時抄送admin (CC)
 function sendProfessorRejectionEmail(item) {
   if (!item.applicantEmail) return;
   try {
@@ -472,7 +472,7 @@ function sendProfessorRejectionEmail(item) {
         <div style="background-color: #fef2f2; border-left: 4px solid #b91c1c; padding: 10px 14px; margin: 12px 0;">
           <strong>退回原因：</strong> ${item.professorReview?.comment || "經費考量或規格不符暫不採購。"}
         </div>
-        <p>如有任何疑問，請與助理或教授進一步討論。</p>
+        <p>如有任何疑問，請與admin或教授進一步討論。</p>
       </div>
     `;
     MailApp.sendEmail({

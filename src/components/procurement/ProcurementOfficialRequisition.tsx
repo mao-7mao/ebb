@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { ProcurementItem, ProcurementItemLine, CurrencyCode } from "../../types/procurement";
 import { 
   Printer, 
@@ -18,6 +18,7 @@ interface ProcurementOfficialRequisitionProps {
   onClose: () => void;
   items: ProcurementItem[]; // Supports one or multiple requisition items
   lang: "zh" | "en";
+  isAdmin?: boolean;
   onExportCSV?: (items: ProcurementItem[]) => void;
 }
 
@@ -26,16 +27,28 @@ export default function ProcurementOfficialRequisition({
   onClose,
   items,
   lang,
+  isAdmin = false,
   onExportCSV
 }: ProcurementOfficialRequisitionProps) {
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Keyboard shortcut: Press Escape to close preview modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   if (!isOpen || !items || items.length === 0) return null;
 
   // Primary requisition info
   const primaryReq = items[0];
   const applicant = primaryReq.applicantName || "";
-  const assistantReviewer = primaryReq.assistantReview?.reviewerName || "助理";
+  const assistantReviewer = primaryReq.assistantReview?.reviewerName || "admin";
   const professorReviewer = primaryReq.professorReview?.reviewerName || "教授";
 
   // Requisition Date formatted as YYYY.MM.DD (matches screenshot: 2025.08.06)
@@ -296,7 +309,7 @@ export default function ProcurementOfficialRequisition({
 
         <div style="margin-top:14px; font-size:10pt; line-height:1.7; font-family:'標楷體','DFKai-SB';">
           1. 凡購買物品者，請先填寫請購單，經審核人與老師同意後，始可購買。單價或總價金額超過 3,000 元，需事先詢價三家廠商並徵得老師同意簽可後，始可購買。<br/>
-          2. 耗材類、藥品類由子瑩負責審核，其他類由老師直接審核。<br/>
+          2. 耗材類、藥品類由miao負責審核，其他類由老師直接審核。<br/>
           3. 審核人需確定物品是否還有庫存、是否需要增購，也要參考過去購買紀錄，審核本次請購價錢與數量是否合理。
         </div>
       </body>
@@ -345,13 +358,31 @@ export default function ProcurementOfficialRequisition({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm overflow-y-auto p-4 md:p-6 print:p-0 print:bg-white print:static">
+    <div 
+      className="fixed inset-0 z-[70] flex flex-col items-center justify-start bg-slate-950/80 backdrop-blur-sm overflow-y-auto p-3 sm:p-6 print:p-0 print:bg-white print:static"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      {/* Floating Quick Close Button (Top-Right, always accessible anywhere on page) */}
+      <button
+        type="button"
+        onClick={onClose}
+        className="fixed top-4 right-4 z-[80] print:hidden px-3.5 py-2 bg-rose-600/90 hover:bg-rose-600 text-white rounded-full text-xs font-bold transition shadow-2xl border border-rose-400 flex items-center gap-1.5 cursor-pointer backdrop-blur-sm active:scale-95"
+        title="關閉請購單預覽 (ESC)"
+      >
+        <X className="w-4 h-4" />
+        <span>關閉預覽 (ESC)</span>
+      </button>
+
       <div 
         id="official-requisition-modal"
-        className="w-full max-w-4xl bg-slate-100 rounded-2xl shadow-2xl border border-slate-300 overflow-hidden print:border-none print:shadow-none print:w-full print:max-w-none print:bg-white"
+        className="w-full max-w-4xl bg-slate-100 rounded-2xl shadow-2xl border border-slate-300 overflow-hidden my-2 sm:my-4 print:border-none print:shadow-none print:w-full print:max-w-none print:bg-white flex flex-col"
       >
-        {/* Action Toolbar (Hidden during browser printing) */}
-        <div className="px-6 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 print:hidden">
+        {/* Action Toolbar (Sticky Top, Hidden during browser printing) */}
+        <div className="sticky top-0 z-30 px-4 sm:px-6 py-3.5 bg-slate-900/95 backdrop-blur-sm text-white flex flex-wrap items-center justify-between gap-2.5 print:hidden shadow-md">
           <div className="flex items-center gap-2.5">
             <FileText className="w-5 h-5 text-emerald-400" />
             <div>
@@ -366,6 +397,7 @@ export default function ProcurementOfficialRequisition({
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={handlePrint}
               className="px-3.5 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow"
               title="列印或另存為 PDF"
@@ -375,6 +407,7 @@ export default function ProcurementOfficialRequisition({
             </button>
 
             <button
+              type="button"
               onClick={handleExportWord}
               className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow"
               title="匯出為標準 Word (.doc) 格式"
@@ -383,21 +416,26 @@ export default function ProcurementOfficialRequisition({
               <span>匯出 Word (.doc)</span>
             </button>
 
-            <button
-              onClick={handleExportCsv}
-              className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
-              title="匯出 Excel / CSV 表格"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>匯出 Excel</span>
-            </button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+                title="匯出 Excel / CSV 表格"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>匯出 Excel</span>
+              </button>
+            )}
 
             <button
+              type="button"
               onClick={onClose}
-              className="ml-2 p-1.5 text-slate-400 hover:text-white rounded-lg transition"
-              title="關閉預覽"
+              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow active:scale-95 cursor-pointer ml-1"
+              title="關閉請購單預覽 (ESC)"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
+              <span>關閉預覽</span>
             </button>
           </div>
         </div>
@@ -536,7 +574,7 @@ export default function ProcurementOfficialRequisition({
                 1. 凡購買物品者，請先填寫請購單，經審核人與老師同意後，始可購買。單價或總價金額超過 3,000 元，需事先詢價三家廠商並徵得老師同意簽可後，始可購買。
               </p>
               <p>
-                2. 耗材類、藥品類由子瑩負責審核，其他類由老師直接審核。
+                2. 耗材類、藥品類由miao負責審核，其他類由老師直接審核。
               </p>
               <p>
                 3. 審核人需確定物品是否還有庫存、是否需要增購，也要參考過去購買紀錄，審核本次請購價錢與數量是否合理。
@@ -554,6 +592,42 @@ export default function ProcurementOfficialRequisition({
                 </span>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Bottom Action Footer (Hidden during printing) */}
+        <div className="sticky bottom-0 z-30 px-4 sm:px-6 py-3.5 bg-slate-900/95 backdrop-blur-sm border-t border-slate-800 text-white flex flex-wrap items-center justify-between gap-3 print:hidden shadow-lg">
+          <div className="text-xs text-slate-300 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span className="font-medium">國立中山大學 EBB Lab 請購單預覽</span>
+            <span className="font-mono text-slate-400 hidden sm:inline">({primaryReq.requisitionNo})</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 border border-slate-700 shadow"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>列印 / 存為 PDF</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportWord}
+              className="px-3.5 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>匯出 Word</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+              <span>關閉預覽 (ESC)</span>
+            </button>
           </div>
         </div>
       </div>

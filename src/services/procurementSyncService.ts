@@ -325,35 +325,100 @@ export async function fetchItemsFromGoogleSheetCsv(sheetUrl: string): Promise<{
 }
 
 /**
+ * 發送刪除請購單請求至 Google Apps Script Webhook (雙向同步刪除)
+ */
+export async function deleteRequisitionInGasWebhook(
+  url: string,
+  requisitionNo: string,
+  id: string
+): Promise<{ success: boolean; message?: string }> {
+  if (!url || !url.trim()) return { success: false, message: "未設定 Webhook 網址" };
+
+  try {
+    const cleanUrl = url.trim();
+    const res = await fetch(cleanUrl, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "delete_request",
+        requisitionNo,
+        id
+      })
+    });
+
+    if (!res.ok) {
+      return { success: false, message: `伺服器回應錯誤 (${res.status})` };
+    }
+
+    const data = await res.json().catch(() => null);
+    return {
+      success: true,
+      message: data?.message || `已通知 Google 試算表刪除請購單 ${requisitionNo}`
+    };
+  } catch (err: any) {
+    console.warn("deleteRequisitionInGasWebhook error", err);
+    return { success: false, message: err.message || String(err) };
+  }
+}
+
+/**
  * 合併雲端最新項目與本地暫存項目
+ * 實現雙向權威同步：
+ * - 當遠端試算表 (remoteItems) 成功取得資料時，遠端為單一真實來源 (Single Source of Truth)
+ * - 若 Google Sheet 後端已刪除某筆請購單，該單據將自本地緩存與狀態中徹底移除，絕不重新復原舊資料
+ * - 僅保留「剛在本機送出且尚未同步至試算表之最新未提交本地草稿」
  */
 export function mergeProcurementItems(
   localItems: ProcurementItem[],
   remoteItems: ProcurementItem[]
 ): ProcurementItem[] {
-  const map = new Map<string, ProcurementItem>();
+  // 若遠端成功載入資料（非空陣列），遠端為權威基準
+  if (remoteItems && remoteItems.length > 0) {
+    const remoteReqNos = new Set<string>();
+    const remoteIds = new Set<string>();
 
-  // 1. 先加入遠端最新資料（以遠端雲端紀錄為主，並確保日期已標準化）
-  remoteItems.forEach(item => {
-    const key = item.requisitionNo || item.id;
-    map.set(key, {
-      ...item,
-      createdAt: normalizeProcurementDate(item.createdAt, item.requisitionNo || item.id)
-    });
-  });
-
-  // 2. 本地若有尚未同步之新資料（例如剛送出尚未上傳），補入
-  localItems.forEach(item => {
-    const key = item.requisitionNo || item.id;
-    if (!map.has(key)) {
-      map.set(key, {
+    const normalizedRemote = remoteItems.map(item => {
+      const norm = {
         ...item,
         createdAt: normalizeProcurementDate(item.createdAt, item.requisitionNo || item.id)
-      });
-    }
-  });
+      };
+      if (item.requisitionNo) remoteReqNos.add(item.requisitionNo.trim());
+      if (item.id) remoteIds.add(item.id.trim());
+      return norm;
+    });
 
-  const merged = Array.from(map.values());
-  merged.sort((a, b) => compareDatesDesc(a.createdAt, b.createdAt, a.requisitionNo, b.requisitionNo));
-  return merged;
+    // 檢查本地是否含有「剛在前端建立、尚未發送到試算表之全新本地臨時草稿」
+    const now = Date.now();
+    const pendingLocalDrafts = (localItems || []).filter(local => {
+      if (!local) return false;
+      // 來自試算表載入的項目 (req_sheet_*) 若不在遠端清單中，代表已在 Google Sheet 被刪除，必須剔除
+      if (local.id && local.id.startsWith("req_sheet_")) return false;
+      // 若其單號或 ID 曾與遠端相同，但已被遠端剔除，代表為歷史已刪除資料，絕不保留
+      if (local.requisitionNo && remoteReqNos.has(local.requisitionNo.trim())) return false;
+      if (local.id && remoteIds.has(local.id.trim())) return false;
+
+      // 檢查是否為剛在本瀏覽器送出的純本機項目 (id 格式通常為 req_數字時間戳)
+      const timestampMatch = local.id && local.id.match(/^req_(\d{12,14})$/);
+      if (timestampMatch) {
+        const createdTs = parseInt(timestampMatch[1], 10);
+        // 若在 15 分鐘內建立的純本地草稿且尚未上傳，暫時保留
+        if (!isNaN(createdTs) && now - createdTs < 15 * 60 * 1000) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    const merged = [...pendingLocalDrafts, ...normalizedRemote];
+    merged.sort((a, b) => compareDatesDesc(a.createdAt, b.createdAt, a.requisitionNo, b.requisitionNo));
+    return merged;
+  }
+
+  // 若遠端無資料（離線狀態或未配置），回傳已標準化之本地資料
+  const fallback = (localItems || []).map(item => ({
+    ...item,
+    createdAt: normalizeProcurementDate(item.createdAt, item.requisitionNo || item.id)
+  }));
+  fallback.sort((a, b) => compareDatesDesc(a.createdAt, b.createdAt, a.requisitionNo, b.requisitionNo));
+  return fallback;
 }
