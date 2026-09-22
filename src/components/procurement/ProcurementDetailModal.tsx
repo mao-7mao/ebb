@@ -66,7 +66,6 @@ export default function ProcurementDetailModal({
   const [purchasedBy, setPurchasedBy] = useState(item.applicantName);
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split("T")[0]);
   const [actualUnitPrice, setActualUnitPrice] = useState<number>(item.estimatedUnitPrice);
-  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [actualVendor, setActualVendor] = useState(item.vendorName);
   const [purchaseNote, setPurchaseNote] = useState("");
 
@@ -94,7 +93,7 @@ export default function ProcurementDetailModal({
       case "pending_assistant":
         return {
           bg: "bg-amber-50 text-amber-800 border-amber-300",
-          label: lang === "zh" ? "待初審 (Stage 1)" : "Pending Assistant Review",
+          label: lang === "zh" ? "待助理初審 (Stage 1)" : "Pending Assistant Review",
           icon: <Clock className="w-3.5 h-3.5" />
         };
       case "pending_professor":
@@ -118,7 +117,7 @@ export default function ProcurementDetailModal({
       case "purchased":
         return {
           bg: "bg-slate-100 text-slate-800 border-slate-300 font-bold",
-          label: lang === "zh" ? "✓ 採購完成 (已回填發票)" : "✓ Purchased & Invoiced",
+          label: lang === "zh" ? "✓ 採購完成" : "✓ Purchased",
           icon: <Receipt className="w-3.5 h-3.5 text-emerald-700" />
         };
     }
@@ -156,17 +155,12 @@ export default function ProcurementDetailModal({
   // Mark Purchased Handler
   const handleSavePurchase = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!invoiceNumber.trim()) {
-      alert(lang === "zh" ? "請填寫發票號碼或收據編號！" : "Please enter invoice number!");
-      return;
-    }
     const actualTotalPrice = actualUnitPrice * item.quantity;
     onMarkPurchased(item.id, {
       purchasedBy: purchasedBy.trim(),
       purchaseDate,
       actualUnitPrice,
       actualTotalPrice,
-      invoiceNumber: invoiceNumber.trim(),
       vendor: actualVendor.trim(),
       note: purchaseNote.trim()
     });
@@ -192,7 +186,7 @@ export default function ProcurementDetailModal({
         to: item.applicantEmail,
         cc: "ebblab115@gmail.com",
         subject: `[EBB Lab 請購核准通知] 單號 ${item.requisitionNo} - 已獲核准，可執行採購`,
-        body: ` ${item.applicantName} 您好：\n\n您於線上請購系統申請之品項（單號：${item.requisitionNo}，總額預估 NT$ ${item.estimatedTotalPrice.toLocaleString()}）已完成審核核准！\n\n【審核核定結果】\n• 審核狀態：已核准 (Approved)\n• 指定採購人 / 付款方式：${item.purchaser === "student" ? "由請購人自行採購" : item.purchaser === "professor" ? "由教授本人統籌採購" : item.purchaser === "postpayment" ? "貨到後付款 (廠商請款 / 免先付款)" : "待定"}\n• 審定意見：${item.professorReview?.comment || item.assistantReview?.comment || "准予採購"}\n\n【請購品項標準清單】\n${docItemsTable}\n\n請依照指定廠商或平台辦理採購。採購完成並取得統一發票或收據後，請前往請購系統「採購進程追蹤」回填實際金額與發票號碼，以利辦理後續核銷。\n\nEBB Lab 實驗室請購系統\n國立中山大學 環境工程研究所`
+        body: ` ${item.applicantName} 您好：\n\n您於線上請購系統申請之品項（單號：${item.requisitionNo}，總額預估 NT$ ${item.estimatedTotalPrice.toLocaleString()}）已完成審核核准！\n\n【審核核定結果】\n• 審核狀態：已核准 (Approved)\n• 指定採購人 / 付款方式：${item.purchaser === "student" ? "由請購人自行採購" : item.purchaser === "professor" ? "由教授本人統籌採購" : item.purchaser === "postpayment" ? "貨到後付款 (廠商請款 / 免先付款)" : "待定"}\n• 審定意見：${item.professorReview?.comment || item.assistantReview?.comment || "准予採購"}\n\n【請購品項標準清單】\n${docItemsTable}\n\n請依照指定廠商或平台辦理採購。採購完成後，請前往請購系統「採購進程追蹤」更新進程。\n\nEBB Lab 實驗室請購系統\n國立中山大學 環境工程研究所`
       };
     }
 
@@ -210,7 +204,7 @@ export default function ProcurementDetailModal({
     // Case 3: Forwarding to Professor for Review (Contains standard document + Checkbox mode + CC applicant & assistant)
     if (item.status === "pending_professor" || item.assistantReview?.approved) {
       const approvalReplyBody = `【教授請購審核回覆 - 核准通過】\n請購單號：${item.requisitionNo}\n申請人：${item.applicantName}\n預估總額：NT$ ${item.estimatedTotalPrice.toLocaleString()}\n\n■ 教授核定決策：\n[x] 【核准通過】 (Approved)\n    指定採購人：[x] 請購人自購   [ ] 貨到後付款   [ ] 教授統購\n    簽核意見：准予採購\n\n[ ] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：________________________________________\n\n※ 本回信自動同時抄送實驗室 Admin (ebblab115@gmail.com) 與請購人 (${item.applicantEmail})。`;
-      const rejectionReplyBody = `【教授請購審核回覆 - 不予通過】\n請購單號：${item.requisitionNo}\n申請人：${item.applicantName}\n預估總額：NT$ ${item.estimatedTotalPrice.toLocaleString()}\n\n■ 教授核定決策：\n[ ] 【核准通過】 (Approved)\n\n[x] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：請補充詳細規格或經費不足暫不採購\n\n※ 本回信自動同時抄送實驗室 Admin (ebblab115@gmail.com) 與請購人 (${item.applicantEmail})。`;
+      const rejectionReplyBody = `【教授請購審核回覆 - 不予通過】\n請購單號：${item.requisitionNo}\n申請人：${item.applicantName}\n預估總額：NT$ ${item.estimatedTotalPrice.toLocaleString()}\n\n■ 教授核定決策：\n[ ] 【核准通過】 (Approved)\n\n[x] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：規格不符或暫不採購\n\n※ 本回信自動同時抄送實驗室 Admin (ebblab115@gmail.com) 與請購人 (${item.applicantEmail})。`;
 
       return {
         to: "klchang@mail.nsysu.edu.tw",
@@ -219,7 +213,7 @@ export default function ProcurementDetailModal({
         approvalMailto: `mailto:ebblab115@gmail.com?cc=${encodeURIComponent(item.applicantEmail)}&subject=${encodeURIComponent(`Re: [EBB Lab 請購簽核回覆] 單號 ${item.requisitionNo} - 教授核准通過`)}&body=${encodeURIComponent(approvalReplyBody)}`,
         rejectionMailto: `mailto:ebblab115@gmail.com?cc=${encodeURIComponent(item.applicantEmail)}&subject=${encodeURIComponent(`Re: [EBB Lab 請購簽核回覆] 單號 ${item.requisitionNo} - 教授不予通過`)}&body=${encodeURIComponent(rejectionReplyBody)}`,
         isProfEmail: true,
-        body: `張教授您好：\n\n實驗室成員 ${item.applicantName} 已於線上系統提交請購單，經 初審合格轉呈您終審核定。\n\n==================================================\n【EBB Lab 實驗室請購標準文檔 (Official Requisition)】\n==================================================\n• 請購單號：${item.requisitionNo}\n• 申請日期：${item.createdAt}\n• 申請人：${item.applicantName} (${item.applicantEmail})\n• 預估總額：NT$ ${item.estimatedTotalPrice.toLocaleString()} (${item.currency || "TWD"})\n• 請購目的與用途：${item.purpose}\n• 採購規範說明：${isOver3000 ? "★ 單價或總額達 3,000 元以上（已依規定檢附詢價/比價資訊）" : "★ 小額請購（總額未滿 3,000 元，單一廠商採購，免附多家比價）"}\n• 初審意見：${item.assistantReview?.comment || "初審合格，各項規格確認無誤，轉呈教授終審核定。"}\n\n【請購品項清單明細】\n${docItemsTable}\n\n==================================================\n【教授請購審核核定表 (複選框模式)】\n==================================================\n您可直接保留下列選項並回信（系統將自動同時抄送admin與請購人）：\n\n[x] 【核准通過】 (Approved)\n    指定採購人：[x] 請購人自購   [ ] 貨到後付款   [ ] 教授統購\n    教授意見：准予採購\n\n[ ] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：________________________________________\n\n--------------------------------------------------\n※ 點擊下方按鈕或郵件連結即可一鍵回信；您亦可直接登入系統進行線上審批。\n\nEBB Lab 實驗室請購系統\n國立中山大學 環境工程研究所`
+        body: `張教授您好：\n\n實驗室成員 ${item.applicantName} 已於線上系統提交請購單，經 Admin 初審合格轉呈您終審核定。\n\n==================================================\n【EBB Lab 實驗室請購標準文檔 (Official Requisition)】\n==================================================\n• 請購單號：${item.requisitionNo}\n• 申請日期：${item.createdAt}\n• 申請人：${item.applicantName} (${item.applicantEmail})\n• 預估總額：NT$ ${item.estimatedTotalPrice.toLocaleString()} (${item.currency || "TWD"})\n• 請購目的與用途：${item.purpose}\n• 採購規範說明：${isOver3000 ? "★ 單價或總額達 3,000 元以上（已依規定檢附詢價/比價資訊）" : "★ 小額請購（總額未滿 3,000 元，單一廠商採購，免附多家比價）"}\n• Admin 初審意見：${item.assistantReview?.comment || "初審合格，各項規格確認無誤，轉呈教授終審核定。"}\n\n【請購品項清單明細】\n${docItemsTable}\n\n==================================================\n【教授請購審核核定表 (複選框模式)】\n==================================================\n您可直接保留下列選項並回信（系統將自動同時抄送助理與請購人）：\n\n[x] 【核准通過】 (Approved)\n    指定採購人：[x] 請購人自購   [ ] 貨到後付款   [ ] 教授統購\n    教授意見：准予採購\n\n[ ] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：________________________________________\n\n--------------------------------------------------\n※ 點擊下方按鈕或郵件連結即可一鍵回信；您亦可直接登入系統進行線上審批。\n\nEBB Lab 實驗室請購系統\n國立中山大學 環境工程研究所`
       };
     }
 
@@ -228,7 +222,7 @@ export default function ProcurementDetailModal({
       to: "ebblab115@gmail.com",
       cc: item.applicantEmail,
       subject: `[EBB Lab 新請購待審] 單號 ${item.requisitionNo} - ${item.applicantName} 申請 ${item.itemName}`,
-      body: `Admin / 研究admin您好：\n\n實驗室成員 ${item.applicantName} 已於系統填寫新請購單（總額預估 NT$ ${item.estimatedTotalPrice.toLocaleString()}）：\n\n【請購標準文檔】\n• 請購單號：${item.requisitionNo}\n• 申請日期：${item.createdAt}\n• 申請人：${item.applicantName} (${item.applicantEmail})\n• 採購規範：${isOver3000 ? "★ 達 3,000 元以上，需確認多廠商比價" : "★ 未滿 3,000 元小額採購，免附比價"}\n• 請購目的：${item.purpose}\n\n【品項明細】\n${docItemsTable}\n\n請前往系統進行初審，初審確認合格後系統將自動發送含標準請購文檔與核簽複選模板之通知信給教授終審。\n\nEBB Lab 實驗室請購系統`
+      body: `Admin / 研究助理您好：\n\n實驗室成員 ${item.applicantName} 已於系統填寫新請購單（總額預估 NT$ ${item.estimatedTotalPrice.toLocaleString()}）：\n\n【請購標準文檔】\n• 請購單號：${item.requisitionNo}\n• 申請日期：${item.createdAt}\n• 申請人：${item.applicantName} (${item.applicantEmail})\n• 採購規範：${isOver3000 ? "★ 達 3,000 元以上，需確認多廠商比價" : "★ 未滿 3,000 元小額採購，免附比價"}\n• 請購目的：${item.purpose}\n\n【品項明細】\n${docItemsTable}\n\n請前往系統進行初審，初審確認合格後系統將自動發送含標準請購文檔與核簽複選模板之通知信給教授終審。\n\nEBB Lab 實驗室請購系統`
     };
   };
 
@@ -250,45 +244,47 @@ export default function ProcurementDetailModal({
       }}
     >
       <div className="bg-white border border-[#e5e5e0] rounded-sm shadow-2xl max-w-4xl w-full my-auto flex flex-col max-h-[92vh]">
-        {/* Modal Top Bar */}
-        <div className="px-6 py-4 bg-[#f8f8f5] border-b border-[#e5e5e0] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-mono font-bold bg-[#1b4372] text-white px-2.5 py-1 rounded-sm">
+        {/* Modal Top Bar (Responsive flex-wrap for mobile) */}
+        <div className="px-3.5 py-3 sm:px-6 sm:py-4 bg-[#f8f8f5] border-b border-[#e5e5e0] flex flex-wrap items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-mono font-bold bg-[#1b4372] text-white px-2.5 py-1 rounded-sm whitespace-nowrap">
               {item.requisitionNo}
             </span>
-            <div className={`px-2.5 py-1 rounded-sm text-xs font-bold border flex items-center gap-1.5 ${statusBadge.bg}`}>
+            <div className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-sm text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap shrink-0 ${statusBadge.bg}`}>
               {statusBadge.icon}
               <span>{statusBadge.label}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Quick Print Official Requisition */}
             <button
               type="button"
               onClick={() => onOpenPrintView(item)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-sm transition shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-sm transition shadow-xs cursor-pointer whitespace-nowrap"
               title="預覽與列印合規紙本單據"
             >
               <FileText className="w-3.5 h-3.5 text-[#1b4372]" />
-              <span>{lang === "zh" ? "合規請購單" : "Official Form"}</span>
+              <span className="hidden sm:inline">{lang === "zh" ? "合規請購單" : "Official Form"}</span>
+              <span className="inline sm:hidden">{lang === "zh" ? "請購單" : "Form"}</span>
             </button>
 
             {/* Email Notification Preview */}
             <button
               type="button"
               onClick={() => setShowEmailPreview(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-[#1b4372] text-xs font-bold rounded-sm transition shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-[#1b4372] text-xs font-bold rounded-sm transition shadow-xs cursor-pointer whitespace-nowrap"
               title="查看與發送通知信件"
             >
               <Mail className="w-3.5 h-3.5 text-[#8d734a]" />
-              <span>{lang === "zh" ? "Email 通知" : "Email Alert"}</span>
+              <span className="hidden sm:inline">{lang === "zh" ? "Email 通知" : "Email Alert"}</span>
+              <span className="inline sm:hidden">{lang === "zh" ? "通知信" : "Email"}</span>
             </button>
 
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-200 hover:bg-rose-100 hover:text-rose-700 hover:border-rose-300 border border-slate-300 text-slate-700 text-xs font-bold rounded-sm transition cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 sm:px-3 bg-slate-200 hover:bg-rose-100 hover:text-rose-700 hover:border-rose-300 border border-slate-300 text-slate-700 text-xs font-bold rounded-sm transition cursor-pointer whitespace-nowrap"
               title="關閉視窗 (ESC)"
             >
               <X className="w-4 h-4" />
@@ -298,7 +294,7 @@ export default function ProcurementDetailModal({
         </div>
 
         {/* Modal Main Content */}
-        <div className="p-6 overflow-y-auto space-y-6 text-xs font-sans">
+        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-5 text-xs font-sans">
           {/* Item Main Summary Card */}
           <div className="bg-[#fbfbfa] border border-[#e5e5e0] p-5 rounded-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -409,7 +405,7 @@ export default function ProcurementDetailModal({
                 )}
               </div>
               <span className="text-[11px] text-slate-500 font-mono">
-                流程: 提交 ➔ 初審 ➔ 教授終審 ➔ Mail通知
+                流程: 提交 ➔ Admin 初審 ➔ 教授終審 ➔ Mail通知
               </span>
             </div>
           </div>
@@ -466,7 +462,7 @@ export default function ProcurementDetailModal({
               <div className="flex items-center justify-between mb-2">
                 <span className="font-bold text-xs font-serif text-slate-800 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-[#1b4372]" />
-                  一階審核：研究初審
+                  一階審核：研究助理初審
                 </span>
                 {item.assistantReview && (
                   <span className="text-[10px] font-mono text-slate-400">
@@ -488,7 +484,7 @@ export default function ProcurementDetailModal({
                 </div>
               ) : (
                 <p className="text-slate-400 italic text-xs">
-                  尚未完成初審 (待admin確認品項規格與經費來源)
+                  尚未完成初審 (待助理確認品項與規格)
                 </p>
               )}
             </div>
@@ -520,7 +516,7 @@ export default function ProcurementDetailModal({
                 </div>
               ) : (
                 <p className="text-slate-400 italic text-xs">
-                  尚未完成終審 (待初審通過後由教授核定)
+                  尚未完成終審 (待助理初審通過後由教授核定)
                 </p>
               )}
             </div>
@@ -531,9 +527,9 @@ export default function ProcurementDetailModal({
             <div className="p-4 bg-slate-50 border border-slate-300 rounded-sm space-y-2">
               <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                 <Receipt className="w-4 h-4 text-emerald-700" />
-                <span>實際購買及統一發票資訊 (Invoiced Purchase Information)</span>
+                <span>實際購買資訊 (Purchase Information)</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
                 <div>
                   <span className="text-[10px] text-slate-400 block">採購經辦人</span>
                   <span className="font-bold">{item.actualPurchaseInfo.purchasedBy}</span>
@@ -541,10 +537,6 @@ export default function ProcurementDetailModal({
                 <div>
                   <span className="text-[10px] text-slate-400 block">採購日期</span>
                   <span className="font-bold font-mono">{item.actualPurchaseInfo.purchaseDate}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 block">統一發票號碼</span>
-                  <span className="font-bold font-mono text-emerald-800">{item.actualPurchaseInfo.invoiceNumber}</span>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-400 block">實際決標金額</span>
@@ -568,7 +560,7 @@ export default function ProcurementDetailModal({
                 <Clock className="w-4 h-4 text-slate-400 shrink-0" />
                 <span>
                   {item.status === "pending_assistant"
-                    ? (lang === "zh" ? "此請購單目前狀態為「待 初審」。如需審核請由右方登入 Admin 審批。" : "Requisition is pending Admin review.")
+                    ? (lang === "zh" ? "此請購單目前狀態為「待 Admin 初審」。如需審核請由右方登入 Admin 審批。" : "Requisition is pending Admin review.")
                     : (lang === "zh" ? "此請購單目前狀態為「待教授終審」。Admin 可協助登記審核結果或更新進程。" : "Requisition is pending Professor review.")}
                 </span>
               </div>
@@ -590,7 +582,7 @@ export default function ProcurementDetailModal({
               <div className="flex items-center justify-between">
                 <div className="font-bold text-purple-950 text-xs flex items-center gap-1.5">
                   <Clock className="w-4 h-4 text-purple-700" />
-                  <span>初審操作區 (Admin Review Actions)</span>
+                  <span>Admin 初審操作區 (Admin Review Actions)</span>
                 </div>
                 {item.estimatedTotalPrice >= 3000 ? (
                   <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded">
@@ -665,7 +657,7 @@ export default function ProcurementDetailModal({
                     type="text"
                     value={professorComment}
                     onChange={(e) => setProfessorComment(e.target.value)}
-                    placeholder="例如: 准予採購。收貨後請妥存原裝檢驗報告與發票。"
+                    placeholder="例如: 准予採購。收貨後請妥存原裝檢驗報告與進貨單據。"
                     className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2 text-xs"
                   />
                 </div>
@@ -689,7 +681,7 @@ export default function ProcurementDetailModal({
             </div>
           )}
 
-          {/* ACTION SECTION 3: Purchaser Marks As Purchased & Fills In Actual Invoice */}
+          {/* ACTION SECTION 3: Purchaser Marks As Purchased */}
           {item.status === "approved" && (
             <div className="p-4 bg-emerald-50/50 border border-emerald-300 rounded-sm space-y-3 animate-fadeIn">
               <div className="flex items-center justify-between">
@@ -715,7 +707,7 @@ export default function ProcurementDetailModal({
 
               {isFulfilling && (
                 <form onSubmit={handleSavePurchase} className="pt-2 border-t border-emerald-200 space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-slate-600 mb-1">採購經辦人姓名 *</label>
                       <input
@@ -734,16 +726,6 @@ export default function ProcurementDetailModal({
                         value={purchaseDate}
                         onChange={(e) => setPurchaseDate(e.target.value)}
                         className="w-full bg-white border border-emerald-200 rounded-sm p-1.5 text-xs font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-600 mb-1">訂單編號 / 發票號碼 (選填)</label>
-                      <input
-                        type="text"
-                        value={invoiceNumber}
-                        onChange={(e) => setInvoiceNumber(e.target.value)}
-                        placeholder="例如: 發票"
-                        className="w-full bg-white border border-emerald-200 rounded-sm p-1.5 text-xs font-mono font-bold text-emerald-800"
                       />
                     </div>
                   </div>
@@ -769,7 +751,7 @@ export default function ProcurementDetailModal({
                         type="text"
                         value={purchaseNote}
                         onChange={(e) => setPurchaseNote(e.target.value)}
-                        placeholder="例如: 已入庫並完成驗收，附發票電子檔"
+                        placeholder="例如: 已入庫並完成驗收"
                         className="w-full bg-white border border-emerald-200 rounded-sm p-1.5 text-xs"
                       />
                     </div>
@@ -860,23 +842,23 @@ export default function ProcurementDetailModal({
             {emailInfo.isProfEmail && emailInfo.approvalMailto && (
               <div className="p-2.5 bg-blue-50/60 border border-blue-200 rounded-sm space-y-1.5">
                 <div className="text-[11px] font-bold text-[#1b4372] flex items-center gap-1">
-                  <span>✉️ 教授郵件快速回覆選項（點擊將自動開啟郵件，並同時抄送admin與請購人）：</span>
+                  <span>✉️ 教授郵件快速回覆選項（點擊將自動開啟郵件，並同時抄送助理與請購人）：</span>
                 </div>
                 <div className="flex flex-wrap gap-2 pt-1">
                   <a
                     href={emailInfo.approvalMailto}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold transition shadow-2xs"
-                    title="開啟郵件並預選【核准通過】，同時抄送admin與請購人"
+                    title="開啟郵件並預選【核准通過】，同時抄送助理與請購人"
                   >
-                    <span>☑️ 一鍵以【核准通過】回覆 (CC 請購人與admin)</span>
+                    <span>☑️ 一鍵以【核准通過】回覆 (CC 請購人與助理)</span>
                   </a>
                   {emailInfo.rejectionMailto && (
                     <a
                       href={emailInfo.rejectionMailto}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-bold transition shadow-2xs"
-                      title="開啟郵件並預選【不予通過】，同時抄送admin與請購人"
+                      title="開啟郵件並預選【不予通過】，同時抄送助理與請購人"
                     >
-                      <span>❌ 一鍵以【不通過/退回】回覆 (CC 請購人與admin)</span>
+                      <span>❌ 一鍵以【不通過/退回】回覆 (CC 請購人與助理)</span>
                     </a>
                   )}
                 </div>

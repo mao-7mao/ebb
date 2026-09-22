@@ -3,12 +3,12 @@ export type ProcurementCategory = "chemical" | "consumable" | "equipment";
 export type CurrencyCode = "TWD" | "USD" | "CNY";
 
 export type ProcurementStatus = 
-  | "pending_assistant"  // 待初審
+  | "pending_assistant"  // 待助理初審
   | "pending_professor"  // 待教授終審
   | "partially_approved" // 部分通過 (部分品項核准、部分品項退回)
   | "approved"           // 全部核准 (待採購)
   | "rejected"           // 全部退回
-  | "purchased";         // 已採購 (已回填實際購買與發票資訊)
+  | "purchased";         // 已採購 (已完成實際購買)
 
 export type UserRole = "student" | "assistant" | "professor" | "admin";
 
@@ -18,9 +18,9 @@ export type PurchaseProgressStatus =
   | "pending_purchase"     // 待採購 (尚未購買)
   | "student_purchased"    // 請購人已購買 (學生自購)
   | "professor_purchased"  // 教授已購買 (老師統購)
-  | "postpayment"          // 貨到後計畫付款 (廠商送貨後報帳請款)
+  | "postpayment"          // 貨到後付款 (廠商送貨後報帳請款)
   | "delivered"            // 已到貨 / 已收訖
-  | "completed";           // 已填發票 / 結案核銷
+  | "completed";           // 採購完成 / 已結案
 
 export interface VendorQuote {
   id: string;
@@ -93,7 +93,7 @@ export interface ProcurementItem {
   department: string;
   purpose: string;       // 請購總體目的 / 專案說明
   description?: string;  // 詳細用途/說明
-  budgetProject?: string; // 經費計畫 / 會計科目
+  budgetProject?: string;
   status: ProcurementStatus;
   
   // 多品項清單 (一張請購單可含多筆樣品、耗材或設備)
@@ -115,7 +115,7 @@ export interface ProcurementItem {
   consumableDetails?: ProcurementItemLine["consumableDetails"];
   equipmentDetails?: ProcurementItemLine["equipmentDetails"];
 
-  // Approval Threshold & Routing: 不論金額皆須初審後送教授終審；≥ 3000 TWD 需附比價紀錄，< 3000 TWD 免比價
+  // Approval Threshold & Routing: 不論金額皆須助理初審後送教授終審；≥ 3000 TWD 需附比價紀錄，< 3000 TWD 免比價
   requiresProfessorApproval?: boolean;
   notifyProfessor?: boolean;
 
@@ -142,7 +142,7 @@ export interface ProcurementItem {
     purchaseDate: string;
     actualUnitPrice?: number;
     actualTotalPrice: number;
-    invoiceNumber: string;
+    invoiceNumber?: string;
     vendor?: string;
     note?: string;
     receiptFile?: string;

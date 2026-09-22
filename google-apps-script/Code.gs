@@ -57,8 +57,8 @@ function doPost(e) {
     if (action === "create_request") {
       const sheet = getOrCreateSheet(ss, CONFIG.SHEET_NAME_REQUESTS, [
         "請購單號", "申請時間", "申請人", "聯絡信箱", "類別", 
-        "品項清單與規格", "預估總額 (NT$)", "經費計畫", "請購目的", 
-        "建議廠商/平台", "審核狀態", "採購進程", "採購規範說明"
+        "品項清單與規格", "預估總額 (NT$)", "請購目的", 
+        "建議廠商/平台", "審核狀態", "採購進程", "採購規範說明", "資料細節(JSON)"
       ]);
 
       const itemSummary = item.items && item.items.length > 0
@@ -78,15 +78,15 @@ function doPost(e) {
         item.category || "",
         itemSummary,
         item.estimatedTotalPrice || 0,
-        item.budgetProject || "待指定",
         item.purpose || "",
         item.vendorName || item.platform || "",
         "待Admin初審 (pending_assistant)",
         "待審核 (未購買)",
-        modeLabel
+        modeLabel,
+        JSON.stringify(item)
       ]);
 
-      // 請購人提交一律發 Mail 通知 初審
+      // 請購人提交一律發 Mail 通知 Admin 初審
       sendMailToAdminOnSubmit(item, itemSummary, isOver3000);
 
       return responseJSON({ success: true, message: "Request logged to Google Sheets and Admin notified." });
@@ -94,21 +94,21 @@ function doPost(e) {
 
     // 2.1 Admin 退回請購單 (直接通知請購人，不通知教授)
     if (action === "admin_rejected" || action === "assistant_rejected") {
-      updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, "已退回 (rejected)", "退回修正");
+      updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, "已退回 (rejected)", "退回修正", item);
       sendRejectionEmailToApplicant(item, item.assistantReview?.comment || "請補充詳細規格後重新送出。");
       return responseJSON({ success: true, message: "Admin rejected request and notified applicant directly." });
     }
 
-    // 2.2 初審通過 -> 轉呈教授終審 (附標準文檔與核簽複選模板)
+    // 2.2 Admin 初審通過 -> 轉呈教授終審 (附標準文檔與核簽複選模板)
     if (action === "admin_approved_forward_professor" || action === "assistant_approved_forward_professor") {
-      updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, "待教授終審 (pending_professor)", "待審核 (未購買)");
+      updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, "待教授終審 (pending_professor)", "待審核 (未購買)", item);
       sendMailToProfessorOnForward(item);
       return responseJSON({ success: true, message: "Admin approved and forwarded requisition with standard document to professor." });
     }
 
     // 3. 教授終審 (核准或退回，回覆同時抄送admin與請購人)
     if (action === "approve_request" || action === "professor_approved") {
-      updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, "已核准待採購", item.purchaser === "student" ? "待請購人採購" : "待教授採購");
+      updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, "已核准待採購", item.purchaser === "student" ? "待請購人採購" : item.purchaser === "postpayment" ? "貨到後付款" : "待教授採購", item);
 
       // 同步寫入「已核准採購進程」分頁
       logApprovedItemToProgressSheet(ss, item);
@@ -120,20 +120,28 @@ function doPost(e) {
     }
 
     if (action === "professor_rejected") {
-      updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, "教授退回 (rejected)", "退回暫不採購");
+      updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, "教授退回 (rejected)", "退回暫不採購", item);
       sendProfessorRejectionEmail(item);
       return responseJSON({ success: true, message: "Professor rejected; applicant and admin notified." });
     }
 
-    // 4. 更新購買進程 (包含：請購人已購買、教授已購買、已到貨、已填寫發票)
+    // 3.5 審批資料或品項內容直接更新
+    if (action === "update_request" && item && item.requisitionNo) {
+      updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, item.status || "待審核", item.purchaseProgress || "", item);
+      return responseJSON({ success: true, message: `Requisition ${item.requisitionNo} updated.` });
+    }
+
+    // 4. 更新購買進程 (包含：請購人已購買、教授已購買、已到貨、完成結案)
     if (action === "update_purchase_progress") {
       const progressStatus = data.progressStatus || item.purchaseProgress || "已購買";
       const purchaser = data.purchaser || item.purchaser || "";
       const note = data.note || (item.actualPurchaseInfo ? item.actualPurchaseInfo.note : "") || "";
-      const invoiceNo = data.invoiceNo || (item.actualPurchaseInfo ? item.actualPurchaseInfo.invoiceNumber : "") || "";
 
       // 更新進程表
-      updateProgressSheet(ss, item.requisitionNo, progressStatus, purchaser, invoiceNo, note);
+      updateProgressSheet(ss, item.requisitionNo, progressStatus, purchaser, note);
+      if (item && item.requisitionNo) {
+        updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, item.status, progressStatus, item);
+      }
 
       return responseJSON({ success: true, message: `Purchase progress updated to ${progressStatus}` });
     }
@@ -146,15 +154,202 @@ function doPost(e) {
 }
 
 /**
- * 處理 GET 請求
+ * 處理 GET 請求 - 供網頁前端 (Admin 或 任何使用者) 讀取試算表中的請購清單
  */
 function doGet(e) {
-  return ContentService.createTextOutput(JSON.stringify({
-    status: "ok",
-    service: "EBB Lab Procurement Google Apps Script Webhook",
-    timestamp: new Date().toISOString(),
-    guide: "This endpoint receives POST requests from the EBB Lab Procurement System."
-  })).setMimeType(ContentService.MimeType.JSON);
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REQUESTS);
+    if (!sheet) {
+      const sheets = ss.getSheets();
+      if (sheets && sheets.length > 0) sheet = sheets[0];
+    }
+
+    if (!sheet) {
+      return responseJSON({ success: true, count: 0, items: [] });
+    }
+
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length <= 1) {
+      return responseJSON({ success: true, count: 0, items: [] });
+    }
+
+    const headers = data[0].map(function(h) { return String(h || "").trim(); });
+    const hasLegacyBudgetCol = headers.indexOf("經費計畫") !== -1 || headers.indexOf("計畫") !== -1;
+    const purposeCol = hasLegacyBudgetCol ? 8 : 7;
+    const vendorCol = hasLegacyBudgetCol ? 9 : 8;
+    const statusCol = hasLegacyBudgetCol ? 10 : 9;
+    const progressCol = hasLegacyBudgetCol ? 11 : 10;
+    const jsonCol = headers.indexOf("資料細節(JSON)") !== -1 ? headers.indexOf("資料細節(JSON)") : (hasLegacyBudgetCol ? 13 : 12);
+
+    const items = [];
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row[0] && !row[2] && !row[5]) continue; // 跳過空白列
+
+      // 1. 若資料細節(JSON)欄位存有完整 JSON 資料，優先解析還原
+      if (row[jsonCol] && typeof row[jsonCol] === "string" && row[jsonCol].trim().startsWith("{")) {
+        try {
+          const parsed = JSON.parse(row[jsonCol]);
+          if (parsed && (parsed.requisitionNo || parsed.id)) {
+            if (row[statusCol]) parsed.status = mapStatus(row[statusCol]);
+            if (row[progressCol]) parsed.purchaseProgress = mapProgress(row[progressCol]);
+            items.push(parsed);
+            continue;
+          }
+        } catch (err) {
+          Logger.log("Row " + (i + 1) + " JSON parse failed: " + err);
+        }
+      }
+
+      // 2. 還原自欄位 (相容舊版試算表紀錄)
+      const reqNo = String(row[0] || `EBB-${i}`).trim();
+      const createdAt = String(row[1] || "").trim();
+      const applicantName = String(row[2] || "未具名").trim();
+      const applicantEmail = String(row[3] || "").trim();
+      const rawCategory = String(row[4] || "consumable").trim().toLowerCase();
+      const category = rawCategory === "chemical" ? "chemical" : rawCategory === "equipment" ? "equipment" : "consumable";
+      const itemSummary = String(row[5] || "").trim();
+      const estimatedTotalPrice = Number(row[6]) || 0;
+      const purpose = String(row[purposeCol] || "").trim();
+      const vendorName = String(row[vendorCol] || "").trim();
+      const status = mapStatus(String(row[statusCol] || "pending_assistant"));
+      const purchaseProgress = mapProgress(String(row[progressCol] || "pending_purchase"));
+
+      const parsedSubItems = parseItemSummary(itemSummary, category, estimatedTotalPrice, purpose, vendorName);
+
+      items.push({
+        id: `req_sheet_${reqNo.replace(/[^a-zA-Z0-9_-]/g, "")}_${i}`,
+        requisitionNo: reqNo,
+        createdAt: createdAt || new Date().toISOString().split("T")[0],
+        applicantName: applicantName,
+        applicantEmail: applicantEmail,
+        category: category,
+        itemName: parsedSubItems[0]?.itemName || itemSummary || "請購品項",
+        quantity: parsedSubItems[0]?.quantity || 1,
+        unit: parsedSubItems[0]?.unit || "件",
+        estimatedUnitPrice: parsedSubItems[0]?.estimatedUnitPrice || estimatedTotalPrice,
+        estimatedTotalPrice: estimatedTotalPrice,
+        purpose: purpose,
+        vendorName: vendorName,
+        status: status,
+        purchaseProgress: purchaseProgress,
+        purchaser: "unassigned",
+        items: parsedSubItems
+      });
+    }
+
+    // 依申請時間由新到舊排序
+    items.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+
+    return responseJSON({
+      success: true,
+      timestamp: new Date().toISOString(),
+      count: items.length,
+      items: items
+    });
+  } catch (err) {
+    return responseJSON({
+      success: false,
+      error: err.toString()
+    });
+  }
+}
+
+// 狀態字串映射
+function mapStatus(statusStr) {
+  if (!statusStr) return "pending_assistant";
+  const s = String(statusStr).toLowerCase();
+  if (s.includes("pending_professor") || s.includes("待教授")) return "pending_professor";
+  if (s.includes("partially_approved") || s.includes("部分通過")) return "partially_approved";
+  if (s.includes("approved") || s.includes("已核准") || s.includes("通過")) return "approved";
+  if (s.includes("rejected") || s.includes("退回") || s.includes("不予通過")) return "rejected";
+  if (s.includes("purchased") || s.includes("已採購") || s.includes("入庫")) return "purchased";
+  return "pending_assistant";
+}
+
+// 採購進程字串映射
+function mapProgress(progStr) {
+  if (!progStr) return "pending_purchase";
+  const s = String(progStr).toLowerCase();
+  if (s.includes("completed") || s.includes("入庫") || s.includes("完成")) return "completed";
+  if (s.includes("arrived") || s.includes("到貨")) return "arrived";
+  if (s.includes("student_purchased") || s.includes("請購人已買") || s.includes("學生已買")) return "student_purchased";
+  if (s.includes("professor_purchased") || s.includes("教授已買")) return "professor_purchased";
+  if (s.includes("postpayment") || s.includes("貨到")) return "postpayment";
+  return "pending_purchase";
+}
+
+// 解析品項摘要 (如 "1. NaOH (1 瓶)")
+function parseItemSummary(summary, category, totalPrice, purpose, vendor) {
+  if (!summary) {
+    return [{
+      id: "line_1",
+      category: category,
+      itemName: "請購品項",
+      quantity: 1,
+      unit: "件",
+      estimatedUnitPrice: totalPrice,
+      estimatedTotalPrice: totalPrice,
+      purpose: purpose,
+      vendorName: vendor,
+      status: "pending_assistant"
+    }];
+  }
+
+  const lines = summary.split("\n").map(l => l.trim()).filter(Boolean);
+  const result = [];
+
+  lines.forEach((line, idx) => {
+    let cleanLine = line.replace(/^\d+[\.\、\)]\s*/, "");
+    let qty = 1;
+    let unit = "件";
+    const match = cleanLine.match(/\(([^)]+)\)$/);
+    if (match) {
+      const inner = match[1].trim();
+      cleanLine = cleanLine.replace(/\(([^)]+)\)$/, "").trim();
+      const qtyMatch = inner.match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
+      if (qtyMatch) {
+        qty = parseFloat(qtyMatch[1]) || 1;
+        unit = qtyMatch[2] || "件";
+      } else {
+        unit = inner;
+      }
+    }
+
+    const unitPrice = lines.length === 1 ? Math.round(totalPrice / (qty || 1)) : 0;
+    const lineTotal = lines.length === 1 ? totalPrice : 0;
+
+    result.push({
+      id: `line_${idx + 1}`,
+      category: category,
+      itemName: cleanLine || "品項",
+      quantity: qty,
+      unit: unit,
+      estimatedUnitPrice: unitPrice,
+      estimatedTotalPrice: lineTotal,
+      purpose: purpose,
+      vendorName: vendor,
+      status: "pending_assistant"
+    });
+  });
+
+  if (result.length === 0) {
+    result.push({
+      id: "line_1",
+      category: category,
+      itemName: summary,
+      quantity: 1,
+      unit: "件",
+      estimatedUnitPrice: totalPrice,
+      estimatedTotalPrice: totalPrice,
+      purpose: purpose,
+      vendorName: vendor,
+      status: "pending_assistant"
+    });
+  }
+
+  return result;
 }
 
 // 輔助函式：回傳 JSON
@@ -177,14 +372,21 @@ function getOrCreateSheet(ss, name, defaultHeaders) {
 }
 
 // 輔助函式：更新請購單狀態
-function updateSheetRowStatus(ss, sheetName, reqNo, newStatus, newProgress) {
-  const sheet = ss.getSheetByName(sheetName);
+function updateSheetRowStatus(ss, sheetName, reqNo, newStatus, newProgress, updatedItem) {
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    const sheets = ss.getSheets();
+    if (sheets && sheets.length > 0) sheet = sheets[0];
+  }
   if (!sheet) return;
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === reqNo) {
+    if (String(data[i][0]).trim() === String(reqNo).trim()) {
       sheet.getRange(i + 1, 11).setValue(newStatus); // 審核狀態
       if (newProgress) sheet.getRange(i + 1, 12).setValue(newProgress); // 採購進程
+      if (updatedItem) {
+        sheet.getRange(i + 1, 14).setValue(JSON.stringify(updatedItem)); // 資料細節(JSON)
+      }
       break;
     }
   }
@@ -193,11 +395,11 @@ function updateSheetRowStatus(ss, sheetName, reqNo, newStatus, newProgress) {
 // 輔助函式：寫入已核准進程表
 function logApprovedItemToProgressSheet(ss, item) {
   const sheet = getOrCreateSheet(ss, CONFIG.SHEET_NAME_PURCHASED, [
-    "請購單號", "核准日期", "品項名稱", "數量/單位", "經費計畫", 
-    "指定採購人", "購買進程", "實際金額 (NT$)", "發票/收據號碼", "備註"
+    "請購單號", "核准日期", "品項名稱", "數量/單位", 
+    "指定採購人", "購買進程", "實際金額 (NT$)", "備註"
   ]);
 
-  const purchaserLabel = item.purchaser === "student" ? "請購人 (學生)" : "教授本人";
+  const purchaserLabel = item.purchaser === "student" ? "請購人 (學生)" : item.purchaser === "postpayment" ? "貨到後付款" : "教授本人";
   const dateStr = new Date().toLocaleDateString("zh-TW", { timeZone: "Asia/Taipei" });
 
   if (item.items && item.items.length > 0) {
@@ -207,11 +409,9 @@ function logApprovedItemToProgressSheet(ss, item) {
         dateStr,
         sub.itemName,
         `${sub.quantity} ${sub.unit}`,
-        item.budgetProject || "待指定",
         purchaserLabel,
         "待採購 (尚未購買)",
         sub.estimatedTotalPrice || 0,
-        "",
         sub.productUrl || ""
       ]);
     });
@@ -221,31 +421,34 @@ function logApprovedItemToProgressSheet(ss, item) {
       dateStr,
       item.itemName,
       `${item.quantity} ${item.unit}`,
-      item.budgetProject || "待指定",
       purchaserLabel,
       "待採購 (尚未購買)",
       item.estimatedTotalPrice || 0,
-      "",
       item.productUrl || ""
     ]);
   }
 }
 
 // 輔助函式：更新採購進程工作表
-function updateProgressSheet(ss, reqNo, progress, purchaser, invoiceNo, note) {
+function updateProgressSheet(ss, reqNo, progress, purchaser, note) {
   const sheet = getOrCreateSheet(ss, CONFIG.SHEET_NAME_PURCHASED);
   const data = sheet.getDataRange().getValues();
+  if (!data || data.length <= 1) return;
+  const headers = data[0].map(function(h) { return String(h || "").trim(); });
+  const purchaserCol = headers.indexOf("指定採購人") !== -1 ? headers.indexOf("指定採購人") + 1 : 5;
+  const progressCol = headers.indexOf("購買進程") !== -1 ? headers.indexOf("購買進程") + 1 : 6;
+  const noteCol = headers.indexOf("備註") !== -1 ? headers.indexOf("備註") + 1 : 8;
+
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === reqNo) {
-      if (purchaser) sheet.getRange(i + 1, 6).setValue(purchaser);
-      if (progress) sheet.getRange(i + 1, 7).setValue(progress);
-      if (invoiceNo) sheet.getRange(i + 1, 9).setValue(invoiceNo);
-      if (note) sheet.getRange(i + 1, 10).setValue(note);
+    if (String(data[i][0] || "").trim() === String(reqNo).trim()) {
+      if (purchaser) sheet.getRange(i + 1, purchaserCol).setValue(purchaser);
+      if (progress) sheet.getRange(i + 1, progressCol).setValue(progress);
+      if (note) sheet.getRange(i + 1, noteCol).setValue(note);
     }
   }
 }
 
-// 輔助函式：1. 請購人提交 -> 發信通知 初審
+// 輔助函式：1. 請購人提交 -> 發信通知 Admin 初審
 function sendMailToAdminOnSubmit(item, itemSummary, isOver3000) {
   try {
     const policyDesc = isOver3000
@@ -255,7 +458,7 @@ function sendMailToAdminOnSubmit(item, itemSummary, isOver3000) {
     const subject = `[${CONFIG.LAB_NAME}] 新請購單待審：${item.requisitionNo} - ${item.applicantName} (${isOver3000 ? "≥3000元" : "小額"})`;
     const body = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <h2 style="color: #1b4372;">EBB Lab 新請購申請通知 (初審)</h2>
+        <h2 style="color: #1b4372;">EBB Lab 新請購申請通知 (Admin 初審)</h2>
         <p>實驗室成員 <strong>${item.applicantName}</strong> (${item.applicantEmail}) 已提交請購申請：</p>
         <div style="background-color: #f8f9fa; border-left: 4px solid #1b4372; padding: 10px 14px; margin: 12px 0;">
           <strong>採購規範路徑：</strong> ${policyDesc}
@@ -289,7 +492,7 @@ function sendRejectionEmailToApplicant(item, reason) {
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <h2 style="color: #b91c1c;">EBB Lab 請購單初審退回通知</h2>
         <p> <strong>${item.applicantName}</strong> 您好：</p>
-        <p>您於系統申請之請購單 <strong>${item.requisitionNo} (${item.itemName})</strong> 經 初審未通過，原因說明如下：</p>
+        <p>您於系統申請之請購單 <strong>${item.requisitionNo} (${item.itemName})</strong> 經 Admin 初審未通過，原因說明如下：</p>
         <div style="background-color: #fef2f2; border-left: 4px solid #b91c1c; padding: 10px 14px; margin: 12px 0;">
           <strong>退回原因：</strong> ${reason}
         </div>
@@ -307,7 +510,7 @@ function sendRejectionEmailToApplicant(item, reason) {
   }
 }
 
-// 輔助函式：3. 初審通過 -> 發送 Mail 給教授終審 (含標準文檔 + 複選框模式 + 同時抄送admin與請購人)
+// 輔助函式：3. Admin 初審通過 -> 發送 Mail 給教授終審 (含標準文檔 + 複選框模式 + 同時抄送admin與請購人)
 function sendMailToProfessorOnForward(item) {
   try {
     const isOver3000 = (item.estimatedTotalPrice >= 3000);
@@ -331,11 +534,11 @@ function sendMailToProfessorOnForward(item) {
     const rejectionReplySubject = encodeURIComponent(`Re: [EBB Lab 請購簽核回覆] 單號 ${item.requisitionNo} - 教授不予通過`);
 
     const approvalReplyBody = encodeURIComponent(
-      `【教授請購審核回覆 - 核准通過】\n請購單號：${item.requisitionNo}\n申請人：${item.applicantName}\n預估總額：NT$ ${Number(item.estimatedTotalPrice).toLocaleString()}\n\n■ 教授核定決策：\n[x] 【核准通過】 (Approved)\n    指定採購人：[x] 請購人自購   [ ] 貨到後由計畫付款   [ ] 教授統購\n    核定經費計畫：${item.budgetProject || "由admin依案號辦理"}\n    簽核意見：准予採購\n\n[ ] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：\n\n※ 本回信自動同時抄送實驗室 Admin (${CONFIG.ADMIN_EMAIL}) 與請購人 (${item.applicantEmail})。`
+      `【教授請購審核回覆 - 核准通過】\n請購單號：${item.requisitionNo}\n申請人：${item.applicantName}\n預估總額：NT$ ${Number(item.estimatedTotalPrice).toLocaleString()}\n\n■ 教授核定決策：\n[x] 【核准通過】 (Approved)\n    指定採購人：[x] 請購人自購   [ ] 貨到後付款 (廠商請款)   [ ] 教授統購\n    簽核意見：准予採購\n\n[ ] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：\n\n※ 本回信自動同時抄送實驗室 Admin (${CONFIG.ADMIN_EMAIL}) 與請購人 (${item.applicantEmail})。`
     );
 
     const rejectionReplyBody = encodeURIComponent(
-      `【教授請購審核回覆 - 不予通過】\n請購單號：${item.requisitionNo}\n申請人：${item.applicantName}\n預估總額：NT$ ${Number(item.estimatedTotalPrice).toLocaleString()}\n\n■ 教授核定決策：\n[ ] 【核准通過】 (Approved)\n\n[x] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：規格不符或經費考量暫不採購\n\n※ 本回信自動同時抄送實驗室 Admin (${CONFIG.ADMIN_EMAIL}) 與請購人 (${item.applicantEmail})。`
+      `【教授請購審核回覆 - 不予通過】\n請購單號：${item.requisitionNo}\n申請人：${item.applicantName}\n預估總額：NT$ ${Number(item.estimatedTotalPrice).toLocaleString()}\n\n■ 教授核定決策：\n[ ] 【核准通過】 (Approved)\n\n[x] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：規格不符或暫不採購\n\n※ 本回信自動同時抄送實驗室 Admin (${CONFIG.ADMIN_EMAIL}) 與請購人 (${item.applicantEmail})。`
     );
 
     const approvalMailtoUrl = `mailto:${CONFIG.ADMIN_EMAIL}?cc=${encodeURIComponent(item.applicantEmail || "")}&subject=${approvalReplySubject}&body=${approvalReplyBody}`;
@@ -353,13 +556,12 @@ function sendMailToProfessorOnForward(item) {
         <!-- Content -->
         <div style="padding: 20px;">
           <p style="margin-top: 0;">張教授您好：</p>
-          <p>實驗室成員 <strong>${item.applicantName}</strong> (${item.applicantEmail}) 已提交請購單，經 初審合格轉呈您終審核定：</p>
+          <p>實驗室成員 <strong>${item.applicantName}</strong> (${item.applicantEmail}) 已提交請購單，經 Admin 初審合格轉呈您終審核定：</p>
           
           <div style="background-color: #f8fafc; border-left: 4px solid #1b4372; padding: 10px 14px; margin: 14px 0; font-size: 13px;">
             <strong>採購規範：</strong> ${policyDesc}<br/>
             <strong>請購目的：</strong> ${item.purpose || "無"}<br/>
-            <strong>建議經費計畫：</strong> ${item.budgetProject || "待教授指定"}<br/>
-            <strong>初審意見：</strong> ${item.assistantReview?.comment || "初審合格，轉呈教授終審。"}
+            <strong>Admin 初審意見：</strong> ${item.assistantReview?.comment || "初審合格，轉呈教授終審。"}
           </div>
 
           <!-- Standard Document Items Table -->
@@ -402,8 +604,7 @@ function sendMailToProfessorOnForward(item) {
 
             <div style="background-color: #ffffff; border: 1px solid #e2e8f0; padding: 10px; font-family: monospace; font-size: 11px; line-height: 1.5; color: #334155; margin-top: 10px;">
               [x] 【核准通過】 (Approved)<br/>
-              &nbsp;&nbsp;&nbsp;&nbsp;指定採購人：[x] 請購人自購 &nbsp;&nbsp; [ ] 貨到後由計畫付款 &nbsp;&nbsp; [ ] 教授統購<br/>
-              &nbsp;&nbsp;&nbsp;&nbsp;核定經費計畫：${item.budgetProject || "_________________（由admin依案號辦理）"}<br/>
+              &nbsp;&nbsp;&nbsp;&nbsp;指定採購人：[x] 請購人自購 &nbsp;&nbsp; [ ] 貨到後付款 &nbsp;&nbsp; [ ] 教授統購<br/>
               &nbsp;&nbsp;&nbsp;&nbsp;教授意見：准予採購<br/><br/>
               [ ] 【不予通過 / 退回修正】 (Rejected)<br/>
               &nbsp;&nbsp;&nbsp;&nbsp;退回原因：________________________________________
@@ -432,7 +633,7 @@ function sendMailToProfessorOnForward(item) {
 function sendApprovalEmailToApplicantAndAdmin(item) {
   if (!item.applicantEmail) return;
   try {
-    const purchaserText = item.purchaser === "student" ? "由申請人 (學生) 自行採購並回填發票" : "由教授統籌採購";
+    const purchaserText = item.purchaser === "student" ? "由申請人 (學生) 自行採購" : item.purchaser === "postpayment" ? "貨到後付款 (廠商請款)" : "由教授統籌採購";
     const subject = `[${CONFIG.LAB_NAME}] 請購核准通知：單號 ${item.requisitionNo} 已獲教授簽可通過`;
     const body = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -441,10 +642,9 @@ function sendApprovalEmailToApplicantAndAdmin(item) {
         <p>您的請購單 <strong>${item.requisitionNo} (${item.itemName})</strong> 已獲教授終審簽可通過！</p>
         <div style="background-color: #e8f5e9; border-left: 4px solid #2e7d32; padding: 10px 14px; margin: 12px 0;">
           <strong>採購指派：</strong> ${purchaserText}<br/>
-          <strong>核定經費計畫：</strong> ${item.budgetProject || "尚未指定"}<br/>
-          ${item.professorReview?.comment ? `<strong>教授簽核意見：</strong> ${item.professorReview.comment}` : ""}
+          ${item.professorReview?.comment ? `<strong>教授簽核意見：</strong> ${item.professorReview.comment}` : "<strong>教授簽核意見：</strong> 准予採購"}
         </div>
-        <p style="margin-top: 16px;">請依照指定廠商或規範辦理採購。採購完成並取得統一發票或收據後，請前往系統回填實際金額與發票號碼，以利經費核銷。</p>
+        <p style="margin-top: 16px;">請依照指定廠商或規範辦理採購。採購完成後，請前往系統更新採購進程。</p>
         <p style="color: #64748b; font-size: 12px;">※ 本通知信已同步抄送實驗室 Admin (${CONFIG.ADMIN_EMAIL})。</p>
       </div>
     `;
@@ -470,7 +670,7 @@ function sendProfessorRejectionEmail(item) {
         <p> <strong>${item.applicantName}</strong> 您好：</p>
         <p>您的請購單 <strong>${item.requisitionNo} (${item.itemName})</strong> 經教授審核暫不通過，退回原因說明如下：</p>
         <div style="background-color: #fef2f2; border-left: 4px solid #b91c1c; padding: 10px 14px; margin: 12px 0;">
-          <strong>退回原因：</strong> ${item.professorReview?.comment || "經費考量或規格不符暫不採購。"}
+          <strong>退回原因：</strong> ${item.professorReview?.comment || "規格不符或暫不採購。"}
         </div>
         <p>如有任何疑問，請與admin或教授進一步討論。</p>
       </div>

@@ -39,44 +39,44 @@ export default function ProcurementHeader({
   lastSyncTime
 }: ProcurementHeaderProps) {
   return (
-    <div className="bg-[#fdfdfc] border border-[#e5e5e0] rounded-sm p-5 md:p-6 shadow-xs space-y-4">
-      {/* Top Banner & Actions */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-sm bg-[#1b4372] text-white">
-              <ShoppingCart className="w-4 h-4" />
+    <div className="bg-[#fdfdfc] border border-[#e5e5e0] rounded-sm py-2 px-3 sm:px-4 shadow-2xs">
+      {/* Top Banner & Actions in Compact Single/Two-Row Flex */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="p-1 rounded-sm bg-[#1b4372] text-white shrink-0">
+              <ShoppingCart className="w-3.5 h-3.5" />
             </span>
-            <span className="text-xs font-bold text-[#8d734a] tracking-widest uppercase font-serif italic">
-              {lang === "zh" ? "EBB Lab 實驗室請購審核與採購進程管理" : "EBB Lab Procurement & Purchasing Management"}
+            <h1 className="text-base sm:text-lg font-bold text-[#1a1a1a] font-serif flex items-center gap-2">
+              <span>{lang === "zh" ? "實驗室請購審核系統" : "Lab Procurement System"}</span>
+              <span className="text-[10px] font-mono font-normal bg-[#f4f1ea] text-[#1b4372] px-1.5 py-0.2 rounded-sm border border-[#e5e5e0]">
+                v4.2.0
+              </span>
+            </h1>
+            <span className="hidden md:inline text-[11px] text-[#8d734a] font-serif italic border-l border-slate-300 pl-2">
+              {lang === "zh" ? "EBB Lab 請購審核與採購進程" : "EBB Lab Procurement Management"}
             </span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a1a] font-serif flex items-center gap-2.5">
-            {lang === "zh" ? "實驗室請購審核系統" : "Lab Procurement System"}
-            <span className="text-xs font-mono font-normal bg-[#f4f1ea] text-[#1b4372] px-2 py-0.5 rounded-sm border border-[#e5e5e0]">
-              v4.2.0
-            </span>
-          </h1>
-          <p className="text-xs md:text-sm text-slate-500 max-w-2xl font-sans">
+          <p className="text-[11px] text-slate-500 font-sans truncate max-w-xl mt-0.5 hidden sm:block">
             {lang === "zh"
-              ? "點選「+ 填寫請購」送出藥品試劑、實驗耗材或設備請購。"
-              : "Submit chemical, consumable, or equipment requisitions. Synchronized two-way with Google Sheets."}
+              ? "點選「+ 填寫請購」送出藥品試劑、實驗耗材或設備。資料雙向即時同步 Google 試算表。"
+              : "Submit requisitions for chemicals, consumables, or equipment. Real-time sync with Google Sheets."}
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Cloud Sync Button */}
           {onSyncNow && (
             <button
               type="button"
               onClick={onSyncNow}
               disabled={isSyncing}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-sm text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-60"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-sm text-xs font-bold transition shadow-2xs cursor-pointer disabled:opacity-60 whitespace-nowrap"
               title={lastSyncTime ? `上次同步：${lastSyncTime}` : "立即同步 Google 試算表最新請購資料"}
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-emerald-700 ${isSyncing ? "animate-spin" : ""}`} />
-              <span>{isSyncing ? (lang === "zh" ? "同步中..." : "Syncing...") : (lang === "zh" ? "同步雲端" : "Sync Cloud")}</span>
+              <RefreshCw className={`w-3 h-3 text-emerald-700 ${isSyncing ? "animate-spin" : ""}`} />
+              <span className="hidden xs:inline">{isSyncing ? (lang === "zh" ? "同步中..." : "Syncing...") : (lang === "zh" ? "同步雲端" : "Sync Cloud")}</span>
             </button>
           )}
 
@@ -84,37 +84,37 @@ export default function ProcurementHeader({
           <button
             type="button"
             onClick={onToggleLang}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#f8f8f5] hover:bg-[#eae6dc] text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold transition shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-1.5 bg-[#f8f8f5] hover:bg-[#eae6dc] text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold transition shadow-2xs cursor-pointer whitespace-nowrap"
             title={lang === "zh" ? "Switch to English" : "切換至繁體中文"}
           >
-            <Globe className="w-3.5 h-3.5 text-[#1b4372]" />
-            <span>{lang === "zh" ? "EN English" : "繁體中文"}</span>
+            <Globe className="w-3 h-3 text-[#1b4372]" />
+            <span>{lang === "zh" ? "EN" : "中"}</span>
           </button>
 
           {/* Admin Review Login / Logout Button */}
           {isAdmin ? (
-            <div className="inline-flex items-center gap-2 px-3 py-2 bg-purple-50 text-purple-900 border border-purple-200 rounded-sm text-xs font-bold font-sans shadow-xs">
-              <ShieldCheck className="w-4 h-4 text-purple-700" />
-              <span>{lang === "zh" ? "Admin 審批已登入" : "Admin Logged In"}</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-50 text-purple-900 border border-purple-200 rounded-sm text-xs font-bold font-sans shadow-2xs whitespace-nowrap">
+              <ShieldCheck className="w-3.5 h-3.5 text-purple-700" />
+              <span>Admin 審批</span>
               <button
                 type="button"
                 onClick={onAdminLogout}
-                className="inline-flex items-center gap-1 ml-1 text-purple-600 hover:text-purple-950 font-normal hover:underline cursor-pointer"
+                className="inline-flex items-center gap-0.5 ml-1 text-purple-600 hover:text-purple-950 font-normal hover:underline cursor-pointer"
                 title={lang === "zh" ? "登出 Admin 審批身分" : "Log out admin"}
               >
-                <LogOut className="w-3 h-3" />
-                <span>{lang === "zh" ? "登出" : "Logout"}</span>
+                <LogOut className="w-2.5 h-2.5" />
+                <span className="text-[11px]">{lang === "zh" ? "登出" : "Exit"}</span>
               </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={onOpenAdminLogin}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold font-sans transition shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold font-sans transition shadow-2xs cursor-pointer whitespace-nowrap"
               title={lang === "zh" ? "輸入密碼以 Admin 身分審批請購單" : "Enter password for Admin approval"}
             >
-              <Lock className="w-3.5 h-3.5 text-slate-500" />
-              <span>{lang === "zh" ? "Admin 審批登入" : "Admin Login"}</span>
+              <Lock className="w-3 h-3 text-slate-500" />
+              <span>{lang === "zh" ? "Admin 審批" : "Admin"}</span>
             </button>
           )}
 
@@ -122,10 +122,10 @@ export default function ProcurementHeader({
           <button
             type="button"
             onClick={onOpenCreateModal}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold font-sans shadow-xs transition active:scale-95 cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold font-sans shadow-2xs transition active:scale-95 cursor-pointer whitespace-nowrap"
           >
-            <PlusCircle className="w-4 h-4" />
-            <span>{lang === "zh" ? "+ 填寫請購" : "+ New Requisition"}</span>
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>{lang === "zh" ? "+ 填寫請購" : "+ Requisition"}</span>
           </button>
         </div>
       </div>

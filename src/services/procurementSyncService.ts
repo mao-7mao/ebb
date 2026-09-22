@@ -252,20 +252,29 @@ export async function fetchItemsFromGoogleSheetCsv(sheetUrl: string): Promise<{
       return { success: true, items: [], message: "試算表為空或僅有標題列。" };
     }
 
+    const headers = (rows[0] || []).map(h => (h || "").trim());
+    const hasBudgetCol = headers.indexOf("經費計畫") !== -1;
+    const purposeCol = hasBudgetCol ? 8 : 7;
+    const vendorCol = hasBudgetCol ? 9 : 8;
+    const statusCol = hasBudgetCol ? 10 : 9;
+    const progressCol = hasBudgetCol ? 11 : 10;
+    const jsonCol = headers.indexOf("資料細節(JSON)") !== -1 ? headers.indexOf("資料細節(JSON)") : (hasBudgetCol ? 13 : 12);
+
     const items: ProcurementItem[] = [];
 
     // 從第二列開始
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
+      if (!row || row.length === 0) continue;
       if (!row[0] && !row[2] && !row[5]) continue;
 
-      // 若第 14 欄有 JSON
-      if (row[13] && row[13].startsWith("{")) {
+      // 若 JSON 欄位有內容
+      if (row[jsonCol] && typeof row[jsonCol] === "string" && row[jsonCol].trim().startsWith("{")) {
         try {
-          const parsed = JSON.parse(row[13]);
+          const parsed = JSON.parse(row[jsonCol]);
           if (parsed && (parsed.requisitionNo || parsed.id)) {
-            if (row[10]) parsed.status = mapStatusFromSheet(row[10]);
-            if (row[11]) parsed.purchaseProgress = mapProgressFromSheet(row[11]);
+            if (row[statusCol]) parsed.status = mapStatusFromSheet(row[statusCol]);
+            if (row[progressCol]) parsed.purchaseProgress = mapProgressFromSheet(row[progressCol]);
             items.push(parsed);
             continue;
           }
@@ -280,11 +289,10 @@ export async function fetchItemsFromGoogleSheetCsv(sheetUrl: string): Promise<{
       const category: ProcurementCategory = rawCategory === "chemical" ? "chemical" : rawCategory === "equipment" ? "equipment" : "consumable";
       const itemSummary = row[5] || "";
       const estimatedTotalPrice = parseFloat((row[6] || "0").replace(/[^0-9.]/g, "")) || 0;
-      const budgetProject = row[7] || "待指定";
-      const purpose = row[8] || "";
-      const vendorName = row[9] || "";
-      const status = mapStatusFromSheet(row[10] || "pending_assistant");
-      const purchaseProgress = mapProgressFromSheet(row[11] || "pending_purchase");
+      const purpose = row[purposeCol] || "";
+      const vendorName = row[vendorCol] || "";
+      const status = mapStatusFromSheet(row[statusCol] || "pending_assistant");
+      const purchaseProgress = mapProgressFromSheet(row[progressCol] || "pending_purchase");
 
       const parsedLines = parseItemSummaryText(itemSummary, category, estimatedTotalPrice, purpose, vendorName);
 
@@ -301,12 +309,11 @@ export async function fetchItemsFromGoogleSheetCsv(sheetUrl: string): Promise<{
         unit: parsedLines[0]?.unit || "件",
         estimatedUnitPrice: parsedLines[0]?.estimatedUnitPrice || estimatedTotalPrice,
         estimatedTotalPrice,
-        budgetProject,
         purpose,
         vendorName,
         status,
         purchaseProgress,
-        purchaser: (row[11] && row[11].includes("postpayment") ? "postpayment" : "unassigned") as PurchaserType,
+        purchaser: (row[progressCol] && row[progressCol].includes("postpayment") ? "postpayment" : "unassigned") as PurchaserType,
         items: parsedLines
       });
     }

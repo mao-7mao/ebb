@@ -61,7 +61,7 @@ export default function RolePasswordModal({
             </div>
             <div>
               <h3 className="font-bold text-sm leading-tight font-serif">
-                {lang === "zh" ? "Admin 審批登入驗證" : "Admin Review Authentication"}
+                {lang === "zh" ? "Admin 登入驗證" : "Admin Review Authentication"}
               </h3>
               <p className="text-[11px] text-slate-400 font-mono">
                 {lang === "zh" ? "實驗室管理與請購審核權限" : "Lab Requisition Review & Approvals"}
@@ -83,7 +83,7 @@ export default function RolePasswordModal({
             <div className="flex items-center justify-between">
               <span className="font-bold text-xs flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-purple-700" />
-                {lang === "zh" ? "Admin 管理者 / admin審核" : "Admin Requisition Review"}
+                {lang === "zh" ? "admin審核" : "Admin Requisition Review"}
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-xs font-semibold bg-purple-200/80 text-purple-900">
                 審批權限

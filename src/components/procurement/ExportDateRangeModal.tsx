@@ -144,7 +144,6 @@ export default function ExportDateRangeModal({
       "指定採購人 (Purchaser)",
       "實際採購人 (Purchased By)",
       "實際採購日期 (Purchase Date)",
-      "發票/收據號碼 (Invoice No)",
       "實際決標/採購總額 (Actual Total NT$)"
     ];
 
@@ -189,7 +188,6 @@ export default function ExportDateRangeModal({
           `"${req.purchaser || "unassigned"}"`,
           `"${req.actualPurchaseInfo?.purchasedBy || ""}"`,
           `"${req.actualPurchaseInfo?.purchaseDate || ""}"`,
-          `"${req.actualPurchaseInfo?.invoiceNumber || ""}"`,
           req.actualPurchaseInfo?.actualTotalPrice !== undefined ? req.actualPurchaseInfo.actualTotalPrice : ""
         ]);
       });
@@ -249,7 +247,7 @@ export default function ExportDateRangeModal({
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { id: "THIS_MONTH", label: "本月", hint: "本月至今" },
+                { id: "THIS_MONTH", label: "本月份 (當月)", hint: "本月至今" },
                 { id: "LAST_MONTH", label: "上個月份", hint: "上月完整結算" },
                 { id: "30DAYS", label: "最近 30 天", hint: "前30日" },
                 { id: "7DAYS", label: "最近 7 天", hint: "本週記錄" },
@@ -319,7 +317,7 @@ export default function ExportDateRangeModal({
               <option value="ALL">全部審核狀態 (包含待審、已核准、已採購等所有案件)</option>
               <option value="approved">僅核准案件 (Approved - 待採購)</option>
               <option value="purchased">僅已採購完成入庫案件 (Purchased)</option>
-              <option value="pending_assistant">僅待 Admin/初審案件</option>
+              <option value="pending_assistant">僅待 Admin/助理初審案件</option>
               <option value="pending_professor">僅待教授終審案件</option>
               <option value="rejected">僅已退回案件 (Rejected)</option>
             </select>

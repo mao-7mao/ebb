@@ -284,6 +284,10 @@ export default function ProcurementSystem() {
   const [customFilterStartDate, setCustomFilterStartDate] = useState<string>("");
   const [customFilterEndDate, setCustomFilterEndDate] = useState<string>("");
 
+  // Compact Pagination State for Requisitions
+  const [pageSize, setPageSize] = useState<number>(15);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ProcurementItem | null>(null);
@@ -429,8 +433,8 @@ export default function ProcurementSystem() {
     showToast(
       lang === "zh" 
         ? (isOver3000 
-            ? `請購單 ${requisitionNo} 已建立！總額達 3,000 元（需附比價紀錄），將由 初審後呈送教授終審。`
-            : `請購單 ${requisitionNo} 已建立！未滿 3,000 元小額請購（免附比價），將由 初審後呈送教授終審。`)
+            ? `請購單 ${requisitionNo} 已建立！總額達 3,000 元（需附比價紀錄），將由 Admin 初審後呈送教授終審。`
+            : `請購單 ${requisitionNo} 已建立！未滿 3,000 元小額請購（免附比價），將由 Admin 初審後呈送教授終審。`)
         : `Requisition ${requisitionNo} submitted!`
     );
   };
@@ -451,7 +455,7 @@ export default function ProcurementSystem() {
           ...item,
           status: nextStatus,
           assistantReview: {
-            reviewerName: "Lab Admin (系統管理者/admin)",
+            reviewerName: "Lab Admin (系統管理者/助理)",
             reviewedAt: now,
             approved,
             comment
@@ -473,7 +477,7 @@ export default function ProcurementSystem() {
     } else {
       // Send webhook for professor notification with standard doc & checkbox reply
       if (updatedTarget) triggerGasWebhook("admin_approved_forward_professor", updatedTarget);
-      showToast(lang === "zh" ? "初審合格！已發送附標準文檔與核簽複選模板之簽呈信給教授終審。" : "Admin review passed. Forwarded to PI with standard requisition doc & reply options.");
+      showToast(lang === "zh" ? "Admin 初審合格！已發送附標準文檔與核簽複選模板之簽呈信給教授終審。" : "Admin review passed. Forwarded to PI with standard requisition doc & reply options.");
     }
   };
 
@@ -509,10 +513,10 @@ export default function ProcurementSystem() {
 
     if (approved && updatedTarget) {
       triggerGasWebhook("approve_request", updatedTarget);
-      showToast(lang === "zh" ? `教授核定准予採購！回覆通知信已寄達請購人 (${updatedTarget.applicantEmail})，並同步抄送admin。` : `Final approval granted! Notified applicant with CC to Admin.`);
+      showToast(lang === "zh" ? `教授核定准予採購！回覆通知信已寄達請購人 (${updatedTarget.applicantEmail})，並同步抄送助理。` : `Final approval granted! Notified applicant with CC to Admin.`);
     } else if (updatedTarget) {
       triggerGasWebhook("professor_rejected", updatedTarget);
-      showToast(lang === "zh" ? `教授已退回請購單，說明已寄送至請購人 (${updatedTarget.applicantEmail}) 並抄送admin。` : "Request rejected by PI; applicant and Admin notified.");
+      showToast(lang === "zh" ? `教授已退回請購單，說明已寄送至請購人 (${updatedTarget.applicantEmail}) 並抄送助理。` : "Request rejected by PI; applicant and Admin notified.");
     }
   };
 
@@ -608,6 +612,18 @@ export default function ProcurementSystem() {
       (item.chemicalDetails?.casNumber && item.chemicalDetails.casNumber.includes(q))
     );
   });
+
+  // Reset page when filter conditions change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter, statusFilter, dateFilterPreset, customFilterStartDate, customFilterEndDate, searchQuery]);
+
+  const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(filteredItems.length / pageSize));
+  const paginatedItems = useMemo(() => {
+    if (pageSize === 0) return filteredItems;
+    const start = (currentPage - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, currentPage, pageSize]);
 
   // Toggle Bulk selection
   const toggleSelectId = (id: string, e: React.MouseEvent) => {
@@ -715,17 +731,47 @@ export default function ProcurementSystem() {
   const getStatusBadge = (status: ProcurementStatus) => {
     switch (status) {
       case "pending_assistant":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold"><Clock className="w-3 h-3" />待初審</span>;
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold whitespace-nowrap shrink-0">
+            <Clock className="w-3 h-3 shrink-0" />
+            <span>待助理初審</span>
+          </span>
+        );
       case "pending_professor":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-blue-50 text-blue-800 border border-blue-200 text-[10px] font-bold"><Clock className="w-3 h-3" />待教授終審</span>;
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-blue-50 text-blue-800 border border-blue-200 text-[10px] font-bold whitespace-nowrap shrink-0">
+            <Clock className="w-3 h-3 shrink-0" />
+            <span>待教授終審</span>
+          </span>
+        );
       case "approved":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold"><CheckCircle2 className="w-3 h-3" />審核通過 (待採購)</span>;
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold whitespace-nowrap shrink-0">
+            <CheckCircle2 className="w-3 h-3 shrink-0" />
+            <span>審核通過 (待採購)</span>
+          </span>
+        );
       case "partially_approved":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-indigo-50 text-indigo-800 border border-indigo-200 text-[10px] font-bold"><AlertCircle className="w-3 h-3 text-indigo-600" />部分審核通過</span>;
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-indigo-50 text-indigo-800 border border-indigo-200 text-[10px] font-bold whitespace-nowrap shrink-0">
+            <AlertCircle className="w-3 h-3 text-indigo-600 shrink-0" />
+            <span>部分審核通過</span>
+          </span>
+        );
       case "rejected":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-rose-50 text-rose-800 border border-rose-200 text-[10px] font-bold"><XCircle className="w-3 h-3" />已退回</span>;
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-rose-50 text-rose-800 border border-rose-200 text-[10px] font-bold whitespace-nowrap shrink-0">
+            <XCircle className="w-3 h-3 shrink-0" />
+            <span>已退回</span>
+          </span>
+        );
       case "purchased":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-slate-100 text-slate-800 border border-slate-300 text-[10px] font-bold"><Receipt className="w-3 h-3 text-emerald-700" />已採購入庫</span>;
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-slate-100 text-slate-800 border border-slate-300 text-[10px] font-bold whitespace-nowrap shrink-0">
+            <Receipt className="w-3 h-3 text-emerald-700 shrink-0" />
+            <span>已採購入庫</span>
+          </span>
+        );
     }
   };
 
@@ -787,25 +833,25 @@ export default function ProcurementSystem() {
       />
 
       {/* Navigation View Switcher Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#e5e5e0] bg-white rounded-t-sm px-2 pt-1 gap-2 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#e5e5e0] bg-white rounded-t-sm px-2 pt-0.5 gap-1.5 shadow-2xs">
         <div className="flex items-center gap-1 overflow-x-auto">
           {/* Tab 1: Requisitions & Approvals */}
           <button
             type="button"
             onClick={() => setActiveTab("requisitions")}
-            className={`inline-flex items-center gap-2 px-4 py-3 border-b-2 font-serif text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3 py-2 border-b-2 font-serif text-xs font-bold transition whitespace-nowrap cursor-pointer ${
               activeTab === "requisitions"
                 ? "border-[#1b4372] text-[#1b4372] bg-blue-50/40"
                 : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
             }`}
           >
-            <ClipboardList className="w-4 h-4 text-[#1b4372]" />
+            <ClipboardList className="w-3.5 h-3.5 text-[#1b4372]" />
             <span>{lang === "zh" ? "1. 請購審核單據總表" : "1. Requisitions & Approvals"}</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700">
               {items.length} 筆
             </span>
             {pendingReviewsCount > 0 && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
                 {pendingReviewsCount} 待審
               </span>
             )}
@@ -815,19 +861,19 @@ export default function ProcurementSystem() {
           <button
             type="button"
             onClick={() => setActiveTab("approved_purchasing")}
-            className={`inline-flex items-center gap-2 px-4 py-3 border-b-2 font-serif text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3 py-2 border-b-2 font-serif text-xs font-bold transition whitespace-nowrap cursor-pointer ${
               activeTab === "approved_purchasing"
                 ? "border-[#1b4372] text-[#1b4372] bg-blue-50/40"
                 : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
             }`}
           >
-            <PackageCheck className="w-4 h-4 text-[#1b4372]" />
+            <PackageCheck className="w-3.5 h-3.5 text-[#1b4372]" />
             <span>{lang === "zh" ? "2. 已核准品項與採購進程追蹤" : "2. Approved Items & Purchase Tracking"}</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700">
               {approvedItemsStats.totalApprovedCount} 項
             </span>
             {approvedItemsStats.pendingBuyCount > 0 && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white shadow-2xs">
+              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500 text-white shadow-2xs">
                 {approvedItemsStats.pendingBuyCount} 待採購
               </span>
             )}
@@ -837,42 +883,42 @@ export default function ProcurementSystem() {
 
       {/* VIEW 1: Requisitions & Approvals Tab */}
       {activeTab === "requisitions" && (
-        <div className="space-y-6">
+        <div className="space-y-2.5">
           {/* Filter Toolbar & Actions */}
-          <div className="bg-[#fdfdfc] border border-[#e5e5e0] p-4 rounded-sm space-y-3 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="bg-[#fdfdfc] border border-[#e5e5e0] p-2.5 sm:p-3 rounded-sm space-y-2 shadow-2xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
           {/* Search Input */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-[#1b4372] absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-[#1b4372] absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={lang === "zh" ? "搜尋請購單號、品項名稱、申請人、CAS No、發票號碼..." : "Search requisitions, items, CAS No..."}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-[#e5e5e0] rounded-sm text-xs font-sans focus:outline-none focus:border-[#1b4372]"
+              placeholder={lang === "zh" ? "搜尋請購單號、品項名稱、申請人、CAS No..." : "Search requisitions, items, CAS No..."}
+              className="w-full pl-8 pr-3 py-1.5 bg-white border border-[#e5e5e0] rounded-sm text-xs font-sans focus:outline-none focus:border-[#1b4372]"
             />
           </div>
 
           {/* Batch Actions & Order Exports (Admin Only) */}
           {isAdmin && (
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
               {selectedIds.size > 0 && (
                 <>
                   <button
                     type="button"
                     onClick={() => setPrintItems(items.filter(i => selectedIds.has(i.id)))}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1b4372] text-white rounded-sm text-xs font-bold transition shadow-xs active:scale-95"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#1b4372] text-white rounded-sm text-xs font-bold transition shadow-2xs active:scale-95"
                   >
-                    <Printer className="w-3.5 h-3.5" />
-                    <span>{lang === "zh" ? `批次列印單據 (${selectedIds.size})` : `Batch Print (${selectedIds.size})`}</span>
+                    <Printer className="w-3 h-3" />
+                    <span>{lang === "zh" ? `批次列印 (${selectedIds.size})` : `Print (${selectedIds.size})`}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => handleExportCSV(items.filter(i => selectedIds.has(i.id)))}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-xs"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs"
                   >
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>{lang === "zh" ? `匯出 Excel (${selectedIds.size})` : `Export CSV (${selectedIds.size})`}</span>
+                    <FileSpreadsheet className="w-3 h-3 text-emerald-700" />
+                    <span>{lang === "zh" ? `匯出 (${selectedIds.size})` : `Export (${selectedIds.size})`}</span>
                   </button>
                 </>
               )}
@@ -880,21 +926,21 @@ export default function ProcurementSystem() {
               <button
                 type="button"
                 onClick={() => setIsExportDateRangeModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-xs active:scale-95"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-2xs active:scale-95"
                 title="依時間段或自訂日期範圍匯出 Excel (CSV)"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
-                <span>{lang === "zh" ? "依時間段匯出 Excel" : "Export by Date Range"}</span>
+                <FileSpreadsheet className="w-3 h-3 text-amber-300" />
+                <span>{lang === "zh" ? "依時間段匯出" : "Export by Date"}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleExportCSV(filteredItems)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-xs"
+                className="inline-flex items-center gap-1 px-2 py-1.5 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs"
                 title="匯出目前列表篩選後之資料"
               >
-                <Download className="w-3.5 h-3.5 text-slate-600" />
-                <span className="hidden sm:inline">{lang === "zh" ? "匯出當前視圖" : "Export View"}</span>
+                <Download className="w-3 h-3 text-slate-600" />
+                <span className="hidden sm:inline">{lang === "zh" ? "匯出視圖" : "Export View"}</span>
               </button>
             </div>
           )}
@@ -927,7 +973,7 @@ export default function ProcurementSystem() {
                 className="bg-white border border-[#e5e5e0] rounded-sm py-1 px-2 text-xs font-medium focus:outline-none"
               >
                 <option value="ALL">{lang === "zh" ? "全部狀態" : "All Status"}</option>
-                <option value="pending_assistant">{lang === "zh" ? "待 Admin/初審" : "Pending Admin"}</option>
+                <option value="pending_assistant">{lang === "zh" ? "待 Admin/助理初審" : "Pending Admin"}</option>
                 <option value="pending_professor">{lang === "zh" ? "待教授終審" : "Pending PI"}</option>
                 <option value="approved">{lang === "zh" ? "已核准 (待採購)" : "Approved"}</option>
                 <option value="partially_approved">{lang === "zh" ? "部分審核通過" : "Partially Approved"}</option>
@@ -943,11 +989,12 @@ export default function ProcurementSystem() {
                 {lang === "zh" ? "時間:" : "Time:"}
               </span>
               {[
+              
                 { id: "TODAY", label: lang === "zh" ? "今日" : "Today" },
                 { id: "7DAYS", label: lang === "zh" ? "近7天" : "7 Days" },
                 { id: "30DAYS", label: lang === "zh" ? "近30天" : "30 Days" },
                 { id: "THIS_MONTH", label: lang === "zh" ? "本月" : "Month" },
-                { id: "ALL", label: lang === "zh" ? "全部" : "All" },
+                  { id: "ALL", label: lang === "zh" ? "全部" : "All" },
                 { id: "CUSTOM", label: lang === "zh" ? "自訂" : "Custom" }
               ].map((p) => (
                 <button
@@ -1004,14 +1051,147 @@ export default function ProcurementSystem() {
         </div>
       </div>
 
-      {/* Main Table View */}
-      <div className="border border-[#e5e5e0] rounded-sm overflow-hidden bg-white shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs font-sans">
+      {/* Main List View: Responsive Mobile Cards (md:hidden) & Desktop Table (hidden md:block) */}
+      <div className="border border-[#e5e5e0] rounded-sm overflow-hidden bg-white shadow-2xs">
+        {/* 1. Mobile Card List (Visible on phones and small tablets < md) */}
+        <div className="block md:hidden divide-y divide-[#e5e5e0]">
+          {paginatedItems.length > 0 ? (
+            paginatedItems.map((item) => {
+              const isChecked = selectedIds.has(item.id);
+              const displayTotal = item.actualPurchaseInfo?.actualTotalPrice || item.estimatedTotalPrice;
+
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => setSelectedItem(item)}
+                  className={`p-2.5 space-y-1.5 transition cursor-pointer active:bg-slate-50 ${isChecked ? "bg-blue-50/40" : "bg-white"}`}
+                >
+                  {/* Card Header: Requisition No, Date & Status Badge */}
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {isAdmin && (
+                        <div onClick={(e) => toggleSelectId(item.id, e)} className="shrink-0 p-0.5 -m-0.5">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}}
+                            className="rounded text-[#1b4372]"
+                          />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono font-bold text-[#1b4372] text-xs whitespace-nowrap">
+                          {item.requisitionNo}
+                        </span>
+                        <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                          {extractDateOnly(item.createdAt, item.requisitionNo)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 scale-90 origin-right">
+                      {getStatusBadge(item.status)}
+                    </div>
+                  </div>
+
+                  {/* Card Body: Item Name, Category, Links & Purpose */}
+                  <div className="space-y-0.5">
+                    <div className="flex items-start gap-1 flex-wrap">
+                      <span className="px-1 py-0.2 rounded-xs bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200 whitespace-nowrap shrink-0">
+                        {item.category === "chemical" ? "藥品試劑" : item.category === "equipment" ? "儀器設備" : "耗材雜物"}
+                      </span>
+                      <h4 className="font-bold text-slate-900 font-serif text-xs leading-snug flex-1 min-w-[140px]">
+                        {item.itemName}
+                      </h4>
+                      {item.items && item.items.length > 1 && (
+                        <span className="inline-flex items-center px-1 py-0.2 rounded text-[10px] font-mono font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 whitespace-nowrap shrink-0">
+                          共 {item.items.length} 品項
+                        </span>
+                      )}
+                    </div>
+
+                    {item.purpose && (
+                      <p className="text-[10px] text-slate-500 font-sans truncate">
+                        {item.purpose}
+                      </p>
+                    )}
+
+                    {item.chemicalDetails?.casNumber && (
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        CAS: {item.chemicalDetails.casNumber}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card Meta: Price, Vendor, Applicant in Tight Flex Row */}
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-xs">
+                    <div className="font-mono text-xs">
+                      <span className="font-bold text-slate-900">NT$ {displayTotal.toLocaleString()}</span>
+                      <span className="text-[10px] text-slate-500 ml-1">({item.quantity} {item.unit})</span>
+                    </div>
+
+                    <div className="text-[11px] text-slate-600 truncate max-w-[140px]" title={item.vendorName || item.platform || "—"}>
+                      {item.vendorName || item.platform || "—"}
+                    </div>
+                  </div>
+
+                  {/* Card Footer Actions (Touch Friendly Compact Buttons) */}
+                  <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100 text-xs" onClick={(e) => e.stopPropagation()}>
+                    <div className="text-[10px] text-slate-500 truncate max-w-[120px]">
+                      {item.applicantName}
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedItem(item)}
+                        className="inline-flex items-center gap-1 py-1 px-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-[11px] font-bold transition shadow-2xs active:scale-98"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>查看</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPrintItems([item])}
+                        className="inline-flex items-center gap-1 py-1 px-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-[11px] font-bold transition shadow-2xs"
+                        title="產生合規請購單"
+                      >
+                        <Printer className="w-3 h-3 text-[#8d734a]" />
+                        <span>列印</span>
+                      </button>
+
+                      {currentRole === "admin" && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteRequest(item.id, e)}
+                          className="p-1 hover:bg-rose-50 text-rose-500 border border-rose-200 rounded-sm"
+                          title="刪除單據 (管理員權限)"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="p-6 text-center text-slate-400 bg-[#fdfdfc]">
+              <AlertCircle className="w-6 h-6 text-slate-300 mx-auto mb-1.5" />
+              <p className="text-xs font-medium">查無符合條件的請購單</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">請調整篩選條件或點擊上方「+ 填寫請購」</p>
+            </div>
+          )}
+        </div>
+
+        {/* 2. Desktop Table View (Hidden on mobile < md, with compact spacing and consistent row height) */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-xs font-sans min-w-[720px] table-auto">
             <thead className="bg-[#f8f8f5] text-slate-700 font-bold border-b border-[#e5e5e0]">
               <tr>
                 {isAdmin && (
-                  <th className="p-3 text-center w-10">
+                  <th className="py-1.5 px-2 text-center w-7">
                     <input
                       type="checkbox"
                       checked={selectedIds.size > 0 && selectedIds.size === filteredItems.length}
@@ -1020,21 +1200,22 @@ export default function ProcurementSystem() {
                     />
                   </th>
                 )}
-                <th className="p-3 text-left w-32">請購單號 / 申請日</th>
-                <th className="p-3 text-left">品項名稱與規格規格</th>
-                <th className="p-3 text-left w-24">類別</th>
-                <th className="p-3 text-right w-24">數量金額 (NT$)</th>
-                <th className="p-3 text-left w-36">建議廠商 / 平台</th>
-                <th className="p-3 text-left w-28">申請人</th>
-                <th className="p-3 text-center w-36">審核狀態</th>
-                <th className="p-3 text-center w-28">操作</th>
+                <th className="py-1.5 px-2 text-left w-24 whitespace-nowrap">請購單號 / 申請日</th>
+                <th className="py-1.5 px-2 text-left min-w-[140px] max-w-[260px]">品項名稱與規格</th>
+                <th className="py-1.5 px-2 text-center w-16 whitespace-nowrap">類別</th>
+                <th className="py-1.5 px-2 text-right w-24 whitespace-nowrap">數量金額 (NT$)</th>
+                <th className="py-1.5 px-2 text-left w-28 whitespace-nowrap">建議廠商 / 平台</th>
+                <th className="py-1.5 px-2 text-left w-20 whitespace-nowrap">申請人</th>
+                <th className="py-1.5 px-2 text-center w-28 whitespace-nowrap">審核狀態</th>
+                <th className="py-1.5 px-2 text-center w-18 whitespace-nowrap">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e5e5e0]">
-              {filteredItems.length > 0 ? (
-                filteredItems.map((item) => {
+              {paginatedItems.length > 0 ? (
+                paginatedItems.map((item) => {
                   const isChecked = selectedIds.has(item.id);
                   const displayTotal = item.actualPurchaseInfo?.actualTotalPrice || item.estimatedTotalPrice;
+                  const firstItemLineName = item.itemName ? item.itemName.split("\n")[0] : "請購品項";
 
                   return (
                     <tr
@@ -1043,7 +1224,7 @@ export default function ProcurementSystem() {
                       className={`hover:bg-[#fbfbfa] transition cursor-pointer ${isChecked ? "bg-blue-50/30" : ""}`}
                     >
                       {isAdmin && (
-                        <td className="p-3 text-center" onClick={(e) => toggleSelectId(item.id, e)}>
+                        <td className="py-1.5 px-2 text-center align-middle" onClick={(e) => toggleSelectId(item.id, e)}>
                           <input
                             type="checkbox"
                             checked={isChecked}
@@ -1052,83 +1233,87 @@ export default function ProcurementSystem() {
                           />
                         </td>
                       )}
-                      <td className="p-3 font-mono">
+                      <td className="py-1.5 px-2 font-mono whitespace-nowrap align-middle">
                         <span className="font-bold text-[#1b4372] block">{item.requisitionNo}</span>
-                        <span className="text-[10px] text-slate-400 block">{extractDateOnly(item.createdAt, item.requisitionNo)}</span>
+                        <span className="text-[10px] text-slate-400 block leading-tight">{extractDateOnly(item.createdAt, item.requisitionNo)}</span>
                       </td>
-                      <td className="p-3">
-                        <div className="font-bold text-slate-900 font-serif text-sm flex items-center flex-wrap gap-1">
-                          <span>{item.itemName}</span>
+                      <td className="py-1.5 px-2 align-middle max-w-[260px]">
+                        <div className="font-bold text-slate-900 font-serif text-xs flex items-center flex-wrap gap-1 leading-snug">
+                          <span className="truncate max-w-[180px] inline-block" title={item.itemName}>
+                            {firstItemLineName}
+                          </span>
                           {item.items && item.items.length > 1 && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <span className="inline-flex items-center px-1 py-0.2 rounded text-[10px] font-mono font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 whitespace-nowrap">
                               共 {item.items.length} 品項
                             </span>
                           )}
                           {(item.productUrl || (item.items && item.items.some(sub => sub.productUrl))) && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-700 bg-blue-50/80 px-1 py-0.2 rounded border border-blue-200" title="包含購物平台/商品連結">
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-700 bg-blue-50/80 px-1 py-0.2 rounded border border-blue-200 whitespace-nowrap" title="包含購物平台/商品連結">
                               <ExternalLink className="w-2.5 h-2.5" />
                               連結
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-500 font-sans line-clamp-1 mt-0.5">
-                          {item.purpose}
-                        </div>
+                        {item.purpose && (
+                          <div className="text-[10px] text-slate-500 font-sans truncate max-w-[220px]" title={item.purpose}>
+                            {item.purpose}
+                          </div>
+                        )}
                         {item.chemicalDetails?.casNumber && (
-                          <span className="text-[10px] text-slate-400 font-mono">
+                          <span className="text-[10px] text-slate-400 font-mono block truncate max-w-[220px]">
                             CAS: {item.chemicalDetails.casNumber} · {item.vendorName}
                           </span>
                         )}
                       </td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 rounded-xs bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200">
+                      <td className="py-1.5 px-2 text-center whitespace-nowrap align-middle">
+                        <span className="px-1 py-0.2 rounded-xs bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200 inline-block whitespace-nowrap">
                           {item.category === "chemical" ? "藥品試劑" : item.category === "equipment" ? "儀器設備" : "耗材雜物"}
                         </span>
                       </td>
-                      <td className="p-3 text-right font-mono">
-                        <span className="font-bold text-slate-900 block">
+                      <td className="py-1.5 px-2 text-right font-mono whitespace-nowrap align-middle">
+                        <span className="font-bold text-slate-900 block leading-tight">
                           NT$ {displayTotal.toLocaleString()}
                         </span>
-                        <span className="text-[10px] text-slate-400 block">
+                        <span className="text-[10px] text-slate-400 block leading-tight">
                           {item.quantity} {item.unit}
                         </span>
                       </td>
-                      <td className="p-3 text-[11px] text-slate-700 truncate max-w-[150px]" title={item.vendorName || item.platform || "—"}>
+                      <td className="py-1.5 px-2 text-[11px] text-slate-700 truncate max-w-[120px] align-middle" title={item.vendorName || item.platform || "—"}>
                         {item.vendorName || item.platform || <span className="text-slate-400 italic">—</span>}
                       </td>
-                      <td className="p-3">
-                        <span className="font-bold text-slate-800 block">{item.applicantName}</span>
-                        <span className="text-[10px] text-slate-400 block truncate max-w-[100px]">{item.applicantEmail}</span>
+                      <td className="py-1.5 px-2 whitespace-nowrap align-middle">
+                        <span className="font-bold text-slate-800 block text-xs leading-tight">{item.applicantName}</span>
+                        <span className="text-[10px] text-slate-400 block truncate max-w-[80px] leading-tight">{item.applicantEmail}</span>
                       </td>
-                      <td className="p-3 text-center">
+                      <td className="py-1.5 px-2 text-center whitespace-nowrap align-middle">
                         {getStatusBadge(item.status)}
                       </td>
-                      <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-1.5">
+                      <td className="py-1.5 px-2 text-center whitespace-nowrap align-middle" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             type="button"
                             onClick={() => setSelectedItem(item)}
-                            className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-sm"
+                            className="p-1 hover:bg-slate-100 text-slate-600 rounded-sm"
                             title="查看詳細與審核"
                           >
-                            <Eye className="w-4 h-4 text-[#1b4372]" />
+                            <Eye className="w-3.5 h-3.5 text-[#1b4372]" />
                           </button>
                           <button
                             type="button"
                             onClick={() => setPrintItems([item])}
-                            className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-sm"
-                            title="產生請購單"
+                            className="p-1 hover:bg-slate-100 text-slate-600 rounded-sm"
+                            title="產生合規請購單"
                           >
-                            <Printer className="w-4 h-4 text-[#8d734a]" />
+                            <Printer className="w-3.5 h-3.5 text-[#8d734a]" />
                           </button>
                           {currentRole === "admin" && (
                             <button
                               type="button"
                               onClick={(e) => handleDeleteRequest(item.id, e)}
-                              className="p-1.5 hover:bg-rose-50 text-rose-500 rounded-sm"
+                              className="p-1 hover:bg-rose-50 text-rose-500 rounded-sm"
                               title="刪除單據 (管理員權限)"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>
@@ -1138,15 +1323,63 @@ export default function ProcurementSystem() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={isAdmin ? 9 : 8} className="p-10 text-center text-slate-400 bg-[#fdfdfc]">
-                    <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm font-medium">查無符合條件的請購單</p>
-                    <p className="text-xs text-slate-400 mt-1">請調整篩選條件或點擊上方「+ 填寫新請購單」</p>
+                  <td colSpan={isAdmin ? 9 : 8} className="p-8 text-center text-slate-400 bg-[#fdfdfc]">
+                    <AlertCircle className="w-7 h-7 text-slate-300 mx-auto mb-1.5" />
+                    <p className="text-xs font-medium">查無符合條件的請購單</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">請調整篩選條件或點擊上方「+ 填寫新請購單」</p>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Compact Pagination Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-3 py-1.5 bg-[#f8f8f5] border-t border-[#e5e5e0] text-xs font-sans">
+          <div className="flex items-center gap-2 text-slate-500 text-[11px]">
+            <span>共 <strong className="text-slate-800 font-mono">{filteredItems.length}</strong> 筆</span>
+            <span className="text-slate-300">|</span>
+            <div className="flex items-center gap-1">
+              <span>每頁:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-white border border-[#e5e5e0] rounded px-1.5 py-0.5 text-xs font-mono font-medium focus:outline-none cursor-pointer"
+              >
+                <option value={15}>15 筆 (緊湊)</option>
+                <option value={25}>25 筆</option>
+                <option value={50}>50 筆</option>
+                <option value={0}>全部顯示</option>
+              </select>
+            </div>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1 text-[11px]">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                className="px-2 py-0.5 bg-white border border-[#e5e5e0] rounded text-slate-700 disabled:opacity-40 hover:bg-slate-100 disabled:hover:bg-white font-medium cursor-pointer disabled:cursor-not-allowed"
+              >
+                上一頁
+              </button>
+              <span className="font-mono text-slate-600 px-1">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                className="px-2 py-0.5 bg-white border border-[#e5e5e0] rounded text-slate-700 disabled:opacity-40 hover:bg-slate-100 disabled:hover:bg-white font-medium cursor-pointer disabled:cursor-not-allowed"
+              >
+                下一頁
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

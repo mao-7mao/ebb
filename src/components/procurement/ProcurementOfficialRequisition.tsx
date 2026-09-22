@@ -48,7 +48,7 @@ export default function ProcurementOfficialRequisition({
   // Primary requisition info
   const primaryReq = items[0];
   const applicant = primaryReq.applicantName || "";
-  const assistantReviewer = primaryReq.assistantReview?.reviewerName || "admin";
+  const assistantReviewer = primaryReq.assistantReview?.reviewerName || "助理";
   const professorReviewer = primaryReq.professorReview?.reviewerName || "教授";
 
   // Requisition Date formatted as YYYY.MM.DD (matches screenshot: 2025.08.06)
@@ -309,7 +309,7 @@ export default function ProcurementOfficialRequisition({
 
         <div style="margin-top:14px; font-size:10pt; line-height:1.7; font-family:'標楷體','DFKai-SB';">
           1. 凡購買物品者，請先填寫請購單，經審核人與老師同意後，始可購買。單價或總價金額超過 3,000 元，需事先詢價三家廠商並徵得老師同意簽可後，始可購買。<br/>
-          2. 耗材類、藥品類由miao負責審核，其他類由老師直接審核。<br/>
+          2. 耗材類、藥品類由子瑩負責審核，其他類由老師直接審核。<br/>
           3. 審核人需確定物品是否還有庫存、是否需要增購，也要參考過去購買紀錄，審核本次請購價錢與數量是否合理。
         </div>
       </body>
@@ -382,70 +382,74 @@ export default function ProcurementOfficialRequisition({
         className="w-full max-w-4xl bg-slate-100 rounded-2xl shadow-2xl border border-slate-300 overflow-hidden my-2 sm:my-4 print:border-none print:shadow-none print:w-full print:max-w-none print:bg-white flex flex-col"
       >
         {/* Action Toolbar (Sticky Top, Hidden during browser printing) */}
-        <div className="sticky top-0 z-30 px-4 sm:px-6 py-3.5 bg-slate-900/95 backdrop-blur-sm text-white flex flex-wrap items-center justify-between gap-2.5 print:hidden shadow-md">
-          <div className="flex items-center gap-2.5">
-            <FileText className="w-5 h-5 text-emerald-400" />
+        <div className="sticky top-0 z-30 px-3 sm:px-6 py-2.5 sm:py-3.5 bg-slate-900/95 backdrop-blur-sm text-white flex flex-wrap items-center justify-between gap-2 print:hidden shadow-md">
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 shrink-0" />
             <div>
-              <span className="font-bold text-sm tracking-wide">
-                環境生物技術暨生物煉製實驗室請購單
+              <span className="font-bold text-xs sm:text-sm tracking-wide">
+                實驗室請購單
               </span>
-              <span className="ml-2 text-xs text-slate-400 font-mono">
+              <span className="ml-1 sm:ml-2 text-[10px] sm:text-xs text-slate-400 font-mono">
                 {primaryReq.requisitionNo || `DATE-${requisitionDate}`}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <button
               type="button"
               onClick={handlePrint}
-              className="px-3.5 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow"
+              className="px-2.5 sm:px-3.5 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-lg text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 shadow whitespace-nowrap cursor-pointer"
               title="列印或另存為 PDF"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>列印 / 存為 PDF</span>
+              <span className="hidden sm:inline">列印 / 存為 PDF</span>
+              <span className="inline sm:hidden">列印</span>
             </button>
 
             <button
               type="button"
               onClick={handleExportWord}
-              className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow"
+              className="px-2.5 sm:px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 shadow whitespace-nowrap cursor-pointer"
               title="匯出為標準 Word (.doc) 格式"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>匯出 Word (.doc)</span>
+              <span className="hidden sm:inline">匯出 Word (.doc)</span>
+              <span className="inline sm:hidden">Word</span>
             </button>
 
             {isAdmin && (
               <button
                 type="button"
                 onClick={handleExportCsv}
-                className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+                className="px-2.5 sm:px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 whitespace-nowrap cursor-pointer"
                 title="匯出 Excel / CSV 表格"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>匯出 Excel</span>
+                <span className="hidden sm:inline">匯出 Excel</span>
+                <span className="inline sm:hidden">Excel</span>
               </button>
             )}
 
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow active:scale-95 cursor-pointer ml-1"
+              className="px-2.5 sm:px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 shadow active:scale-95 cursor-pointer whitespace-nowrap"
               title="關閉請購單預覽 (ESC)"
             >
               <X className="w-4 h-4" />
-              <span>關閉預覽</span>
+              <span className="hidden sm:inline">關閉預覽</span>
+              <span className="inline sm:hidden">關閉</span>
             </button>
           </div>
         </div>
 
         {/* Paper Container - 1:1 Matching User's Word Document Template */}
-        <div className="p-4 md:p-8 flex justify-center bg-slate-200/80 print:p-0 print:bg-white">
+        <div className="p-2 sm:p-4 md:p-8 flex justify-center bg-slate-200/80 print:p-0 print:bg-white overflow-x-auto">
           <div 
             ref={printRef}
             id="requisition-paper-sheet"
-            className="w-full max-w-[794px] min-h-[1123px] bg-white p-10 md:p-12 shadow-lg border border-slate-300 print:shadow-none print:border-none print:p-8 text-black"
+            className="w-full max-w-[794px] min-w-[620px] min-h-[1123px] bg-white p-6 sm:p-10 md:p-12 shadow-lg border border-slate-300 print:shadow-none print:border-none print:p-8 text-black"
             style={{
               fontFamily: "'標楷體', 'DFKai-SB', 'BiauKai', 'Noto Serif TC', 'PMingLiU', serif"
             }}
@@ -468,22 +472,22 @@ export default function ProcurementOfficialRequisition({
             </div>
 
             {/* Main Requisition Table (Exact 6 Columns with crisp black borders) */}
-            <table className="w-full border-collapse border border-black text-center text-[13.5px] leading-snug">
+            <table className="w-full border-collapse border border-black text-center text-[13px] leading-snug">
               <thead>
                 <tr className="bg-white text-black font-bold">
-                  <th className="border border-black p-2.5 w-[29%] text-center">產品名稱及規格</th>
-                  <th className="border border-black p-2.5 w-[12%] text-center">單價</th>
-                  <th className="border border-black p-2.5 w-[9%] text-center">數量</th>
-                  <th className="border border-black p-2.5 w-[12%] text-center">小計</th>
-                  <th className="border border-black p-2.5 w-[20%] text-center">用途</th>
-                  <th className="border border-black p-2.5 w-[18%] text-center">備註(廠商)</th>
+                  <th className="border border-black py-1.5 px-2 w-[29%] text-center">產品名稱及規格</th>
+                  <th className="border border-black py-1.5 px-2 w-[12%] text-center">單價</th>
+                  <th className="border border-black py-1.5 px-2 w-[9%] text-center">數量</th>
+                  <th className="border border-black py-1.5 px-2 w-[12%] text-center">小計</th>
+                  <th className="border border-black py-1.5 px-2 w-[20%] text-center">用途</th>
+                  <th className="border border-black py-1.5 px-2 w-[18%] text-center">備註(廠商)</th>
                 </tr>
               </thead>
               <tbody>
                 {/* Requisition Line Items */}
                 {flattenedLines.map((line, idx) => (
-                  <tr key={line.lineId || idx} className="h-12 hover:bg-slate-50/50">
-                    <td className="border border-black p-2.5 text-center align-middle">
+                  <tr key={line.lineId || idx} className="hover:bg-slate-50/50">
+                    <td className="border border-black py-1.5 px-2 text-center align-middle">
                       <div className="font-medium text-black">
                         {line.nameWithSpec}
                       </div>
@@ -493,19 +497,19 @@ export default function ProcurementOfficialRequisition({
                         </div>
                       )}
                     </td>
-                    <td className="border border-black p-2.5 text-center font-mono align-middle font-medium">
+                    <td className="border border-black py-1.5 px-2 text-center font-mono align-middle font-medium">
                       {renderCellAmount(line.unitPrice, line.currency)}
                     </td>
-                    <td className="border border-black p-2.5 text-center font-mono align-middle">
+                    <td className="border border-black py-1.5 px-2 text-center font-mono align-middle">
                       {line.quantity}
                     </td>
-                    <td className="border border-black p-2.5 text-center font-mono align-middle font-medium">
+                    <td className="border border-black py-1.5 px-2 text-center font-mono align-middle font-medium">
                       {renderCellAmount(line.subtotal, line.currency)}
                     </td>
-                    <td className="border border-black p-2.5 text-center align-middle">
+                    <td className="border border-black py-1.5 px-2 text-center align-middle">
                       {line.purpose}
                     </td>
-                    <td className="border border-black p-2.5 text-center align-middle">
+                    <td className="border border-black py-1.5 px-2 text-center align-middle">
                       {line.vendorAndPlatform}
                     </td>
                   </tr>
@@ -513,35 +517,35 @@ export default function ProcurementOfficialRequisition({
 
                 {/* Empty Rows to match Word document visual proportions */}
                 {Array(emptyRowsCount).fill(0).map((_, eIdx) => (
-                  <tr key={`empty-row-${eIdx}`} className="h-11">
-                    <td className="border border-black p-2">&nbsp;</td>
-                    <td className="border border-black p-2">&nbsp;</td>
-                    <td className="border border-black p-2">&nbsp;</td>
-                    <td className="border border-black p-2">&nbsp;</td>
-                    <td className="border border-black p-2">&nbsp;</td>
-                    <td className="border border-black p-2">&nbsp;</td>
+                  <tr key={`empty-row-${eIdx}`} className="h-7">
+                    <td className="border border-black py-1 px-2">&nbsp;</td>
+                    <td className="border border-black py-1 px-2">&nbsp;</td>
+                    <td className="border border-black py-1 px-2">&nbsp;</td>
+                    <td className="border border-black py-1 px-2">&nbsp;</td>
+                    <td className="border border-black py-1 px-2">&nbsp;</td>
+                    <td className="border border-black py-1 px-2">&nbsp;</td>
                   </tr>
                 ))}
 
                 {/* Summary Row (總計列) - Matches Screenshot */}
-                <tr className="h-11 font-bold">
-                  <td className="border border-black p-2 text-center text-[15px] tracking-[6px]">
+                <tr className="h-9 font-bold">
+                  <td className="border border-black py-1.5 px-2 text-center text-[14px] tracking-[6px]">
                     總　計
                   </td>
-                  <td className="border border-black p-2 text-center text-[13px]">
+                  <td className="border border-black py-1.5 px-2 text-center text-[12px]">
                     {getCurrencyUnitLabel()}
                   </td>
-                  <td className="border border-black p-2"></td>
-                  <td className="border border-black p-2 text-center font-mono text-[14px]">
+                  <td className="border border-black py-1.5 px-2"></td>
+                  <td className="border border-black py-1.5 px-2 text-center font-mono text-[13.5px]">
                     {primaryTotalAmount.toLocaleString()}
                   </td>
-                  <td className="border border-black p-2"></td>
-                  <td className="border border-black p-2"></td>
+                  <td className="border border-black py-1.5 px-2"></td>
+                  <td className="border border-black py-1.5 px-2"></td>
                 </tr>
 
                 {/* Signatures Row (核准列) - Matches Screenshot */}
-                <tr className="h-12 font-bold">
-                  <td className="border border-black p-2 text-center text-[14px]">
+                <tr className="h-10 font-bold">
+                  <td className="border border-black py-1.5 px-2 text-center text-[13.5px]">
                     老師核准
                   </td>
                   <td className="border border-black p-2 text-center font-normal">
@@ -574,7 +578,7 @@ export default function ProcurementOfficialRequisition({
                 1. 凡購買物品者，請先填寫請購單，經審核人與老師同意後，始可購買。單價或總價金額超過 3,000 元，需事先詢價三家廠商並徵得老師同意簽可後，始可購買。
               </p>
               <p>
-                2. 耗材類、藥品類由miao負責審核，其他類由老師直接審核。
+                2. 耗材類、藥品類由子瑩負責審核，其他類由老師直接審核。
               </p>
               <p>
                 3. 審核人需確定物品是否還有庫存、是否需要增購，也要參考過去購買紀錄，審核本次請購價錢與數量是否合理。

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { 
   ProcurementItem, 
   ProcurementItemLine, 
@@ -301,6 +301,21 @@ export default function ApprovedPurchasingTracker({
     };
   }, [allApprovedEntries]);
 
+  // Compact Pagination State for Tracker
+  const [pageSize, setPageSize] = useState<number>(15);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, progressFilter, categoryFilter, datePreset, customStartDate, customEndDate]);
+
+  const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(filteredEntries.length / pageSize));
+  const paginatedEntries = useMemo(() => {
+    if (pageSize === 0) return filteredEntries;
+    const start = (currentPage - 1) * pageSize;
+    return filteredEntries.slice(start, start + pageSize);
+  }, [filteredEntries, currentPage, pageSize]);
+
   // Handle Opening Quick Edit Modal
   const openEditModal = (entry: FlatApprovedItem) => {
     setEditingEntry(entry);
@@ -347,7 +362,7 @@ export default function ApprovedPurchasingTracker({
       note: editNote
     };
 
-    // If marked as completed or delivered with invoice, set overall status to purchased
+    // If marked as completed, set overall status to purchased
     if (editStatus === "completed") {
       req.status = "purchased";
     }
@@ -450,7 +465,6 @@ export default function ApprovedPurchasingTracker({
       "購買進程狀態",
       "實際採購人",
       "採購日期",
-      "發票/收據號碼",
       "備註說明",
       "購物平台/廠商",
       "商品規格連結",
@@ -472,7 +486,6 @@ export default function ApprovedPurchasingTracker({
       `"${getProgressLabel(e.purchaseProgress).label}"`,
       `"${e.purchasedBy || ""}"`,
       `"${e.purchaseDate || ""}"`,
-      `"${e.invoiceNumber || ""}"`,
       `"${(e.note || "").replace(/"/g, '""')}"`,
       `"${(e.platform || e.vendorName || "").replace(/"/g, '""')}"`,
       `"${(e.productUrl || "").replace(/"/g, '""')}"`,
@@ -548,108 +561,108 @@ export default function ApprovedPurchasingTracker({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5">
       {/* 1. Summary Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-        <div className="bg-[#fdfdfc] border border-[#e5e5e0] p-3 rounded-sm shadow-2xs">
-          <span className="text-[11px] font-bold text-slate-500 block">已核准品項總數</span>
-          <div className="flex items-baseline justify-between mt-1 gap-1.5">
-            <span className="text-xl font-bold font-serif text-slate-800 shrink-0">{stats.totalCount} 項</span>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
+        <div className="bg-[#fdfdfc] border border-[#e5e5e0] p-2 rounded-sm shadow-2xs">
+          <span className="text-[10px] font-bold text-slate-500 block">已核准品項總數</span>
+          <div className="flex items-baseline justify-between mt-0.5 gap-1">
+            <span className="text-base sm:text-lg font-bold font-serif text-slate-800 shrink-0">{stats.totalCount} 項</span>
             {isUserAdmin ? (
-              <span className="text-xs font-bold font-mono text-slate-700 whitespace-nowrap leading-none text-right" title={`核准總金額 NT$ ${stats.totalEstPrice.toLocaleString()}`}>
+              <span className="text-[11px] font-bold font-mono text-slate-700 whitespace-nowrap leading-none text-right" title={`核准總金額 NT$ ${stats.totalEstPrice.toLocaleString()}`}>
                 NT$ {stats.totalEstPrice.toLocaleString()}
               </span>
             ) : (
-              <span className="text-[10px] text-slate-400 font-sans whitespace-nowrap text-right" title="總金額僅限 Admin / 教授 權限檢視">
-                訪客模式
+              <span className="text-[9px] text-slate-400 font-sans whitespace-nowrap text-right" title="總金額僅限 Admin / 教授 權限檢視">
+                訪客隱藏
               </span>
             )}
           </div>
         </div>
 
-        <div className="bg-amber-50/70 border border-amber-200/80 p-3 rounded-sm shadow-2xs">
+        <div className="bg-amber-50/70 border border-amber-200/80 p-2 rounded-sm shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-amber-900">⏳ 尚未購買 (待採購)</span>
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            <span className="text-[10px] font-bold text-amber-900">⏳ 尚未購買 (待採購)</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
           </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-xl font-bold font-serif text-amber-900">{stats.pendingCount} 項</span>
-            <span className="text-[10px] text-amber-700 font-medium">需儘速下單</span>
-          </div>
-        </div>
-
-        <div className="bg-emerald-50/70 border border-emerald-200/80 p-3 rounded-sm shadow-2xs">
-          <span className="text-[11px] font-bold text-emerald-900 block">🛒 請購人已購買</span>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-xl font-bold font-serif text-emerald-900">{stats.studentPurchasedCount} 項</span>
-            <span className="text-[10px] text-emerald-700 font-medium">已自購/下訂</span>
+          <div className="flex items-baseline justify-between mt-0.5">
+            <span className="text-base sm:text-lg font-bold font-serif text-amber-900">{stats.pendingCount} 項</span>
+            <span className="text-[9px] text-amber-700 font-medium">需儘速下單</span>
           </div>
         </div>
 
-        <div className="bg-purple-50/70 border border-purple-200/80 p-3 rounded-sm shadow-2xs">
-          <span className="text-[11px] font-bold text-purple-900 block">🎓 教授已購買</span>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-xl font-bold font-serif text-purple-900">{stats.profPurchasedCount} 項</span>
-            <span className="text-[10px] text-purple-700 font-medium">老師已統購</span>
+        <div className="bg-emerald-50/70 border border-emerald-200/80 p-2 rounded-sm shadow-2xs">
+          <span className="text-[10px] font-bold text-emerald-900 block">🛒 請購人已購買</span>
+          <div className="flex items-baseline justify-between mt-0.5">
+            <span className="text-base sm:text-lg font-bold font-serif text-emerald-900">{stats.studentPurchasedCount} 項</span>
+            <span className="text-[9px] text-emerald-700 font-medium">學生已自購</span>
           </div>
         </div>
 
-        <div className="bg-blue-50/70 border border-blue-200/80 p-3 rounded-sm shadow-2xs">
-          <span className="text-[11px] font-bold text-blue-900 block">🏢 貨到後付款</span>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-xl font-bold font-serif text-blue-900">{stats.postpaymentCount} 項</span>
-            <span className="text-[10px] text-blue-700 font-medium">廠商請款免先付</span>
+        <div className="bg-purple-50/70 border border-purple-200/80 p-2 rounded-sm shadow-2xs">
+          <span className="text-[10px] font-bold text-purple-900 block">🎓 教授已購買</span>
+          <div className="flex items-baseline justify-between mt-0.5">
+            <span className="text-base sm:text-lg font-bold font-serif text-purple-900">{stats.profPurchasedCount} 項</span>
+            <span className="text-[9px] text-purple-700 font-medium">老師已統購</span>
           </div>
         </div>
 
-        <div className="bg-slate-50 border border-slate-200 p-3 rounded-sm shadow-2xs col-span-2 sm:col-span-1">
-          <span className="text-[11px] font-bold text-slate-700 block">📦 已到貨 / 已驗收</span>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-xl font-bold font-serif text-slate-800">{stats.completedCount} 項</span>
-            <span className="text-[10px] text-slate-500 font-medium">採購完成</span>
+        <div className="bg-blue-50/70 border border-blue-200/80 p-2 rounded-sm shadow-2xs">
+          <span className="text-[10px] font-bold text-blue-900 block">🏢 貨到後付款</span>
+          <div className="flex items-baseline justify-between mt-0.5">
+            <span className="text-base sm:text-lg font-bold font-serif text-blue-900">{stats.postpaymentCount} 項</span>
+            <span className="text-[9px] text-blue-700 font-medium">廠商請款免先付</span>
+          </div>
+        </div>
+
+        <div className="bg-slate-50 border border-slate-200 p-2 rounded-sm shadow-2xs col-span-2 sm:col-span-1">
+          <span className="text-[10px] font-bold text-slate-700 block">📦 已到貨 / 已驗收</span>
+          <div className="flex items-baseline justify-between mt-0.5">
+            <span className="text-base sm:text-lg font-bold font-serif text-slate-800">{stats.completedCount} 項</span>
+            <span className="text-[9px] text-slate-500 font-medium">採購完成</span>
           </div>
         </div>
       </div>
 
       {/* 2. Filter & Date Range Bar */}
-      <div className="bg-[#fdfdfc] border border-[#e5e5e0] p-4 rounded-sm space-y-3 shadow-xs">
+      <div className="bg-[#fdfdfc] border border-[#e5e5e0] p-2.5 rounded-sm space-y-2 shadow-2xs">
         
         {/* Top search & export line */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2">
           {/* Keyword Search */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-[#1b4372] absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-[#1b4372] absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="搜尋已核准品項名稱、單號、申請人、購物平台、廠商通路..."
-              className="w-full pl-9 pr-4 py-2 bg-white border border-[#e5e5e0] rounded-sm text-xs font-sans focus:outline-none focus:border-[#1b4372]"
+              placeholder="搜尋品項名稱、單號、申請人、購物平台、廠商通路..."
+              className="w-full pl-8 pr-3 py-1.5 bg-white border border-[#e5e5e0] rounded-sm text-xs font-sans focus:outline-none focus:border-[#1b4372]"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3" />
               </button>
             )}
           </div>
 
           {/* Action buttons (Admin only for bulk export & batch progress) */}
           {isUserAdmin && (
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
               {/* Batch actions if items selected */}
               {selectedKeys.size > 0 && (
-                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-sm border border-slate-300">
-                  <span className="text-[11px] font-bold text-slate-700 px-1.5">
-                    已選 {selectedKeys.size} 項：
+                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-sm border border-slate-300">
+                  <span className="text-[10px] font-bold text-slate-700 px-1">
+                    選 {selectedKeys.size} 項：
                   </span>
                   <button
                     type="button"
                     onClick={() => handleBatchUpdateProgress("student_purchased")}
-                    className="px-2 py-1 bg-emerald-700 text-white rounded text-[11px] font-bold hover:bg-emerald-800"
+                    className="px-1.5 py-0.5 bg-emerald-700 text-white rounded text-[10px] font-bold hover:bg-emerald-800"
                     title="標記為請購人已購買"
                   >
                     🛒 請購人已買
@@ -657,7 +670,7 @@ export default function ApprovedPurchasingTracker({
                   <button
                     type="button"
                     onClick={() => handleBatchUpdateProgress("professor_purchased", "Prof. K.L. Chang")}
-                    className="px-2 py-1 bg-purple-700 text-white rounded text-[11px] font-bold hover:bg-purple-800"
+                    className="px-1.5 py-0.5 bg-purple-700 text-white rounded text-[10px] font-bold hover:bg-purple-800"
                     title="標記為教授已購買"
                   >
                     🎓 教授已買
@@ -665,15 +678,15 @@ export default function ApprovedPurchasingTracker({
                   <button
                     type="button"
                     onClick={() => handleBatchUpdateProgress("postpayment", "貨到後付款 (免先付)")}
-                    className="px-2 py-1 bg-blue-700 text-white rounded text-[11px] font-bold hover:bg-blue-800"
-                    title="標記為貨到後計畫付款"
+                    className="px-1.5 py-0.5 bg-blue-700 text-white rounded text-[10px] font-bold hover:bg-blue-800"
+                    title="標記為貨到後付款"
                   >
-                    🏢 貨到後付款
+                    🏢 貨到付款
                   </button>
                   <button
                     type="button"
                     onClick={() => handleBatchUpdateProgress("delivered")}
-                    className="px-2 py-1 bg-teal-700 text-white rounded text-[11px] font-bold hover:bg-teal-800"
+                    className="px-1.5 py-0.5 bg-teal-700 text-white rounded text-[10px] font-bold hover:bg-teal-800"
                     title="標記為已到貨"
                   >
                     📦 已到貨
@@ -685,50 +698,49 @@ export default function ApprovedPurchasingTracker({
               <button
                 type="button"
                 onClick={() => setIsPrintChecklistOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs"
                 title="列印或檢視採購採買清單"
               >
                 <Printer className="w-3.5 h-3.5 text-[#8d734a]" />
-                <span>採購待購清單 ({filteredEntries.filter(e => e.purchaseProgress === "pending_purchase").length})</span>
+                <span>待購清單 ({filteredEntries.filter(e => e.purchaseProgress === "pending_purchase").length})</span>
               </button>
 
               {/* Export CSV */}
               <button
                 type="button"
                 onClick={handleExportApprovedCSV}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-2xs"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-2xs"
                 title={`依目前選定之時間範圍匯出 ${filteredEntries.length} 筆資料為 Excel (CSV)`}
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>匯出 Excel (CSV) ({filteredEntries.length} 筆)</span>
+                <span>匯出 CSV ({filteredEntries.length})</span>
               </button>
             </div>
           )}
         </div>
 
         {/* Date Filtering Section with Range Picker */}
-        <div className="pt-2.5 border-t border-[#e5e5e0] flex flex-col md:flex-row md:items-center justify-between gap-2.5 text-xs">
+        <div className="pt-2 border-t border-[#e5e5e0] flex flex-col md:flex-row md:items-center justify-between gap-1.5 text-xs">
           {/* Quick Date Presets */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-slate-500 font-bold flex items-center gap-1 shrink-0">
-              <Calendar className="w-3.5 h-3.5 text-[#1b4372]" />
-              時間篩選：
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-slate-500 font-bold flex items-center gap-1 shrink-0 text-[11px]">
+              <Calendar className="w-3 h-3 text-[#1b4372]" />
+              時間：
             </span>
 
-            {[
-             
+            {[           
               { id: "TODAY", label: "今日" },
-              { id: "7DAYS", label: "最近 7 天" },
-              { id: "30DAYS", label: "最近 30 天" },
-              { id: "THIS_MONTH", label: "本月份" },
-               { id: "ALL", label: "全部時間" },
-              { id: "CUSTOM", label: "📅 自訂日期範圍" }
+              { id: "7DAYS", label: "近7天" },
+              { id: "30DAYS", label: "近30天" },
+              { id: "THIS_MONTH", label: "本月" },
+              { id: "ALL", label: "全部" },
+              { id: "CUSTOM", label: "📅 自訂範圍" }
             ].map((p) => (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => setDatePreset(p.id)}
-                className={`px-2.5 py-1 rounded-sm text-xs font-medium transition border ${
+                className={`px-2 py-0.5 rounded-sm text-[11px] font-medium transition border ${
                   datePreset === p.id
                     ? "bg-[#1b4372] text-white border-[#1b4372] font-bold"
                     : "bg-white text-slate-700 border-[#e5e5e0] hover:bg-slate-100"
@@ -741,21 +753,20 @@ export default function ApprovedPurchasingTracker({
 
           {/* Custom Date Range Pickers (Shows if CUSTOM is selected, or always inline) */}
           {datePreset === "CUSTOM" && (
-            <div className="flex items-center gap-1.5 bg-emerald-50/60 p-1.5 rounded border border-emerald-200">
-              <CalendarRange className="w-3.5 h-3.5 text-[#1b4372] shrink-0" />
-              <span className="text-[11px] font-bold text-[#1b4372]">起：</span>
+            <div className="flex items-center gap-1 bg-emerald-50/60 p-1 rounded border border-emerald-200">
+              <CalendarRange className="w-3 h-3 text-[#1b4372] shrink-0" />
               <input
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="bg-white border border-slate-300 rounded px-1.5 py-0.5 text-xs font-mono focus:outline-none"
+                className="bg-white border border-slate-300 rounded px-1 py-0.5 text-[11px] font-mono focus:outline-none"
               />
-              <span className="text-[11px] font-bold text-[#1b4372]">至：</span>
+              <span>~</span>
               <input
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="bg-white border border-slate-300 rounded px-1.5 py-0.5 text-xs font-mono focus:outline-none"
+                className="bg-white border border-slate-300 rounded px-1 py-0.5 text-[11px] font-mono focus:outline-none"
               />
               {(customStartDate || customEndDate) && (
                 <button
@@ -775,32 +786,32 @@ export default function ApprovedPurchasingTracker({
         </div>
 
         {/* Dropdown Filters (Progress, Category, Project) */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#e5e5e0] text-xs">
+        <div className="flex flex-wrap items-center gap-2 pt-1.5 border-t border-[#e5e5e0] text-xs">
           {/* Progress Filter */}
           <div className="flex items-center gap-1">
-            <span className="text-slate-500 font-bold">購買進程：</span>
+            <span className="text-slate-500 font-bold text-[11px]">進程：</span>
             <select
               value={progressFilter}
               onChange={(e) => setProgressFilter(e.target.value as any)}
-              className="bg-white border border-[#e5e5e0] rounded-sm py-1 px-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#1b4372]"
+              className="bg-white border border-[#e5e5e0] rounded-sm py-0.5 px-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#1b4372]"
             >
-              <option value="ALL">全部進程 (全部已審核品項)</option>
+              <option value="ALL">全部進程 (全部品項)</option>
               <option value="pending_purchase">⏳ 尚未購買 (待採購)</option>
-              <option value="student_purchased">🛒 請購人已購買 (學生自購)</option>
-              <option value="professor_purchased">🎓 教授已購買 (老師統購)</option>
-              <option value="postpayment">🏢 貨到後付款 (廠商請款)</option>
+              <option value="student_purchased">🛒 請購人已買 (學生自購)</option>
+              <option value="professor_purchased">🎓 教授已買 (老師統購)</option>
+              <option value="postpayment">🏢 貨到付款 (廠商請款)</option>
               <option value="delivered">📦 已到貨 / 已收訖</option>
-              <option value="completed">✅ 採購驗收完成</option>
+              <option value="completed">✅ 驗收完成</option>
             </select>
           </div>
 
           {/* Category Filter */}
           <div className="flex items-center gap-1">
-            <span className="text-slate-500 font-medium">類別：</span>
+            <span className="text-slate-500 font-medium text-[11px]">類別：</span>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value as any)}
-              className="bg-white border border-[#e5e5e0] rounded-sm py-1 px-2 text-xs font-medium focus:outline-none"
+              className="bg-white border border-[#e5e5e0] rounded-sm py-0.5 px-1.5 text-xs font-medium focus:outline-none"
             >
               <option value="ALL">全部類別</option>
               <option value="chemical">藥品化學品</option>
@@ -810,20 +821,160 @@ export default function ApprovedPurchasingTracker({
           </div>
 
           <div className="ml-auto text-slate-400 text-[11px] font-mono">
-            顯示 {filteredEntries.length} 筆已核准品項
+            共 {filteredEntries.length} 筆已核准品項
           </div>
         </div>
 
       </div>
 
-      {/* 3. Approved Items Table */}
-      <div className="border border-[#e5e5e0] rounded-sm overflow-hidden bg-white shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs font-sans">
+      {/* 3. Approved Items: Responsive Mobile Cards (md:hidden) & Desktop Table (hidden md:block) */}
+      <div className="border border-[#e5e5e0] rounded-sm overflow-hidden bg-white shadow-2xs">
+        {/* 1. Mobile Card List (Visible on phones and small tablets < md) */}
+        <div className="block md:hidden divide-y divide-[#e5e5e0]">
+          {paginatedEntries.length > 0 ? (
+            paginatedEntries.map((entry) => {
+              const isChecked = selectedKeys.has(entry.key);
+              const progressInfo = getProgressLabel(entry.purchaseProgress);
+
+              return (
+                <div
+                  key={entry.key}
+                  className={`p-2.5 space-y-1.5 transition ${isChecked ? "bg-blue-50/40" : "bg-white"}`}
+                >
+                  {/* Card Header: Requisition No, Date & Category */}
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {isUserAdmin && (
+                        <div onClick={(e) => toggleSelectKey(entry.key, e)} className="shrink-0 p-0.5 -m-0.5">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}}
+                            className="rounded text-[#1b4372]"
+                          />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex items-center gap-1.5 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => onViewRequisitionDetail(entry.originalRequisition)}
+                          className="font-mono font-bold text-[#1b4372] text-xs hover:underline text-left whitespace-nowrap"
+                          title="查看原請購單"
+                        >
+                          {entry.requisitionNo}
+                        </button>
+                        <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                          {extractDateOnly(entry.createdAt, entry.requisitionNo)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className="px-1 py-0.2 rounded-xs bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200 whitespace-nowrap shrink-0">
+                      {entry.category === "chemical" ? "藥品試劑" : entry.category === "equipment" ? "儀器設備" : "耗材雜物"}
+                    </span>
+                  </div>
+
+                  {/* Card Body: Item Name, Platform, Specs, Purpose */}
+                  <div className="space-y-0.5">
+                    <div className="flex items-start gap-1 flex-wrap">
+                      <h4 className="font-bold text-slate-900 font-serif text-xs leading-snug flex-1 min-w-[140px]">
+                        {entry.itemName}
+                      </h4>
+
+                      {entry.platform && (
+                        <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-mono bg-orange-50 text-orange-800 border border-orange-200 shrink-0">
+                          <Building className="w-2.5 h-2.5" />
+                          {entry.platform}
+                        </span>
+                      )}
+
+                      {entry.productUrl && (
+                        <a
+                          href={entry.productUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-0.5 text-[9px] text-blue-700 hover:text-blue-900 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200 font-medium shrink-0"
+                          title="前往購物平台 / 商品連結"
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span>商品</span>
+                        </a>
+                      )}
+                    </div>
+
+                    {entry.purpose && (
+                      <p className="text-[10px] text-slate-500 font-sans truncate">
+                        用途: {entry.purpose}
+                      </p>
+                    )}
+
+                    {entry.vendorName && (
+                      <div className="text-[10px] text-slate-500 font-mono truncate">
+                        廠商/通路: {entry.vendorName}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card Meta: Amount, Quantity, Applicant in tight row */}
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-xs">
+                    <div className="font-mono text-xs">
+                      <span className="font-bold text-slate-900">
+                        NT$ {(entry.actualPrice || entry.estimatedTotalPrice).toLocaleString()}
+                      </span>
+                      <span className="text-[10px] text-slate-500 ml-1">
+                        ({entry.quantity} {entry.unit})
+                      </span>
+                    </div>
+
+                    <div className="text-[10px] text-slate-600 truncate max-w-[120px]">
+                      {entry.applicantName}
+                    </div>
+                  </div>
+
+                  {/* Mobile Action Bar: Compact Progress Button + Requisition Info */}
+                  <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(entry)}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border text-[11px] transition shadow-2xs font-medium whitespace-nowrap ${progressInfo.badgeClass}`}
+                      title="點擊切換或更新購買進程"
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${progressInfo.dotColor}`}></span>
+                      <span>{progressInfo.label}</span>
+                      <Edit3 className="w-2.5 h-2.5 ml-0.5 opacity-60 shrink-0" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => onViewRequisitionDetail(entry.originalRequisition)}
+                      className="py-0.5 px-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-[11px] font-medium inline-flex items-center gap-0.5 shadow-2xs shrink-0"
+                      title="查看原單完整審批資訊"
+                    >
+                      <ExternalLink className="w-2.5 h-2.5 text-[#1b4372]" />
+                      <span>原單</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="p-6 text-center text-slate-400 font-sans">
+              <ShoppingCart className="w-6 h-6 mx-auto text-slate-300 mb-1.5" />
+              <p className="text-xs font-bold text-slate-600">查無符合條件之已核准品項</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                請嘗試清除篩選條件，或在請購總表中進行審核通過。
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* 2. Desktop Table View (Hidden on mobile < md, with compact spacing and consistent row height) */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-xs font-sans min-w-[820px] table-auto">
             <thead className="bg-[#f8f8f5] text-slate-700 font-bold border-b border-[#e5e5e0]">
               <tr>
                 {isUserAdmin && (
-                  <th className="p-3 text-center w-10">
+                  <th className="py-2 px-2 text-center w-8">
                     <input
                       type="checkbox"
                       checked={selectedKeys.size > 0 && selectedKeys.size === filteredEntries.length}
@@ -832,21 +983,22 @@ export default function ApprovedPurchasingTracker({
                     />
                   </th>
                 )}
-                <th className="p-3 text-left w-32">請購單號 / 申請日</th>
-                <th className="p-3 text-left min-w-[220px]">核准品項規格與購物連結</th>
-                <th className="p-3 text-left w-20">類別</th>
-                <th className="p-3 text-right w-24">數量金額 (NT$)</th>
-                <th className="p-3 text-left w-32">建議廠商 / 通路</th>
-                <th className="p-3 text-left w-24">請購人</th>
-                <th className="p-3 text-center min-w-[180px]">購買進程 (點擊更新)</th>
-                <th className="p-3 text-center w-28">操作</th>
+                <th className="py-1.5 px-2 text-left w-24 whitespace-nowrap">請購單號 / 申請日</th>
+                <th className="py-1.5 px-2 text-left min-w-[140px] max-w-[260px]">核准品項規格與連結</th>
+                <th className="py-1.5 px-1.5 text-center w-16 whitespace-nowrap">類別</th>
+                <th className="py-1.5 px-2 text-right w-24 whitespace-nowrap">數量金額 (NT$)</th>
+                <th className="py-1.5 px-2 text-left w-28 whitespace-nowrap">建議廠商 / 通路</th>
+                <th className="py-1.5 px-2 text-left w-20 whitespace-nowrap">請購人</th>
+                <th className="py-1.5 px-2 text-center w-32 whitespace-nowrap">購買進程 (點擊更新)</th>
+                <th className="py-1.5 px-1.5 text-center w-16 whitespace-nowrap">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e5e5e0]">
-              {filteredEntries.length > 0 ? (
-                filteredEntries.map((entry) => {
+              {paginatedEntries.length > 0 ? (
+                paginatedEntries.map((entry) => {
                   const isChecked = selectedKeys.has(entry.key);
                   const progressInfo = getProgressLabel(entry.purchaseProgress);
+                  const firstItemLineName = entry.itemName ? entry.itemName.split("\n")[0] : "核准品項";
 
                   return (
                     <tr
@@ -855,7 +1007,7 @@ export default function ApprovedPurchasingTracker({
                     >
                       {/* Checkbox (Admin only) */}
                       {isUserAdmin && (
-                        <td className="p-3 text-center" onClick={(e) => toggleSelectKey(entry.key, e)}>
+                        <td className="py-1.5 px-2 text-center align-middle" onClick={(e) => toggleSelectKey(entry.key, e)}>
                           <input
                             type="checkbox"
                             checked={isChecked}
@@ -866,28 +1018,30 @@ export default function ApprovedPurchasingTracker({
                       )}
 
                       {/* Requisition No & Date */}
-                      <td className="p-3 font-mono">
+                      <td className="py-1.5 px-2 font-mono whitespace-nowrap align-middle">
                         <button
                           type="button"
                           onClick={() => onViewRequisitionDetail(entry.originalRequisition)}
-                          className="font-bold text-[#1b4372] hover:underline text-left block"
+                          className="font-bold text-[#1b4372] hover:underline text-left block text-xs"
                           title="查看原請購單"
                         >
                           {entry.requisitionNo}
                         </button>
-                        <span className="text-[10px] text-slate-400 block mt-0.5">
+                        <span className="text-[10px] text-slate-400 block leading-tight">
                           {extractDateOnly(entry.createdAt, entry.requisitionNo)}
                         </span>
                       </td>
 
                       {/* Item Name, Specs & Product URL */}
-                      <td className="p-3">
-                        <div className="font-bold text-slate-900 font-serif text-sm flex items-center flex-wrap gap-1.5">
-                          <span>{entry.itemName}</span>
+                      <td className="py-1.5 px-2 align-middle max-w-[260px]">
+                        <div className="font-bold text-slate-900 font-serif text-xs flex items-center flex-wrap gap-1 leading-snug">
+                          <span className="truncate max-w-[180px] inline-block" title={entry.itemName}>
+                            {firstItemLineName}
+                          </span>
 
                           {/* Shopping Platform badge */}
                           {entry.platform && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-mono bg-orange-50 text-orange-800 border border-orange-200">
+                            <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-mono bg-orange-50 text-orange-800 border border-orange-200 whitespace-nowrap">
                               <Building className="w-2.5 h-2.5" />
                               {entry.platform}
                             </span>
@@ -899,100 +1053,100 @@ export default function ApprovedPurchasingTracker({
                               href={entry.productUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[10px] text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200 font-medium transition"
+                              className="inline-flex items-center gap-0.5 text-[9px] text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-1 py-0.2 rounded border border-blue-200 font-medium transition whitespace-nowrap"
                               title="前往購物平台 / 商品連結"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <ExternalLink className="w-2.5 h-2.5" />
-                              <span>下單連結</span>
+                              <span>連結</span>
                             </a>
                           )}
                         </div>
 
                         {/* Purpose note */}
                         {entry.purpose && (
-                          <div className="text-[11px] text-slate-500 font-sans line-clamp-1 mt-0.5">
-                            {entry.purpose}
+                          <div className="text-[10px] text-slate-500 font-sans truncate max-w-[220px]" title={entry.purpose}>
+                            用途：{entry.purpose}
                           </div>
                         )}
 
                         {/* Vendor name */}
                         {entry.vendorName && (
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            建議廠商/通路：{entry.vendorName}
+                          <div className="text-[10px] text-slate-400 font-mono truncate max-w-[220px]">
+                            通路：{entry.vendorName}
                           </div>
                         )}
                       </td>
 
                       {/* Category */}
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 rounded-xs bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200 whitespace-nowrap">
+                      <td className="py-1.5 px-1.5 text-center whitespace-nowrap align-middle">
+                        <span className="px-1 py-0.2 rounded-xs bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200 inline-block whitespace-nowrap">
                           {entry.category === "chemical" ? "藥品試劑" : entry.category === "equipment" ? "儀器設備" : "耗材雜物"}
                         </span>
                       </td>
 
                       {/* Quantity & Estimated / Actual Total */}
-                      <td className="p-3 text-right font-mono">
-                        <span className="font-bold text-slate-900 block">
+                      <td className="py-1.5 px-2 text-right font-mono whitespace-nowrap align-middle">
+                        <span className="font-bold text-slate-900 block leading-tight text-xs">
                           NT$ {(entry.actualPrice || entry.estimatedTotalPrice).toLocaleString()}
                         </span>
-                        <span className="text-[10px] text-slate-400 block">
+                        <span className="text-[10px] text-slate-400 block leading-tight">
                           {entry.quantity} {entry.unit}
                         </span>
                         {entry.actualPrice && entry.actualPrice !== entry.estimatedTotalPrice && (
-                          <span className="text-[9px] text-emerald-700 block">
+                          <span className="text-[9px] text-emerald-700 block leading-tight">
                             (預估 NT$ {entry.estimatedTotalPrice.toLocaleString()})
                           </span>
                         )}
                       </td>
 
                       {/* Vendor / Platform */}
-                      <td className="p-3 text-[11px] text-slate-700 truncate max-w-[140px]" title={entry.vendorName || entry.platform || "—"}>
+                      <td className="py-1.5 px-2 text-[11px] text-slate-700 truncate max-w-[120px] align-middle" title={entry.vendorName || entry.platform || "—"}>
                         {entry.vendorName || entry.platform || <span className="text-slate-400 italic">—</span>}
                       </td>
 
                       {/* Applicant */}
-                      <td className="p-3">
-                        <span className="font-bold text-slate-800 block">{entry.applicantName}</span>
-                        <span className="text-[10px] text-slate-400 block truncate max-w-[90px]">{entry.applicantEmail}</span>
+                      <td className="py-1.5 px-2 whitespace-nowrap align-middle">
+                        <span className="font-bold text-slate-800 block text-xs leading-tight">{entry.applicantName}</span>
+                        <span className="text-[10px] text-slate-400 block truncate max-w-[80px] leading-tight">{entry.applicantEmail}</span>
                       </td>
 
                       {/* Purchase Progress (Click to Update) */}
-                      <td className="p-3 text-center">
+                      <td className="py-1.5 px-2 text-center whitespace-nowrap align-middle">
                         <button
                           type="button"
                           onClick={() => openEditModal(entry)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm border text-[11px] transition shadow-2xs hover:scale-102 ${progressInfo.badgeClass}`}
+                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border text-[11px] transition shadow-2xs hover:scale-102 whitespace-nowrap ${progressInfo.badgeClass}`}
                           title="點擊切換或更新購買進程（包含請購人已購買、教授已購買等）"
                         >
-                          <span className={`w-2 h-2 rounded-full ${progressInfo.dotColor}`}></span>
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${progressInfo.dotColor}`}></span>
                           <span>{progressInfo.label}</span>
-                          <Edit3 className="w-3 h-3 ml-0.5 opacity-60" />
+                          <Edit3 className="w-2.5 h-2.5 ml-0.5 opacity-60 shrink-0" />
                         </button>
 
                         {/* Display purchaser detail below badge */}
                         {entry.purchasedBy && (
-                          <div className="text-[10px] text-slate-500 font-mono mt-1">
+                          <div className="text-[10px] text-slate-500 font-mono mt-0.5 whitespace-nowrap leading-tight">
                             買受人：{entry.purchasedBy}
                           </div>
                         )}
                       </td>
 
                       {/* Actions */}
-                      <td className="p-3 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                      <td className="py-1.5 px-1.5 text-center whitespace-nowrap align-middle">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             type="button"
                             onClick={() => openEditModal(entry)}
-                            className="p-1.5 hover:bg-blue-50 text-[#1b4372] rounded-sm transition"
+                            className="p-1 hover:bg-blue-50 text-[#1b4372] rounded-sm transition"
                             title="更新購買進程"
                           >
-                            <Edit3 className="w-4 h-4" />
+                            <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
                             onClick={() => onViewRequisitionDetail(entry.originalRequisition)}
-                            className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-sm transition"
+                            className="p-1 hover:bg-slate-100 text-slate-600 rounded-sm transition"
                             title="查看原單完整審批資訊"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -1004,11 +1158,11 @@ export default function ApprovedPurchasingTracker({
                 })
               ) : (
                 <tr>
-                  <td colSpan={isUserAdmin ? 9 : 8} className="p-12 text-center text-slate-400 font-sans">
-                    <div className="max-w-sm mx-auto space-y-2">
-                      <ShoppingCart className="w-8 h-8 mx-auto text-slate-300" />
+                  <td colSpan={isUserAdmin ? 9 : 8} className="p-8 text-center text-slate-400 font-sans">
+                    <div className="max-w-sm mx-auto space-y-1.5">
+                      <ShoppingCart className="w-7 h-7 mx-auto text-slate-300" />
                       <p className="text-xs font-bold text-slate-600">查無符合條件之已核准品項</p>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[10px] text-slate-400">
                         請嘗試清除篩選條件，或在請購總表中進行審核通過。
                       </p>
                     </div>
@@ -1017,6 +1171,54 @@ export default function ApprovedPurchasingTracker({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Compact Pagination Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-3 py-1.5 bg-[#f8f8f5] border-t border-[#e5e5e0] text-xs font-sans">
+          <div className="flex items-center gap-2 text-slate-500 text-[11px]">
+            <span>共 <strong className="text-slate-800 font-mono">{filteredEntries.length}</strong> 筆</span>
+            <span className="text-slate-300">|</span>
+            <div className="flex items-center gap-1">
+              <span>每頁:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-white border border-[#e5e5e0] rounded px-1.5 py-0.5 text-xs font-mono font-medium focus:outline-none cursor-pointer"
+              >
+                <option value={15}>15 筆 (緊湊)</option>
+                <option value={25}>25 筆</option>
+                <option value={50}>50 筆</option>
+                <option value={0}>全部顯示</option>
+              </select>
+            </div>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1 text-[11px]">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                className="px-2 py-0.5 bg-white border border-[#e5e5e0] rounded text-slate-700 disabled:opacity-40 hover:bg-slate-100 disabled:hover:bg-white font-medium cursor-pointer disabled:cursor-not-allowed"
+              >
+                上一頁
+              </button>
+              <span className="font-mono text-slate-600 px-1">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                className="px-2 py-0.5 bg-white border border-[#e5e5e0] rounded text-slate-700 disabled:opacity-40 hover:bg-slate-100 disabled:hover:bg-white font-medium cursor-pointer disabled:cursor-not-allowed"
+              >
+                下一頁
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1122,7 +1324,7 @@ export default function ApprovedPurchasingTracker({
                     <span className="text-slate-300">·</span>
                     <button
                       type="button"
-                      onClick={() => setEditPurchasedBy("貨到後計畫付款 (廠商請款)")}
+                      onClick={() => setEditPurchasedBy("貨到後付款 (廠商請款)")}
                       className="text-[10px] text-blue-700 underline hover:text-blue-900"
                     >
                       貨到後付款

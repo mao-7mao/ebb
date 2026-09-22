@@ -8,7 +8,7 @@
 
 | 腳本檔案名稱 | 對應試算表目的 | 對應前端系統功能 | 支援請求方法 |
 | :--- | :--- | :--- | :--- |
-| **`Code.gs`** | 請購與採購紀錄總表 | 請購系統 (Procurement System) | `doPost` (請購送審、核准同步、發票到貨) |
+| **`Code.gs`** | 請購與採購紀錄總表 | 請購系統 (Procurement System) | `doPost` (請購送審、核准同步、進程追蹤) |
 | **`MemberData_Code.gs`** | 人員名冊與研究進度資料庫 | Lab Data Studio & 人員進度追蹤 | `doGet` (開啟網頁自動讀取最新名冊與會議)<br>`doPost` (網頁修改一鍵回寫試算表) |
 
 ---

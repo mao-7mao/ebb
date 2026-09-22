@@ -1425,16 +1425,7 @@ export default function App() {
               {/* Calendar tab toggler with Week View, Month View, Agenda View */}
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm p-1 shadow-xs text-xs font-bold">
-                  <button 
-                    onClick={() => setCalendarView("week")}
-                    className={`px-3.5 py-1.5 rounded-sm transition-all ${
-                      calendarView === "week" 
-                        ? "bg-[#1b4372] text-white shadow-xs" 
-                        : "text-slate-700 hover:bg-[#fafafa]"
-                    }`}
-                  >
-                    Week View (週視圖)
-                  </button>
+
                   <button 
                     onClick={() => setCalendarView("month")}
                     className={`px-3.5 py-1.5 rounded-sm transition-all ${
@@ -1444,6 +1435,16 @@ export default function App() {
                     }`}
                   >
                     Month View (月視圖)
+                  </button>
+                                    <button 
+                    onClick={() => setCalendarView("week")}
+                    className={`px-3.5 py-1.5 rounded-sm transition-all ${
+                      calendarView === "week" 
+                        ? "bg-[#1b4372] text-white shadow-xs" 
+                        : "text-slate-700 hover:bg-[#fafafa]"
+                    }`}
+                  >
+                    Week View (週視圖)
                   </button>
                   <button 
                     onClick={() => setCalendarView("list")}
@@ -1738,8 +1739,8 @@ export default function App() {
                     <Mail className="w-5 h-5 text-[#1b4372] shrink-0 mt-0.5" />
                     <div>
                       <span className="block text-[#1a1a1a] font-bold">Email:</span>
-                      <a href="mailto:ebblab115@gmail.com" className="text-xs text-[#1b4372] font-mono hover:underline block mt-0.5">
-                        ebblab115@gmail.com
+                      <a href="mailto:klchang@mail.nsysu.edu.tw" className="text-xs text-[#1b4372] font-mono hover:underline block mt-0.5">
+                        klchang@mail.nsysu.edu.tw
                       </a>
                     </div>
                   </div>

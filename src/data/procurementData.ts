@@ -3,20 +3,22 @@ import { HistoricalCatalogItem, ProcurementItem } from "../types/procurement";
 export const DEFAULT_VENDORS = [
   "Sigma-Aldrich (Merck)",
   "Echo Chemical 景明化工",
-  "Acros Organics (賽默飛 Thermo Fisher)",
+  "Acros Organics",
   "科研市集",
   "Alfa Aesar",
   "友和生技 Uni-Onward",
   "伯昂興業 Ber-An",
   "巨研科技 Advantech",
+  "國祥儀器 Kuo-Hsiang",
   "德記儀器 Teki Lab Supply",
   "三洋精密儀器 Sanyo Scientific",
-  "淘寶 / 天貓商家"
+  "淘寶商家"
 ];
 
 // 常用與預設購物平台清單 (支援使用者即時新增與本地記憶)
 export const DEFAULT_SHOPPING_PLATFORMS: string[] = [
   "蝦皮購物 (Shopee)",
+  "科研市集",
   "淘寶 (Taobao)",
   "京東 (JD)",
   "1688",
@@ -77,7 +79,7 @@ export const GOOGLE_APPS_SCRIPT_SAMPLE = `/**
  * 1. 支援接收請購系統前端網頁的 POST 請求 (doPost)。
  * 2. 支援前端 (Admin 或 任何使用者) GET 請求 (doGet)，即時回傳試算表中的請購資料清單。
  * 3. 自動在 Google Sheets 中記錄請購清單與採購進程。
- * 4. 自動透過 Gmail 寄送審批通知與採購進度更新給admin、教授與申請學生。
+ * 4. 自動透過 Gmail 寄送審批通知與採購進度更新給助理、教授與申請學生。
  * 
  * 設定步驟：
  * 1. 開啟您的 Google 試算表（例如「EBB Lab 請購與採購紀錄表」）。
@@ -109,17 +111,17 @@ function doPost(e) {
     if (action === "ping") {
       return responseJSON({ success: true, message: "EBB Lab Apps Script Webhook is active and connected!" });
     }
-    
+
     if (action === "create_request") {
       const sheet = getOrCreateSheet(ss, CONFIG.SHEET_NAME_REQUESTS, [
         "請購單號", "申請時間", "申請人", "聯絡信箱", "類別", 
-        "品項清單與規格", "預估總額 (NT$)", "經費計畫", "請購目的", 
+        "品項清單與規格", "預估總額 (NT$)", "請購目的", 
         "建議廠商/平台", "審核狀態", "採購進程", "採購規範說明", "資料細節(JSON)"
       ]);
 
       const itemSummary = item.items && item.items.length > 0
         ? item.items.map((it, idx) => \`\${idx + 1}. \${it.itemName} (\${it.quantity} \${it.unit})\`).join("\\n")
-        : \`\${item.itemName} (\${item.quantity} \${item.unit})\`;
+        : \`\${item.itemName} (\${item.quantity} \${it.unit || "件"})\`;
 
       const isOver3000 = (item.estimatedTotalPrice >= 3000);
       const modeLabel = isOver3000 
@@ -134,7 +136,6 @@ function doPost(e) {
         item.category || "",
         itemSummary,
         item.estimatedTotalPrice || 0,
-        item.budgetProject || "待指定",
         item.purpose || "",
         item.vendorName || item.platform || "",
         "待Admin初審 (pending_assistant)",
@@ -181,8 +182,7 @@ function doPost(e) {
       const progressStatus = data.progressStatus || item.purchaseProgress || "已購買";
       const purchaser = data.purchaser || item.purchaser || "";
       const note = data.note || (item.actualPurchaseInfo ? item.actualPurchaseInfo.note : "") || "";
-      const invoiceNo = data.invoiceNo || (item.actualPurchaseInfo ? item.actualPurchaseInfo.invoiceNumber : "") || "";
-      updateProgressSheet(ss, item.requisitionNo, progressStatus, purchaser, invoiceNo, note);
+      updateProgressSheet(ss, item.requisitionNo, progressStatus, purchaser, note);
       if (item && item.requisitionNo) {
         updateSheetRowStatus(ss, CONFIG.SHEET_NAME_REQUESTS, item.requisitionNo, item.status, progressStatus, item);
       }
@@ -215,17 +215,25 @@ function doGet(e) {
     const data = sheet.getDataRange().getValues();
     if (!data || data.length <= 1) return responseJSON({ success: true, count: 0, items: [] });
 
+    const headers = data[0].map(function(h) { return String(h || "").trim(); });
+    const hasLegacyBudget = headers.indexOf("經費計畫") !== -1;
+    const purposeCol = hasLegacyBudget ? 8 : 7;
+    const vendorCol = hasLegacyBudget ? 9 : 8;
+    const statusCol = hasLegacyBudget ? 10 : 9;
+    const progressCol = hasLegacyBudget ? 11 : 10;
+    const jsonCol = headers.indexOf("資料細節(JSON)") !== -1 ? headers.indexOf("資料細節(JSON)") : (hasLegacyBudget ? 13 : 12);
+
     const items = [];
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       if (!row[0] && !row[2] && !row[5]) continue;
 
-      if (row[13] && typeof row[13] === "string" && row[13].trim().startsWith("{")) {
+      if (row[jsonCol] && typeof row[jsonCol] === "string" && row[jsonCol].trim().startsWith("{")) {
         try {
-          const parsed = JSON.parse(row[13]);
+          const parsed = JSON.parse(row[jsonCol]);
           if (parsed && (parsed.requisitionNo || parsed.id)) {
-            if (row[10]) parsed.status = mapStatus(row[10]);
-            if (row[11]) parsed.purchaseProgress = mapProgress(row[11]);
+            if (row[statusCol]) parsed.status = mapStatus(row[statusCol]);
+            if (row[progressCol]) parsed.purchaseProgress = mapProgress(row[progressCol]);
             items.push(parsed);
             continue;
           }
@@ -245,11 +253,10 @@ function doGet(e) {
       const category = rawCategory === "chemical" ? "chemical" : rawCategory === "equipment" ? "equipment" : "consumable";
       const itemSummary = String(row[5] || "").trim();
       const estimatedTotalPrice = Number(row[6]) || 0;
-      const budgetProject = String(row[7] || "待指定").trim();
-      const purpose = String(row[8] || "").trim();
-      const vendorName = String(row[9] || "").trim();
-      const status = mapStatus(String(row[10] || "pending_assistant"));
-      const purchaseProgress = mapProgress(String(row[11] || "pending_purchase"));
+      const purpose = String(row[purposeCol] || "").trim();
+      const vendorName = String(row[vendorCol] || "").trim();
+      const status = mapStatus(String(row[statusCol] || "pending_assistant"));
+      const purchaseProgress = mapProgress(String(row[progressCol] || "pending_purchase"));
 
       const parsedSubItems = parseItemSummary(itemSummary, category, estimatedTotalPrice, purpose, vendorName);
 
@@ -265,7 +272,6 @@ function doGet(e) {
         unit: parsedSubItems[0]?.unit || "件",
         estimatedUnitPrice: parsedSubItems[0]?.estimatedUnitPrice || estimatedTotalPrice,
         estimatedTotalPrice: estimatedTotalPrice,
-        budgetProject: budgetProject,
         purpose: purpose,
         vendorName: vendorName,
         status: status,
@@ -274,7 +280,7 @@ function doGet(e) {
         items: parsedSubItems
       });
     }
-    
+
     items.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
     return responseJSON({ success: true, timestamp: new Date().toISOString(), count: items.length, items: items });
   } catch (err) {
@@ -365,24 +371,29 @@ function updateSheetRowStatus(ss, sheetName, reqNo, newStatus, newProgress, upda
 }
 
 function logApprovedItemToProgressSheet(ss, item) {
-  const sheet = getOrCreateSheet(ss, CONFIG.SHEET_NAME_PURCHASED, ["請購單號", "核准日期", "品項名稱", "數量/單位", "經費計畫", "指定採購人", "購買進程", "實際金額 (NT$)", "發票/收據號碼", "備註"]);
-  const purchaserLabel = item.purchaser === "student" ? "請購人 (學生)" : item.purchaser === "postpayment" ? "貨到後計畫付款" : "教授本人";
+  const sheet = getOrCreateSheet(ss, CONFIG.SHEET_NAME_PURCHASED, ["請購單號", "核准日期", "品項名稱", "數量/單位", "指定採購人", "購買進程", "實際金額 (NT$)", "備註"]);
+  const purchaserLabel = item.purchaser === "student" ? "請購人 (學生)" : item.purchaser === "postpayment" ? "貨到後付款" : "教授本人";
   const dateStr = new Date().toLocaleDateString("zh-TW", { timeZone: "Asia/Taipei" });
   const itemsList = item.items && item.items.length > 0 ? item.items : [item];
   itemsList.forEach(sub => {
-    sheet.appendRow([item.requisitionNo, dateStr, sub.itemName, \`\${sub.quantity} \${sub.unit}\`, item.budgetProject || "待指定", purchaserLabel, "待採購 (尚未購買)", sub.estimatedTotalPrice || 0, "", sub.productUrl || ""]);
+    sheet.appendRow([item.requisitionNo, dateStr, sub.itemName, \`\${sub.quantity} \${sub.unit}\`, purchaserLabel, "待採購 (尚未購買)", sub.estimatedTotalPrice || 0, sub.productUrl || ""]);
   });
 }
 
-function updateProgressSheet(ss, reqNo, progress, purchaser, invoiceNo, note) {
+function updateProgressSheet(ss, reqNo, progress, purchaser, note) {
   const sheet = getOrCreateSheet(ss, CONFIG.SHEET_NAME_PURCHASED);
   const data = sheet.getDataRange().getValues();
+  if (!data || data.length <= 1) return;
+  const headers = data[0].map(function(h) { return String(h || "").trim(); });
+  const purchaserCol = headers.indexOf("指定採購人") !== -1 ? headers.indexOf("指定採購人") + 1 : 5;
+  const progressCol = headers.indexOf("購買進程") !== -1 ? headers.indexOf("購買進程") + 1 : 6;
+  const noteCol = headers.indexOf("備註") !== -1 ? headers.indexOf("備註") + 1 : 8;
+
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === reqNo) {
-      if (purchaser) sheet.getRange(i + 1, 6).setValue(purchaser);
-      if (progress) sheet.getRange(i + 1, 7).setValue(progress);
-      if (invoiceNo) sheet.getRange(i + 1, 9).setValue(invoiceNo);
-      if (note) sheet.getRange(i + 1, 10).setValue(note);
+    if (String(data[i][0] || "").trim() === String(reqNo).trim()) {
+      if (purchaser) sheet.getRange(i + 1, purchaserCol).setValue(purchaser);
+      if (progress) sheet.getRange(i + 1, progressCol).setValue(progress);
+      if (note) sheet.getRange(i + 1, noteCol).setValue(note);
     }
   }
 }
@@ -418,7 +429,7 @@ function sendRejectionEmailToApplicant(item, reason) {
 
 function sendMailToProfessorOnForward(item) {
   try {
-    MailApp.sendEmail({ to: CONFIG.PROFESSOR_EMAIL, cc: \`\${CONFIG.ADMIN_EMAIL},\${item.applicantEmail || ""}\`, subject: \`[\${CONFIG.LAB_NAME}] 請購簽核：單號 \${item.requisitionNo} - \${item.applicantName}\`, body: \`請購單 \${item.requisitionNo} 經 初審合格轉呈核定。\` });
+    MailApp.sendEmail({ to: CONFIG.PROFESSOR_EMAIL, cc: \`\${CONFIG.ADMIN_EMAIL},\${item.applicantEmail || ""}\`, subject: \`[\${CONFIG.LAB_NAME}] 請購簽核：單號 \${item.requisitionNo} - \${item.applicantName}\`, body: \`請購單 \${item.requisitionNo} 經 Admin 初審合格轉呈核定。\` });
   } catch (err) {}
 }
 
