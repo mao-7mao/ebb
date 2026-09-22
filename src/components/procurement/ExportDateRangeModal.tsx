@@ -249,7 +249,7 @@ export default function ExportDateRangeModal({
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { id: "THIS_MONTH", label: "本月份 (當月)", hint: "本月至今" },
+                { id: "THIS_MONTH", label: "本月", hint: "本月至今" },
                 { id: "LAST_MONTH", label: "上個月份", hint: "上月完整結算" },
                 { id: "30DAYS", label: "最近 30 天", hint: "前30日" },
                 { id: "7DAYS", label: "最近 7 天", hint: "本週記錄" },
