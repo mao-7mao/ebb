@@ -822,7 +822,7 @@ export default function ApprovedPurchasingTracker({
                 <th className="p-3 text-left min-w-[220px]">核准品項規格與購物連結</th>
                 <th className="p-3 text-left w-20">類別</th>
                 <th className="p-3 text-right w-24">數量金額 (NT$)</th>
-                <th className="p-3 text-left w-32">建議廠商 / 通路</th>
+                <th className="p-3 text-left w-32">廠商 / 通路</th>
                 <th className="p-3 text-left w-24">請購人</th>
                 <th className="p-3 text-center min-w-[180px]">購買進程 (點擊更新)</th>
                 <th className="p-3 text-center w-28">操作</th>

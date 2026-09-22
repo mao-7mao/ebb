@@ -1003,7 +1003,7 @@ export default function ProcurementSystem() {
                 <th className="p-3 text-left">品項名稱與規格規格</th>
                 <th className="p-3 text-left w-24">類別</th>
                 <th className="p-3 text-right w-24">數量金額 (NT$)</th>
-                <th className="p-3 text-left w-36">建議廠商 / 平台</th>
+                <th className="p-3 text-left w-36">廠商 / 平台</th>
                 <th className="p-3 text-left w-28">申請人</th>
                 <th className="p-3 text-center w-36">審核狀態</th>
                 <th className="p-3 text-center w-28">操作</th>

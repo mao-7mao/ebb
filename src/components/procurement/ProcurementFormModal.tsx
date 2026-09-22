@@ -799,7 +799,7 @@ export default function ProcurementFormModal({
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">原廠廠牌 (Brand)</label>
+                      <label className="block text-slate-600 font-medium mb-1">廠牌 (Brand)</label>
                       <input
                         type="text"
                         value={currentItem.brand}
