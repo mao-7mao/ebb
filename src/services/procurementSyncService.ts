@@ -1,4 +1,5 @@
 import { ProcurementItem, ProcurementCategory, ProcurementStatus, PurchaseProgressStatus, PurchaserType } from "../types/procurement";
+import { normalizeProcurementDate, compareDatesDesc } from "../utils/dateUtils";
 
 /**
  * 試算表狀態字串映射為 ProcurementStatus
@@ -197,10 +198,15 @@ export async function fetchItemsFromGasWebhook(url: string): Promise<{
     }
 
     if (data && Array.isArray(data.items)) {
+      const normalizedItems: ProcurementItem[] = data.items.map((it: any) => ({
+        ...it,
+        createdAt: normalizeProcurementDate(it.createdAt, it.requisitionNo || it.id)
+      }));
+      normalizedItems.sort((a, b) => compareDatesDesc(a.createdAt, b.createdAt, a.requisitionNo, b.requisitionNo));
       return {
         success: true,
-        items: data.items,
-        message: `成功從 Google Apps Script 同步 ${data.items.length} 筆請購資料！`
+        items: normalizedItems,
+        message: `成功從 Google Apps Script 同步 ${normalizedItems.length} 筆請購資料！`
       };
     }
 
@@ -267,7 +273,7 @@ export async function fetchItemsFromGoogleSheetCsv(sheetUrl: string): Promise<{
       }
 
       const reqNo = row[0] || `EBB-${i}`;
-      const createdAt = row[1] || new Date().toISOString().split("T")[0];
+      const createdAt = normalizeProcurementDate(row[1], reqNo);
       const applicantName = row[2] || "未具名";
       const applicantEmail = row[3] || "";
       const rawCategory = (row[4] || "consumable").toLowerCase();
@@ -305,7 +311,7 @@ export async function fetchItemsFromGoogleSheetCsv(sheetUrl: string): Promise<{
       });
     }
 
-    items.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    items.sort((a, b) => compareDatesDesc(a.createdAt, b.createdAt, a.requisitionNo, b.requisitionNo));
 
     return {
       success: true,
@@ -327,21 +333,27 @@ export function mergeProcurementItems(
 ): ProcurementItem[] {
   const map = new Map<string, ProcurementItem>();
 
-  // 1. 先加入遠端最新資料（以遠端雲端紀錄為主）
+  // 1. 先加入遠端最新資料（以遠端雲端紀錄為主，並確保日期已標準化）
   remoteItems.forEach(item => {
     const key = item.requisitionNo || item.id;
-    map.set(key, item);
+    map.set(key, {
+      ...item,
+      createdAt: normalizeProcurementDate(item.createdAt, item.requisitionNo || item.id)
+    });
   });
 
   // 2. 本地若有尚未同步之新資料（例如剛送出尚未上傳），補入
   localItems.forEach(item => {
     const key = item.requisitionNo || item.id;
     if (!map.has(key)) {
-      map.set(key, item);
+      map.set(key, {
+        ...item,
+        createdAt: normalizeProcurementDate(item.createdAt, item.requisitionNo || item.id)
+      });
     }
   });
 
   const merged = Array.from(map.values());
-  merged.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  merged.sort((a, b) => compareDatesDesc(a.createdAt, b.createdAt, a.requisitionNo, b.requisitionNo));
   return merged;
 }

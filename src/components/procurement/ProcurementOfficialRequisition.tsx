@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import NsysuEmblem from "./NsysuEmblem";
 import { CURRENCY_CONFIG, formatPriceWithCurrency } from "../../data/procurementData";
+import { extractDateOnly } from "../../utils/dateUtils";
 
 interface ProcurementOfficialRequisitionProps {
   isOpen?: boolean;
@@ -39,15 +40,7 @@ export default function ProcurementOfficialRequisition({
 
   // Requisition Date formatted as YYYY.MM.DD (matches screenshot: 2025.08.06)
   const formatRequisitionDate = (dateStr?: string) => {
-    if (!dateStr) {
-      const now = new Date();
-      const y = now.getFullYear();
-      const m = String(now.getMonth() + 1).padStart(2, "0");
-      const d = String(now.getDate()).padStart(2, "0");
-      return `${y}.${m}.${d}`;
-    }
-    const clean = dateStr.split(" ")[0].replace(/-/g, ".");
-    return clean;
+    return extractDateOnly(dateStr, primaryReq.requisitionNo).replace(/-/g, ".");
   };
 
   const requisitionDate = formatRequisitionDate(primaryReq.createdAt);
@@ -259,7 +252,7 @@ export default function ProcurementOfficialRequisition({
               </h2>
             </td>
             <td style="border:none; text-align:right; width:90px; vertical-align:middle;">
-              <img src="https://www.nsysu.edu.tw/var/file/0/1000/msys_1000_5682857_38476.png" width="75" height="75" alt="中山大學校徽" />
+              <img src="https://www.nsysu.edu.tw/var/file/0/1000/msys_1000_5682857_38476.png" width="75" height="75" alt="國立中山大學校徽" />
             </td>
           </tr>
         </table>

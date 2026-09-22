@@ -226,7 +226,12 @@ function doGet(e) {
       }
 
       const reqNo = String(row[0] || \`EBB-\${i}\`).trim();
-      const createdAt = String(row[1] || "").trim();
+      let createdAt = "";
+      if (row[1] instanceof Date) {
+        createdAt = Utilities.formatDate(row[1], "GMT+8", "yyyy-MM-dd");
+      } else {
+        createdAt = String(row[1] || "").trim();
+      }
       const applicantName = String(row[2] || "未具名").trim();
       const applicantEmail = String(row[3] || "").trim();
       const rawCategory = String(row[4] || "consumable").trim().toLowerCase();

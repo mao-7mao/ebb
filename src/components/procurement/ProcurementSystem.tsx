@@ -25,6 +25,12 @@ import {
   fetchItemsFromGoogleSheetCsv, 
   mergeProcurementItems 
 } from "../../services/procurementSyncService";
+import { 
+  normalizeProcurementDate, 
+  extractDateOnly, 
+  compareDatesDesc,
+  getTodayTaipeiDate
+} from "../../utils/dateUtils";
 import { EXTERNAL_LINKS } from "../../config/externalLinks";
 import { 
   Search, 
@@ -96,9 +102,12 @@ export default function ProcurementSystem() {
 
     const overallProg = deriveProg(item);
 
+    const normalizedCreatedAt = normalizeProcurementDate(item.createdAt, item.requisitionNo || item.id);
+
     if (Array.isArray(item.items) && item.items.length > 0) {
       return {
         ...item,
+        createdAt: normalizedCreatedAt,
         purchaseProgress: item.purchaseProgress || overallProg,
         items: item.items.map((sub: any) => ({
           ...sub,
@@ -126,6 +135,7 @@ export default function ProcurementSystem() {
     };
     return {
       ...item,
+      createdAt: normalizedCreatedAt,
       purchaseProgress: item.purchaseProgress || overallProg,
       items: [legacyLine]
     };
@@ -378,7 +388,7 @@ export default function ProcurementSystem() {
     const nextSeq = items.length + 1;
     const requisitionNo = `EBB-2026-${String(nextSeq).padStart(3, "0")}`;
     const now = new Date();
-    const createdAt = `${now.toISOString().split("T")[0]} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const createdAt = normalizeProcurementDate(now);
 
     const newItem: ProcurementItem = {
       ...data,
@@ -545,19 +555,21 @@ export default function ProcurementSystem() {
     if (statusFilter !== "ALL" && item.status !== statusFilter) return false;
 
     // Date range filter
-    const itemDate = (item.createdAt || "").split(" ")[0];
-    const todayStr = new Date().toISOString().split("T")[0];
+    const itemDate = extractDateOnly(item.createdAt, item.requisitionNo);
+    const todayStr = getTodayTaipeiDate();
 
     if (dateFilterPreset === "TODAY") {
       if (itemDate !== todayStr) return false;
     } else if (dateFilterPreset === "7DAYS") {
       const d7 = new Date();
       d7.setDate(d7.getDate() - 7);
-      if (itemDate < d7.toISOString().split("T")[0]) return false;
+      const d7Str = extractDateOnly(d7);
+      if (itemDate < d7Str) return false;
     } else if (dateFilterPreset === "30DAYS") {
       const d30 = new Date();
       d30.setDate(d30.getDate() - 30);
-      if (itemDate < d30.toISOString().split("T")[0]) return false;
+      const d30Str = extractDateOnly(d30);
+      if (itemDate < d30Str) return false;
     } else if (dateFilterPreset === "THIS_MONTH") {
       const ym = todayStr.substring(0, 7);
       if (!itemDate.startsWith(ym)) return false;
@@ -651,7 +663,7 @@ export default function ProcurementSystem() {
         rows.push([
           `"${req.requisitionNo}"`,
           idx + 1,
-          `"${req.createdAt}"`,
+          `"${extractDateOnly(req.createdAt, req.requisitionNo)}"`,
           `"${req.applicantName}"`,
           `"${req.applicantEmail}"`,
           `"${item.category || req.category}"`,
@@ -1018,7 +1030,7 @@ export default function ProcurementSystem() {
                       </td>
                       <td className="p-3 font-mono">
                         <span className="font-bold text-[#1b4372] block">{item.requisitionNo}</span>
-                        <span className="text-[10px] text-slate-400 block">{item.createdAt.split(" ")[0]}</span>
+                        <span className="text-[10px] text-slate-400 block">{extractDateOnly(item.createdAt, item.requisitionNo)}</span>
                       </td>
                       <td className="p-3">
                         <div className="font-bold text-slate-900 font-serif text-sm flex items-center flex-wrap gap-1">

@@ -8,6 +8,7 @@ import {
   CurrencyCode 
 } from "../../types/procurement";
 import { formatPriceWithCurrency, CURRENCY_CONFIG } from "../../data/procurementData";
+import { extractDateOnly, getTodayTaipeiDate, normalizeProcurementDate } from "../../utils/dateUtils";
 import { 
   Search, 
   Filter, 
@@ -151,7 +152,7 @@ export default function ApprovedPurchasingTracker({
             key: `${req.id}_${sub.id || idx}`,
             requisitionId: req.id,
             requisitionNo: req.requisitionNo,
-            createdAt: req.createdAt,
+            createdAt: normalizeProcurementDate(req.createdAt, req.requisitionNo || req.id),
             applicantName: req.applicantName,
             applicantEmail: req.applicantEmail,
             lineId: sub.id || `${req.id}_line_${idx}`,
@@ -183,7 +184,7 @@ export default function ApprovedPurchasingTracker({
           key: `${req.id}_main`,
           requisitionId: req.id,
           requisitionNo: req.requisitionNo,
-          createdAt: req.createdAt,
+          createdAt: normalizeProcurementDate(req.createdAt, req.requisitionNo || req.id),
           applicantName: req.applicantName,
           applicantEmail: req.applicantEmail,
           lineId: `${req.id}_main`,
@@ -240,21 +241,20 @@ export default function ApprovedPurchasingTracker({
       }
 
       // Date Range Filter (checking entry.createdAt date or purchaseDate)
-      const entryDateStr = entry.createdAt.split(" ")[0]; // YYYY-MM-DD
-      const now = new Date();
-      const todayStr = now.toISOString().split("T")[0];
+      const entryDateStr = extractDateOnly(entry.createdAt, entry.requisitionNo);
+      const todayStr = getTodayTaipeiDate();
 
       if (datePreset === "TODAY") {
         if (entryDateStr !== todayStr) return false;
       } else if (datePreset === "7DAYS") {
         const d7 = new Date();
         d7.setDate(d7.getDate() - 7);
-        const d7Str = d7.toISOString().split("T")[0];
+        const d7Str = extractDateOnly(d7);
         if (entryDateStr < d7Str) return false;
       } else if (datePreset === "30DAYS") {
         const d30 = new Date();
         d30.setDate(d30.getDate() - 30);
-        const d30Str = d30.toISOString().split("T")[0];
+        const d30Str = extractDateOnly(d30);
         if (entryDateStr < d30Str) return false;
       } else if (datePreset === "THIS_MONTH") {
         const currentYearMonth = todayStr.substring(0, 7); // YYYY-MM
@@ -456,7 +456,7 @@ export default function ApprovedPurchasingTracker({
 
     const rows = filteredEntries.map(e => [
       `"${e.requisitionNo}"`,
-      `"${e.createdAt.split(" ")[0]}"`,
+      `"${extractDateOnly(e.createdAt, e.requisitionNo)}"`,
       `"${e.itemName.replace(/"/g, '""')}"`,
       `"${e.category === "chemical" ? "藥品化學品" : e.category === "equipment" ? "儀器設備" : "耗材雜物"}"`,
       e.quantity,
@@ -859,7 +859,7 @@ export default function ApprovedPurchasingTracker({
                           {entry.requisitionNo}
                         </button>
                         <span className="text-[10px] text-slate-400 block mt-0.5">
-                          {entry.createdAt.split(" ")[0]}
+                          {extractDateOnly(entry.createdAt, entry.requisitionNo)}
                         </span>
                       </td>
 

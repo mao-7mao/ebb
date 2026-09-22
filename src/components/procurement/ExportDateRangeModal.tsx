@@ -10,6 +10,7 @@ import {
   Filter
 } from "lucide-react";
 import { ProcurementItem } from "../../types/procurement";
+import { extractDateOnly, getTodayTaipeiDate } from "../../utils/dateUtils";
 
 interface ExportDateRangeModalProps {
   isOpen: boolean;
@@ -34,8 +35,7 @@ export default function ExportDateRangeModal({
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
   // Calculate dates based on preset
-  const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = getTodayTaipeiDate();
 
   const effectiveRange = useMemo(() => {
     let start = "";
@@ -49,14 +49,15 @@ export default function ExportDateRangeModal({
     } else if (datePreset === "7DAYS") {
       const d7 = new Date();
       d7.setDate(d7.getDate() - 7);
-      start = d7.toISOString().split("T")[0];
+      start = extractDateOnly(d7);
       label = `最近 7 天 (${start} ~ ${end})`;
     } else if (datePreset === "30DAYS") {
       const d30 = new Date();
       d30.setDate(d30.getDate() - 30);
-      start = d30.toISOString().split("T")[0];
+      start = extractDateOnly(d30);
       label = `最近 30 天 (${start} ~ ${end})`;
     } else if (datePreset === "THIS_MONTH") {
+      const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, "0");
       start = `${year}-${month}-01`;
@@ -65,6 +66,7 @@ export default function ExportDateRangeModal({
       end = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
       label = `本月份 (${start} ~ ${end})`;
     } else if (datePreset === "LAST_MONTH") {
+      const now = new Date();
       const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const year = prevMonthDate.getFullYear();
       const month = String(prevMonthDate.getMonth() + 1).padStart(2, "0");
@@ -94,7 +96,7 @@ export default function ExportDateRangeModal({
       // Date filter
       if (datePreset === "ALL") return true;
 
-      const itemDate = (item.createdAt || "").split(" ")[0]; // YYYY-MM-DD
+      const itemDate = extractDateOnly(item.createdAt, item.requisitionNo);
       if (!itemDate) return true;
 
       if (effectiveRange.start && itemDate < effectiveRange.start) return false;
@@ -170,7 +172,7 @@ export default function ExportDateRangeModal({
         rows.push([
           `"${req.requisitionNo}"`,
           idx + 1,
-          `"${req.createdAt}"`,
+          `"${extractDateOnly(req.createdAt, req.requisitionNo)}"`,
           `"${req.applicantName}"`,
           `"${req.applicantEmail}"`,
           `"${item.category || req.category}"`,
