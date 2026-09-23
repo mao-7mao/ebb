@@ -595,7 +595,7 @@ export default function ApprovedPurchasingTracker({
           <span className="text-[10px] font-bold text-emerald-900 block">🛒 請購人已購買</span>
           <div className="flex items-baseline justify-between mt-0.5">
             <span className="text-base sm:text-lg font-bold font-serif text-emerald-900">{stats.studentPurchasedCount} 項</span>
-            <span className="text-[9px] text-emerald-700 font-medium">學生已自購</span>
+            <span className="text-[9px] text-emerald-700 font-medium">已購</span>
           </div>
         </div>
 
