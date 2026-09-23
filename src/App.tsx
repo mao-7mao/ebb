@@ -526,7 +526,7 @@ export default function App() {
                 }`}
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span>Procurement System</span>
+                <span>Procurement System </span>
               </button>
 
               <button 
@@ -546,7 +546,7 @@ export default function App() {
                 }`}
               >
                 <Calendar className="w-4 h-4 text-[#1b4372]" />
-                <span>Meeting Schedule</span>
+                <span>Meeting Schedule </span>
               </button>
 
               <button 
@@ -645,7 +645,7 @@ export default function App() {
                 }`}
               >
                 <ShoppingCart className="w-4 h-4 text-[#1b4372]" /> 
-                <span>Procurement</span>
+                <span>Procurement </span>
               </button>
 
               <button 
@@ -963,7 +963,7 @@ export default function App() {
                       <ShoppingCart className="w-5 h-5" />
                     </div>
                     <h3 className="text-lg font-bold text-slate-900 font-serif group-hover:text-[#1b4372] transition">
-                      Procurement System (請購系統)
+                      Procurement System 
                     </h3>
                     <p className="text-xs text-slate-600 leading-relaxed">
                       Chemicals, consumables & equipment requisition with multi-vendor quotes, two-stage approval, and bilingual export.
@@ -1389,7 +1389,7 @@ export default function App() {
 
         {/* ================= PAGE: PROCUREMENT SYSTEM ================= */}
         {currentPage === "procurement" && (
-          <div className="py-12 px-6 lg:px-16 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
+          <div className="py-4 sm:py-6 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-3 sm:space-y-4 animate-in fade-in duration-200">
             <ProcurementSystem />
           </div>
         )}

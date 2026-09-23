@@ -23,10 +23,10 @@ export const EXTERNAL_LINKS = {
   // 【請在此貼入】請購系統 Google Apps Script Webhook 網址 (部署為網頁應用程式後的 URL，以 /exec 結尾)
   // 範例: "https://script.google.com/macros/s/AKfycbx.../exec"
   // ==========================================================================
-  procurementWebhookUrl: ((typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_PROCUREMENT_GAS_WEBHOOK_URL) as string) || "https://script.google.com/macros/s/AKfycbws1l7U0up8frC3lTblL7FJVVAD8j_rtitCQa0gT7L5OEKw_5U8fQONQNymuGz6YXv0/exec",
+  procurementWebhookUrl: ((typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_PROCUREMENT_GAS_WEBHOOK_URL) as string) || "https://script.google.com/macros/s/AKfycbw7GXdcoWJbKmCQtaWQe8vECcCXhZJAtV0EloANvVeLF1iFpNgNuvvWIfn8aPP35l9V/exec",
 
   // 請購系統對應的 Google 試算表或 Google 表單網址 (供管理備查)
-  procurementSheetUrl: "https://script.google.com/macros/s/AKfycbws1l7U0up8frC3lTblL7FJVVAD8j_rtitCQa0gT7L5OEKw_5U8fQONQNymuGz6YXv0/exec",
+  procurementSheetUrl: "https://script.google.com/macros/s/AKfycbw7GXdcoWJbKmCQtaWQe8vECcCXhZJAtV0EloANvVeLF1iFpNgNuvvWIfn8aPP35l9V/exec",
 
   // ==========================================================================
   // 2. 進度報告與成員管理 (Progress Tracking & Member Sync)

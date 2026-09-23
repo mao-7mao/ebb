@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { 
   ProcurementItem, 
+  ProcurementItemLine,
   UserRole, 
   PurchaserType 
 } from "../../types/procurement";
+import EditRequisitionModal from "./EditRequisitionModal";
 import { 
   X, 
   CheckCircle2, 
@@ -24,7 +26,8 @@ import {
   Copy,
   ExternalLink,
   ShieldCheck,
-  Send
+  Send,
+  Edit3
 } from "lucide-react";
 
 interface ProcurementDetailModalProps {
@@ -56,6 +59,9 @@ export default function ProcurementDetailModal({
   onUpdateItem,
   onOpenAdminLogin
 }: ProcurementDetailModalProps) {
+  // Admin privilege check
+  const isUserAdmin = Boolean(isAdmin || currentRole === "admin");
+
   // Review inputs
   const [assistantComment, setAssistantComment] = useState("");
   const [professorComment, setProfessorComment] = useState("");
@@ -69,7 +75,10 @@ export default function ProcurementDetailModal({
   const [actualVendor, setActualVendor] = useState(item.vendorName);
   const [purchaseNote, setPurchaseNote] = useState("");
 
-  // Email preview modal state
+  // Edit requisition details modal state (Admin only)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Email preview modal state (Admin only)
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
 
@@ -77,7 +86,9 @@ export default function ProcurementDetailModal({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (showEmailPreview) {
+        if (isEditModalOpen) {
+          setIsEditModalOpen(false);
+        } else if (showEmailPreview) {
           setShowEmailPreview(false);
         } else {
           onClose();
@@ -86,7 +97,7 @@ export default function ProcurementDetailModal({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, showEmailPreview]);
+  }, [onClose, showEmailPreview, isEditModalOpen]);
 
   const getStatusBadge = (status: ProcurementItem["status"]) => {
     switch (status) {
@@ -265,21 +276,37 @@ export default function ProcurementDetailModal({
               title="預覽與列印合規紙本單據"
             >
               <FileText className="w-3.5 h-3.5 text-[#1b4372]" />
-              <span className="hidden sm:inline">{lang === "zh" ? "合規請購單" : "Official Form"}</span>
+              <span className="hidden sm:inline">{lang === "zh" ? "請購單" : "Official Form"}</span>
               <span className="inline sm:hidden">{lang === "zh" ? "請購單" : "Form"}</span>
             </button>
 
-            {/* Email Notification Preview */}
-            <button
-              type="button"
-              onClick={() => setShowEmailPreview(true)}
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-[#1b4372] text-xs font-bold rounded-sm transition shadow-xs cursor-pointer whitespace-nowrap"
-              title="查看與發送通知信件"
-            >
-              <Mail className="w-3.5 h-3.5 text-[#8d734a]" />
-              <span className="hidden sm:inline">{lang === "zh" ? "Email 通知" : "Email Alert"}</span>
-              <span className="inline sm:hidden">{lang === "zh" ? "通知信" : "Email"}</span>
-            </button>
+            {/* Edit Requisition Details (Admin Only: 修正請購人書寫錯誤) */}
+            {isUserAdmin && (
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(true)}
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-sm transition shadow-xs cursor-pointer whitespace-nowrap"
+                title="請購人書寫有誤時，Admin 可修改規格、數量、單價、連結等細項"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-amber-700" />
+                <span className="hidden sm:inline">{lang === "zh" ? "修改細項" : "Edit Details"}</span>
+                <span className="inline sm:hidden">{lang === "zh" ? "修改" : "Edit"}</span>
+              </button>
+            )}
+
+            {/* Email Notification Preview (Admin Only: 未登入 admin 時候不顯示) */}
+            {isUserAdmin && (
+              <button
+                type="button"
+                onClick={() => setShowEmailPreview(true)}
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-[#1b4372] text-xs font-bold rounded-sm transition shadow-xs cursor-pointer whitespace-nowrap"
+                title="查看與發送通知信件 (Admin 專用)"
+              >
+                <Mail className="w-3.5 h-3.5 text-[#8d734a]" />
+                <span className="hidden sm:inline">{lang === "zh" ? "Email 通知" : "Email Alert"}</span>
+                <span className="inline sm:hidden">{lang === "zh" ? "通知信" : "Email"}</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -409,6 +436,149 @@ export default function ProcurementDetailModal({
               </span>
             </div>
           </div>
+
+          {/* Detailed Requisition Line Items Breakdown */}
+          {(() => {
+            const displayItemsList: ProcurementItemLine[] = (item.items && item.items.length > 0)
+              ? item.items
+              : [
+                  {
+                    id: item.id,
+                    category: item.category || "consumable",
+                    itemName: item.itemName,
+                    quantity: item.quantity || 1,
+                    unit: item.unit || "個",
+                    estimatedUnitPrice: item.estimatedUnitPrice || 0,
+                    estimatedTotalPrice: item.estimatedTotalPrice || 0,
+                    currency: item.currency || "TWD",
+                    vendorName: item.vendorName,
+                    platform: item.platform,
+                    productUrl: item.productUrl,
+                    purpose: item.purpose,
+                    status: item.status === "rejected" ? "rejected" : item.status === "approved" ? "approved" : "pending_assistant",
+                    chemicalDetails: item.chemicalDetails,
+                    consumableDetails: item.consumableDetails,
+                    equipmentDetails: item.equipmentDetails
+                  }
+                ];
+
+            return (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="font-bold text-slate-800 text-xs font-serif flex items-center gap-1.5">
+                    <Package className="w-3.5 h-3.5 text-[#1b4372]" />
+                    <span>
+                      {lang === "zh" ? "請購品項細項清單" : "Requisition Line Items"} ({displayItemsList.length} {lang === "zh" ? "項" : "items"})
+                    </span>
+                  </h4>
+                  {isUserAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="inline-flex items-center gap-1 text-[11px] text-amber-900 hover:text-amber-950 font-bold bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded border border-amber-300 transition shadow-2xs cursor-pointer"
+                      title="若請購人有規格或文字錯誤，點此直接修正細項"
+                    >
+                      <Edit3 className="w-3 h-3 text-amber-700" />
+                      <span>{lang === "zh" ? "✎ 修正品項細項 (Admin)" : "✎ Edit Line Items"}</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="border border-[#e5e5e0] rounded-sm overflow-x-auto bg-white shadow-2xs">
+                  <table className="w-full text-xs min-w-[560px]">
+                    <thead className="bg-[#f8f8f5] text-slate-700 font-bold border-b border-[#e5e5e0]">
+                      <tr>
+                        <th className="p-2 text-center w-10">#</th>
+                        <th className="p-2 text-left">品名規格與詳細資訊</th>
+                        <th className="p-2 text-center w-20">類別</th>
+                        <th className="p-2 text-right w-24">數量單位</th>
+                        <th className="p-2 text-right w-28">預估單價</th>
+                        <th className="p-2 text-right w-28">小計 (NT$)</th>
+                        <th className="p-2 text-left w-36">建議通路 / 連結</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {displayItemsList.map((line, idx) => {
+                        const lineTotal = line.estimatedTotalPrice || ((line.quantity || 1) * (line.estimatedUnitPrice || 0));
+                        return (
+                          <tr key={line.id || idx} className="hover:bg-slate-50/60 transition">
+                            <td className="p-2 text-center font-mono font-bold text-slate-500">
+                              {idx + 1}
+                            </td>
+                            <td className="p-2">
+                              <div className="font-bold text-slate-900">{line.itemName}</div>
+                              <div className="text-[11px] text-slate-500 flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
+                                {line.chemicalDetails?.casNumber && (
+                                  <span className="font-mono text-emerald-800 bg-emerald-50 px-1 rounded">
+                                    CAS: {line.chemicalDetails.casNumber}
+                                  </span>
+                                )}
+                                {line.chemicalDetails?.purity && (
+                                  <span>純度: {line.chemicalDetails.purity}</span>
+                                )}
+                                {line.chemicalDetails?.packageSize && (
+                                  <span>包裝: {line.chemicalDetails.packageSize}</span>
+                                )}
+                                {line.consumableDetails?.specModel && (
+                                  <span>規格: {line.consumableDetails.specModel}</span>
+                                )}
+                                {line.equipmentDetails?.modelNumber && (
+                                  <span>型號: {line.equipmentDetails.modelNumber}</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-2 text-center">
+                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                line.category === "chemical" 
+                                  ? "bg-emerald-100 text-emerald-800" 
+                                  : line.category === "equipment" 
+                                  ? "bg-blue-100 text-blue-800" 
+                                  : "bg-amber-100 text-amber-800"
+                              }`}>
+                                {line.category === "chemical" ? "藥品" : line.category === "equipment" ? "設備" : "耗材"}
+                              </span>
+                            </td>
+                            <td className="p-2 text-right font-mono font-medium text-slate-700">
+                              {line.quantity} {line.unit}
+                            </td>
+                            <td className="p-2 text-right font-mono text-slate-700">
+                              {line.currency && line.currency !== "TWD" ? `${line.currency} ` : "NT$ "}
+                              {line.estimatedUnitPrice?.toLocaleString()}
+                            </td>
+                            <td className="p-2 text-right font-mono font-bold text-[#1b4372]">
+                              NT$ {lineTotal.toLocaleString()}
+                            </td>
+                            <td className="p-2">
+                              <div className="text-[11px] font-medium text-slate-700 truncate max-w-[140px]" title={line.vendorName}>
+                                {line.platform && (
+                                  <span className="bg-slate-100 text-slate-600 px-1 py-0.5 rounded text-[10px] mr-1">
+                                    {line.platform}
+                                  </span>
+                                )}
+                                {line.vendorName || "-"}
+                              </div>
+                              {line.productUrl && (
+                                <a
+                                  href={line.productUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-0.5 text-[10px] mt-0.5"
+                                  title={line.productUrl}
+                                >
+                                  <span>商品網址</span>
+                                  <ExternalLink className="w-2.5 h-2.5" />
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Multi-Vendor Quotes Comparison Table */}
           {item.quotes && item.quotes.length > 0 && (
@@ -615,7 +785,7 @@ export default function ProcurementDetailModal({
                   type="button"
                   onClick={() => handleAssistantAction(false)}
                   className="px-4 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-sm text-xs font-bold transition"
-                  title="退回申請，直接發信通知請購人（不打擾教授）"
+                  title="退回申請，直接發信通知請購人"
                 >
                   ✕ 退回申請 (直接通知請購人)
                 </button>
@@ -794,8 +964,8 @@ export default function ProcurementDetailModal({
         </div>
       </div>
 
-      {/* Email Notification Preview Modal */}
-      {showEmailPreview && (
+      {/* Email Notification Preview Modal (Admin Only: 未登入 admin 時不顯示) */}
+      {showEmailPreview && isUserAdmin && (
         <div className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white border border-slate-300 rounded-sm shadow-2xl max-w-xl w-full p-6 space-y-4 font-sans">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
@@ -889,6 +1059,19 @@ export default function ProcurementDetailModal({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Admin Edit Requisition Details Modal */}
+      {isEditModalOpen && isUserAdmin && (
+        <EditRequisitionModal
+          item={item}
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSave={(updatedItem) => {
+            onUpdateItem?.(updatedItem);
+          }}
+          lang={lang}
+        />
       )}
     </div>
   );

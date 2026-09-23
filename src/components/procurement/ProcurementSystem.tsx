@@ -455,7 +455,7 @@ export default function ProcurementSystem() {
           ...item,
           status: nextStatus,
           assistantReview: {
-            reviewerName: "Lab Admin (系統管理者/助理)",
+            reviewerName: "admin",
             reviewedAt: now,
             approved,
             comment
@@ -1155,7 +1155,7 @@ export default function ProcurementSystem() {
                         type="button"
                         onClick={() => setPrintItems([item])}
                         className="inline-flex items-center gap-1 py-1 px-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-[11px] font-bold transition shadow-2xs"
-                        title="產生合規請購單"
+                        title="產生請購單"
                       >
                         <Printer className="w-3 h-3 text-[#8d734a]" />
                         <span>列印</span>
@@ -1302,7 +1302,7 @@ export default function ProcurementSystem() {
                             type="button"
                             onClick={() => setPrintItems([item])}
                             className="p-1 hover:bg-slate-100 text-slate-600 rounded-sm"
-                            title="產生合規請購單"
+                            title="產生請購單"
                           >
                             <Printer className="w-3.5 h-3.5 text-[#8d734a]" />
                           </button>

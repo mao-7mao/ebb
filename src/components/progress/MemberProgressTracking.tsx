@@ -540,7 +540,7 @@ export default function MemberProgressTracking({
                 }`}
               >
                 <List className="w-3.5 h-3.5" />
-                <span>List</span>
+                <span>清單模式 (List)</span>
               </button>
 
               <button
@@ -553,7 +553,7 @@ export default function MemberProgressTracking({
                 }`}
               >
                 <CalendarRange className="w-3.5 h-3.5" />
-                <span>Timeline</span>
+                <span>時間軸模式 (Timeline)</span>
               </button>
 
               <button
@@ -566,7 +566,7 @@ export default function MemberProgressTracking({
                 }`}
               >
                 <Columns className="w-3.5 h-3.5" />
-                <span>看板</span>
+                <span>看板模式 (Kanban)</span>
               </button>
             </div>
 

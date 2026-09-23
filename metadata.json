@@ -1,6 +1,6 @@
 {
   "name": "EBB Lab",
-  "description": "EBB Lab",
+  "description": "國立中山大學 環境生物技術與生物精煉實驗室 (EBB Lab) - 成員研究、設備化學品預約、請購管理、月曆日誌與 Google 日曆雙向同步及 PPTX 週報生成系統",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
