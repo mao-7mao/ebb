@@ -645,7 +645,7 @@ export default function App() {
                 }`}
               >
                 <ShoppingCart className="w-4 h-4 text-[#1b4372]" /> 
-                <span>Procurement </span>
+                <span>Procurement</span>
               </button>
 
               <button 
@@ -864,7 +864,7 @@ export default function App() {
                     className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] hover:border-[#1b4372] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group"
                   >
                     <ShoppingCart className="w-4 h-4 text-[#1b4372] group-hover:scale-110 transition-transform" />
-                    <span>Procurement</span>
+                    <span>請購系統 (Procurement)</span>
                   </button>
 
                   {/* 5. Meeting Schedule */}
@@ -963,7 +963,7 @@ export default function App() {
                       <ShoppingCart className="w-5 h-5" />
                     </div>
                     <h3 className="text-lg font-bold text-slate-900 font-serif group-hover:text-[#1b4372] transition">
-                      Procurement System 
+                      Procurement System
                     </h3>
                     <p className="text-xs text-slate-600 leading-relaxed">
                       Chemicals, consumables & equipment requisition with multi-vendor quotes, two-stage approval, and bilingual export.
@@ -1436,7 +1436,7 @@ export default function App() {
                   >
                     Month View (月視圖)
                   </button>
-                                    <button 
+                  <button 
                     onClick={() => setCalendarView("week")}
                     className={`px-3.5 py-1.5 rounded-sm transition-all ${
                       calendarView === "week" 

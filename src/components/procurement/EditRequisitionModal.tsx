@@ -672,7 +672,7 @@ export default function EditRequisitionModal({
                 </span>
               ) : (
                 <span className="inline-block px-2.5 py-1 rounded bg-blue-100 text-blue-900 font-bold text-[11px] border border-blue-300">
-                  ★ 未滿 3,000 元（小額請購 · 助理初審後轉呈教授）
+                  ★ 未滿 3,000 元（小額請購 · admin初審後轉呈教授）
                 </span>
               )}
             </div>

@@ -9,6 +9,7 @@ export const DEFAULT_VENDORS = [
   "友和生技 Uni-Onward",
   "伯昂興業 Ber-An",
   "巨研科技 Advantech",
+  "國祥儀器 Kuo-Hsiang",
   "德記儀器 Teki Lab Supply",
   "三洋精密儀器 Sanyo Scientific",
   "淘寶 / 天貓商家"
@@ -29,7 +30,7 @@ export const DEFAULT_SHOPPING_PLATFORMS: string[] = [
 
 // 角色安全權限密碼 (預設密碼，支援修改與各端獨立驗證)
 export const DEFAULT_ROLE_PASSWORDS = {
-  admin: "ebbadmin"          // 系統管理者
+  admin: "ebbadmin"      
 };
 
 // 幣種符號與換算匯率參考 (提供台幣、美元、人民幣即時對照)
@@ -77,7 +78,7 @@ export const GOOGLE_APPS_SCRIPT_SAMPLE = `/**
  * 1. 支援接收請購系統前端網頁的 POST 請求 (doPost)。
  * 2. 支援前端 (Admin 或 任何使用者) GET 請求 (doGet)，即時回傳試算表中的請購資料清單。
  * 3. 自動在 Google Sheets 中記錄請購清單與採購進程。
- * 4. 自動透過 Gmail 寄送審批通知與採購進度更新給助理、教授與申請學生。
+ * 4. 自動透過 Gmail 寄送審批通知與採購進度更新給admin、教授與申請學生。
  * 
  * 設定步驟：
  * 1. 開啟您的 Google 試算表（例如「EBB Lab 請購與採購紀錄表」）。

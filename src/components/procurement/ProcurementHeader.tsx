@@ -59,7 +59,7 @@ export default function ProcurementHeader({
           </div>
           <p className="text-[11px] text-slate-500 font-sans truncate max-w-xl mt-0.5 hidden sm:block">
             {lang === "zh"
-              ? "點選「+ 填寫請購」送出藥品試劑、實驗耗材或設備。"
+              ? "點選「+ 填寫請購」送出藥品試劑、實驗耗材或設備。資料雙向即時同步 Google 試算表。"
               : "Submit requisitions for chemicals, consumables, or equipment. Real-time sync with Google Sheets."}
           </p>
         </div>

@@ -108,7 +108,7 @@ export async function generateWeeklyReportPptx(
     { text: "報告人 (Presenter)： ", options: { bold: true, color: "CBD5E1" } },
     { text: `${config.authorName || "實驗室研究生"}\n\n`, options: { color: PALETTE.white, bold: true } },
     { text: "指導單位 (Affiliation)： ", options: { bold: true, color: "CBD5E1" } },
-    { text: `${config.labName || "國立臺灣大學 綠色生質生物精煉實驗室 (EBB Lab)"}`, options: { color: PALETTE.white } }
+    { text: `${config.labName || "EBB Lab"}`, options: { color: PALETTE.white } }
   ], {
     x: 1.3,
     y: 4.7,

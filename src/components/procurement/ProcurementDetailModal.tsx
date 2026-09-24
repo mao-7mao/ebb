@@ -104,7 +104,7 @@ export default function ProcurementDetailModal({
       case "pending_assistant":
         return {
           bg: "bg-amber-50 text-amber-800 border-amber-300",
-          label: lang === "zh" ? "待助理初審 (Stage 1)" : "Pending Assistant Review",
+          label: lang === "zh" ? "待admin初審 (Stage 1)" : "Pending Assistant Review",
           icon: <Clock className="w-3.5 h-3.5" />
         };
       case "pending_professor":
@@ -224,7 +224,7 @@ export default function ProcurementDetailModal({
         approvalMailto: `mailto:ebblab115@gmail.com?cc=${encodeURIComponent(item.applicantEmail)}&subject=${encodeURIComponent(`Re: [EBB Lab 請購簽核回覆] 單號 ${item.requisitionNo} - 教授核准通過`)}&body=${encodeURIComponent(approvalReplyBody)}`,
         rejectionMailto: `mailto:ebblab115@gmail.com?cc=${encodeURIComponent(item.applicantEmail)}&subject=${encodeURIComponent(`Re: [EBB Lab 請購簽核回覆] 單號 ${item.requisitionNo} - 教授不予通過`)}&body=${encodeURIComponent(rejectionReplyBody)}`,
         isProfEmail: true,
-        body: `張教授您好：\n\n實驗室成員 ${item.applicantName} 已於線上系統提交請購單，經 Admin 初審合格轉呈您終審核定。\n\n==================================================\n【EBB Lab 實驗室請購標準文檔 (Official Requisition)】\n==================================================\n• 請購單號：${item.requisitionNo}\n• 申請日期：${item.createdAt}\n• 申請人：${item.applicantName} (${item.applicantEmail})\n• 預估總額：NT$ ${item.estimatedTotalPrice.toLocaleString()} (${item.currency || "TWD"})\n• 請購目的與用途：${item.purpose}\n• 採購規範說明：${isOver3000 ? "★ 單價或總額達 3,000 元以上（已依規定檢附詢價/比價資訊）" : "★ 小額請購（總額未滿 3,000 元，單一廠商採購，免附多家比價）"}\n• Admin 初審意見：${item.assistantReview?.comment || "初審合格，各項規格確認無誤，轉呈教授終審核定。"}\n\n【請購品項清單明細】\n${docItemsTable}\n\n==================================================\n【教授請購審核核定表 (複選框模式)】\n==================================================\n您可直接保留下列選項並回信（系統將自動同時抄送助理與請購人）：\n\n[x] 【核准通過】 (Approved)\n    指定採購人：[x] 請購人自購   [ ] 貨到後付款   [ ] 教授統購\n    教授意見：准予採購\n\n[ ] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：________________________________________\n\n--------------------------------------------------\n※ 點擊下方按鈕或郵件連結即可一鍵回信；您亦可直接登入系統進行線上審批。\n\nEBB Lab 實驗室請購系統\n國立中山大學 環境工程研究所`
+        body: `張教授您好：\n\n實驗室成員 ${item.applicantName} 已於線上系統提交請購單，經 Admin 初審合格轉呈您終審核定。\n\n==================================================\n【EBB Lab 實驗室請購標準文檔 (Official Requisition)】\n==================================================\n• 請購單號：${item.requisitionNo}\n• 申請日期：${item.createdAt}\n• 申請人：${item.applicantName} (${item.applicantEmail})\n• 預估總額：NT$ ${item.estimatedTotalPrice.toLocaleString()} (${item.currency || "TWD"})\n• 請購目的與用途：${item.purpose}\n• 採購規範說明：${isOver3000 ? "★ 單價或總額達 3,000 元以上（已依規定檢附詢價/比價資訊）" : "★ 小額請購（總額未滿 3,000 元，單一廠商採購，免附多家比價）"}\n• Admin 初審意見：${item.assistantReview?.comment || "初審合格，各項規格確認無誤，轉呈教授終審核定。"}\n\n【請購品項清單明細】\n${docItemsTable}\n\n==================================================\n【教授請購審核核定表 (複選框模式)】\n==================================================\n您可直接保留下列選項並回信（系統將自動同時抄送admin與請購人）：\n\n[x] 【核准通過】 (Approved)\n    指定採購人：[x] 請購人自購   [ ] 貨到後付款   [ ] 教授統購\n    教授意見：准予採購\n\n[ ] 【不予通過 / 退回修正】 (Rejected)\n    退回原因：________________________________________\n\n--------------------------------------------------\n※ 點擊下方按鈕或郵件連結即可一鍵回信；您亦可直接登入系統進行線上審批。\n\nEBB Lab 實驗室請購系統\n國立中山大學 環境工程研究所`
       };
     }
 
@@ -233,7 +233,7 @@ export default function ProcurementDetailModal({
       to: "ebblab115@gmail.com",
       cc: item.applicantEmail,
       subject: `[EBB Lab 新請購待審] 單號 ${item.requisitionNo} - ${item.applicantName} 申請 ${item.itemName}`,
-      body: `Admin / 研究助理您好：\n\n實驗室成員 ${item.applicantName} 已於系統填寫新請購單（總額預估 NT$ ${item.estimatedTotalPrice.toLocaleString()}）：\n\n【請購標準文檔】\n• 請購單號：${item.requisitionNo}\n• 申請日期：${item.createdAt}\n• 申請人：${item.applicantName} (${item.applicantEmail})\n• 採購規範：${isOver3000 ? "★ 達 3,000 元以上，需確認多廠商比價" : "★ 未滿 3,000 元小額採購，免附比價"}\n• 請購目的：${item.purpose}\n\n【品項明細】\n${docItemsTable}\n\n請前往系統進行初審，初審確認合格後系統將自動發送含標準請購文檔與核簽複選模板之通知信給教授終審。\n\nEBB Lab 實驗室請購系統`
+      body: `Admin您好：\n\n實驗室成員 ${item.applicantName} 已於系統填寫新請購單（總額預估 NT$ ${item.estimatedTotalPrice.toLocaleString()}）：\n\n【請購標準文檔】\n• 請購單號：${item.requisitionNo}\n• 申請日期：${item.createdAt}\n• 申請人：${item.applicantName} (${item.applicantEmail})\n• 採購規範：${isOver3000 ? "★ 達 3,000 元以上，需確認多廠商比價" : "★ 未滿 3,000 元小額採購，免附比價"}\n• 請購目的：${item.purpose}\n\n【品項明細】\n${docItemsTable}\n\n請前往系統進行初審，初審確認合格後系統將自動發送含標準請購文檔與核簽複選模板之通知信給教授終審。\n\nEBB Lab 實驗室請購系統`
     };
   };
 
@@ -276,7 +276,7 @@ export default function ProcurementDetailModal({
               title="預覽與列印合規紙本單據"
             >
               <FileText className="w-3.5 h-3.5 text-[#1b4372]" />
-              <span className="hidden sm:inline">{lang === "zh" ? "請購單" : "Official Form"}</span>
+              <span className="hidden sm:inline">{lang === "zh" ? "合規請購單" : "Official Form"}</span>
               <span className="inline sm:hidden">{lang === "zh" ? "請購單" : "Form"}</span>
             </button>
 
@@ -632,7 +632,7 @@ export default function ProcurementDetailModal({
               <div className="flex items-center justify-between mb-2">
                 <span className="font-bold text-xs font-serif text-slate-800 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-[#1b4372]" />
-                  一階審核：研究助理初審
+                  一階審核：研究admin初審
                 </span>
                 {item.assistantReview && (
                   <span className="text-[10px] font-mono text-slate-400">
@@ -654,7 +654,7 @@ export default function ProcurementDetailModal({
                 </div>
               ) : (
                 <p className="text-slate-400 italic text-xs">
-                  尚未完成初審 (待助理確認品項與規格)
+                  尚未完成初審 (待admin確認品項與規格)
                 </p>
               )}
             </div>
@@ -686,7 +686,7 @@ export default function ProcurementDetailModal({
                 </div>
               ) : (
                 <p className="text-slate-400 italic text-xs">
-                  尚未完成終審 (待助理初審通過後由教授核定)
+                  尚未完成終審 (待admin初審通過後由教授核定)
                 </p>
               )}
             </div>
@@ -785,7 +785,7 @@ export default function ProcurementDetailModal({
                   type="button"
                   onClick={() => handleAssistantAction(false)}
                   className="px-4 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-sm text-xs font-bold transition"
-                  title="退回申請，直接發信通知請購人"
+                  title="退回申請，直接發信通知請購人（不打擾教授）"
                 >
                   ✕ 退回申請 (直接通知請購人)
                 </button>
@@ -1012,23 +1012,23 @@ export default function ProcurementDetailModal({
             {emailInfo.isProfEmail && emailInfo.approvalMailto && (
               <div className="p-2.5 bg-blue-50/60 border border-blue-200 rounded-sm space-y-1.5">
                 <div className="text-[11px] font-bold text-[#1b4372] flex items-center gap-1">
-                  <span>✉️ 教授郵件快速回覆選項（點擊將自動開啟郵件，並同時抄送助理與請購人）：</span>
+                  <span>✉️ 教授郵件快速回覆選項（點擊將自動開啟郵件，並同時抄送admin與請購人）：</span>
                 </div>
                 <div className="flex flex-wrap gap-2 pt-1">
                   <a
                     href={emailInfo.approvalMailto}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold transition shadow-2xs"
-                    title="開啟郵件並預選【核准通過】，同時抄送助理與請購人"
+                    title="開啟郵件並預選【核准通過】，同時抄送admin與請購人"
                   >
-                    <span>☑️ 一鍵以【核准通過】回覆 (CC 請購人與助理)</span>
+                    <span>☑️ 一鍵以【核准通過】回覆 (CC 請購人與admin)</span>
                   </a>
                   {emailInfo.rejectionMailto && (
                     <a
                       href={emailInfo.rejectionMailto}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-bold transition shadow-2xs"
-                      title="開啟郵件並預選【不予通過】，同時抄送助理與請購人"
+                      title="開啟郵件並預選【不予通過】，同時抄送admin與請購人"
                     >
-                      <span>❌ 一鍵以【不通過/退回】回覆 (CC 請購人與助理)</span>
+                      <span>❌ 一鍵以【不通過/退回】回覆 (CC 請購人與admin)</span>
                     </a>
                   )}
                 </div>

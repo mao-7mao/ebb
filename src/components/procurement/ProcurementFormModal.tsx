@@ -465,7 +465,7 @@ export default function ProcurementFormModal({
               rows={2}
               value={overallPurpose}
               onChange={(e) => setOverallPurpose(e.target.value)}
-              placeholder={lang === "zh" ? "請敘明本次請購品項之總體研究用途、進行之實驗主題或必要性 (作為助理初審與教授核定依據)..." : "State the overall research purpose and experiment justification..."}
+              placeholder={lang === "zh" ? "請敘明本次請購品項之總體研究用途、進行之實驗主題或必要性 (作為admin初審與教授核定依據)..." : "State the overall research purpose and experiment justification..."}
               className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2.5 text-xs focus:border-[#1b4372] focus:outline-none"
             />
           </div>
@@ -1122,7 +1122,7 @@ export default function ProcurementFormModal({
                   <div className="bg-white/80 p-2.5 rounded border border-amber-200 text-[11px] text-slate-700 space-y-1">
                     <div className="font-semibold text-slate-900 flex items-center gap-1">
                       <span>審核流程：</span>
-                      <span className="font-mono text-amber-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過（回覆抄送助理與請購人）</span>
+                      <span className="font-mono text-amber-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過（回覆抄送admin與請購人）</span>
                     </div>
                   </div>
                 </div>
@@ -1147,7 +1147,7 @@ export default function ProcurementFormModal({
                   <div className="bg-white/80 p-2.5 rounded border border-emerald-200 text-[11px] text-slate-700 space-y-1">
                     <div className="font-semibold text-slate-900 flex items-center gap-1">
                       <span>審核流程：</span>
-                      <span className="font-mono text-emerald-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過（回覆抄送助理與請購人）</span>
+                      <span className="font-mono text-emerald-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過（回覆抄送admin與請購人）</span>
                     </div>
                   </div>
                 </div>

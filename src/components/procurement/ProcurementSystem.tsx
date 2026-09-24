@@ -455,7 +455,7 @@ export default function ProcurementSystem() {
           ...item,
           status: nextStatus,
           assistantReview: {
-            reviewerName: "admin",
+            reviewerName: "admin-miao",
             reviewedAt: now,
             approved,
             comment
@@ -513,10 +513,10 @@ export default function ProcurementSystem() {
 
     if (approved && updatedTarget) {
       triggerGasWebhook("approve_request", updatedTarget);
-      showToast(lang === "zh" ? `教授核定准予採購！回覆通知信已寄達請購人 (${updatedTarget.applicantEmail})，並同步抄送助理。` : `Final approval granted! Notified applicant with CC to Admin.`);
+      showToast(lang === "zh" ? `教授核定准予採購！回覆通知信已寄達請購人 (${updatedTarget.applicantEmail})，並同步抄送admin。` : `Final approval granted! Notified applicant with CC to Admin.`);
     } else if (updatedTarget) {
       triggerGasWebhook("professor_rejected", updatedTarget);
-      showToast(lang === "zh" ? `教授已退回請購單，說明已寄送至請購人 (${updatedTarget.applicantEmail}) 並抄送助理。` : "Request rejected by PI; applicant and Admin notified.");
+      showToast(lang === "zh" ? `教授已退回請購單，說明已寄送至請購人 (${updatedTarget.applicantEmail}) 並抄送admin。` : "Request rejected by PI; applicant and Admin notified.");
     }
   };
 
@@ -734,7 +734,7 @@ export default function ProcurementSystem() {
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold whitespace-nowrap shrink-0">
             <Clock className="w-3 h-3 shrink-0" />
-            <span>待助理初審</span>
+            <span>待admin初審</span>
           </span>
         );
       case "pending_professor":
@@ -973,7 +973,7 @@ export default function ProcurementSystem() {
                 className="bg-white border border-[#e5e5e0] rounded-sm py-1 px-2 text-xs font-medium focus:outline-none"
               >
                 <option value="ALL">{lang === "zh" ? "全部狀態" : "All Status"}</option>
-                <option value="pending_assistant">{lang === "zh" ? "待 Admin/助理初審" : "Pending Admin"}</option>
+                <option value="pending_assistant">{lang === "zh" ? "待 Admin初審" : "Pending Admin"}</option>
                 <option value="pending_professor">{lang === "zh" ? "待教授終審" : "Pending PI"}</option>
                 <option value="approved">{lang === "zh" ? "已核准 (待採購)" : "Approved"}</option>
                 <option value="partially_approved">{lang === "zh" ? "部分審核通過" : "Partially Approved"}</option>
@@ -1155,7 +1155,7 @@ export default function ProcurementSystem() {
                         type="button"
                         onClick={() => setPrintItems([item])}
                         className="inline-flex items-center gap-1 py-1 px-2 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-[11px] font-bold transition shadow-2xs"
-                        title="產生請購單"
+                        title="產生合規請購單"
                       >
                         <Printer className="w-3 h-3 text-[#8d734a]" />
                         <span>列印</span>
@@ -1302,7 +1302,7 @@ export default function ProcurementSystem() {
                             type="button"
                             onClick={() => setPrintItems([item])}
                             className="p-1 hover:bg-slate-100 text-slate-600 rounded-sm"
-                            title="產生請購單"
+                            title="產生合規請購單"
                           >
                             <Printer className="w-3.5 h-3.5 text-[#8d734a]" />
                           </button>

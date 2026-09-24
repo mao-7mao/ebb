@@ -583,8 +583,6 @@ export default function CalendarLogModule() {
               <h3 className="font-bold text-base font-serif text-[#1a1a1a]">
                 實驗室公開行事曆 (EBB Lab Public Calendar)
               </h3>
-              <p className="text-xs text-slate-500">
-              </p>
             </div>
             <button
               type="button"

@@ -50,7 +50,7 @@ const GREEN_SHADES: Record<GreenShade, GreenShadeColors> = {
     backLeftBg: "bg-[#122f54]",
     primaryBg: "bg-[#122f54]",
     accentText: "text-[#ebdcb9]",
-    primaryHex: "#122f54"
+    primaryHex: "#3b6296"
   },
   moss: {
     name: "牛津蔚藍 (Oxford Blue)",
@@ -58,7 +58,7 @@ const GREEN_SHADES: Record<GreenShade, GreenShadeColors> = {
     backLeftBg: "bg-[#18365c]",
     primaryBg: "bg-[#18365c]",
     accentText: "text-[#e3d1ae]",
-    primaryHex: "#18365c"
+    primaryHex: "#75a9ec"
   }
 };
 

@@ -6,7 +6,6 @@ interface NsysuEmblemProps {
 }
 
 export default function NsysuEmblem({ className = "", size = 80 }: NsysuEmblemProps) {
-  // Try rendering the SVG logo from /logo.svg with an elegant fallback
   return (
     <div 
       className={`relative flex items-center justify-center select-none ${className}`} 
@@ -18,8 +17,13 @@ export default function NsysuEmblem({ className = "", size = 80 }: NsysuEmblemPr
         alt="國立中山大學校徽" 
         className="w-full h-full object-contain"
         onError={(e) => {
-          // Fallback to high-precision vector emblem
-          (e.target as HTMLElement).style.display = "none";
+          // If /logo.svg fails, try /nsysu_seal.png or hide gracefully
+          const target = e.currentTarget;
+          if (target.src.endsWith("/logo.svg")) {
+            target.src = "/nsysu_seal.png";
+          } else {
+            target.style.display = "none";
+          }
         }}
       />
     </div>

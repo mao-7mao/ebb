@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { ProcurementItem, ProcurementItemLine, CurrencyCode } from "../../types/procurement";
 import { 
   Printer, 
@@ -7,11 +7,14 @@ import {
   FileSpreadsheet, 
   FileText, 
   Check, 
-  ExternalLink 
+  ExternalLink,
+  Loader2,
+  FileCode
 } from "lucide-react";
 import NsysuEmblem from "./NsysuEmblem";
 import { CURRENCY_CONFIG, formatPriceWithCurrency } from "../../data/procurementData";
 import { extractDateOnly } from "../../utils/dateUtils";
+import { downloadRequisitionDocx, generateRequisitionMhtmlContent } from "../../utils/docxExportService";
 
 interface ProcurementOfficialRequisitionProps {
   isOpen?: boolean;
@@ -31,6 +34,7 @@ export default function ProcurementOfficialRequisition({
   onExportCSV
 }: ProcurementOfficialRequisitionProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [isExportingWord, setIsExportingWord] = useState(false);
 
   // Keyboard shortcut: Press Escape to close preview modal
   useEffect(() => {
@@ -48,7 +52,7 @@ export default function ProcurementOfficialRequisition({
   // Primary requisition info
   const primaryReq = items[0];
   const applicant = primaryReq.applicantName || "";
-  const assistantReviewer = primaryReq.assistantReview?.reviewerName || "助理";
+  const assistantReviewer = primaryReq.assistantReview?.reviewerName || "admin";
   const professorReviewer = primaryReq.professorReview?.reviewerName || "教授";
 
   // Requisition Date formatted as YYYY.MM.DD (matches screenshot: 2025.08.06)
@@ -180,143 +184,67 @@ export default function ProcurementOfficialRequisition({
     window.print();
   };
 
-  // Export to Word (.doc / HTML template)
-  const handleExportWord = () => {
-    const tableRowsHtml = flattenedLines.map(l => `
-      <tr>
-        <td style="border:1px solid #000; padding:8px; text-align:center; font-family:'標楷體','DFKai-SB','Times New Roman'; font-size:12pt;">
-          ${l.nameWithSpec}
-          ${l.productUrl ? `<br/><span style="font-size:9pt; color:#1a56db;">連結: ${l.productUrl}</span>` : ""}
-        </td>
-        <td style="border:1px solid #000; padding:8px; text-align:center; font-family:'標楷體','DFKai-SB','Times New Roman'; font-size:12pt;">
-          ${renderCellAmount(l.unitPrice, l.currency)}
-        </td>
-        <td style="border:1px solid #000; padding:8px; text-align:center; font-family:'標楷體','DFKai-SB','Times New Roman'; font-size:12pt;">
-          ${l.quantity}
-        </td>
-        <td style="border:1px solid #000; padding:8px; text-align:center; font-family:'標楷體','DFKai-SB','Times New Roman'; font-size:12pt;">
-          ${renderCellAmount(l.subtotal, l.currency)}
-        </td>
-        <td style="border:1px solid #000; padding:8px; text-align:center; font-family:'標楷體','DFKai-SB','Times New Roman'; font-size:12pt;">
-          ${l.purpose}
-        </td>
-        <td style="border:1px solid #000; padding:8px; text-align:center; font-family:'標楷體','DFKai-SB','Times New Roman'; font-size:12pt;">
-          ${l.vendorAndPlatform}
-        </td>
-      </tr>
-    `).join("");
+  // Export to native Word (.docx) - recommended, fixes image display failure in Word
+  const handleExportWordDocx = async () => {
+    setIsExportingWord(true);
+    try {
+      await downloadRequisitionDocx({
+        requisitionNo: primaryReq.requisitionNo || "",
+        requisitionDate,
+        applicant,
+        assistantReviewer,
+        professorReviewer,
+        isApproved: primaryReq.status === "approved" || primaryReq.status === "purchased",
+        flattenedLines: flattenedLines.map(l => ({
+          nameWithSpec: l.nameWithSpec,
+          productUrl: l.productUrl,
+          unitPrice: l.unitPrice,
+          currency: l.currency,
+          quantity: l.quantity,
+          unit: l.unit,
+          subtotal: l.subtotal,
+          purpose: l.purpose,
+          vendorAndPlatform: l.vendorAndPlatform
+        })),
+        currencyUnitLabel: getCurrencyUnitLabel(),
+        primaryTotalAmount,
+        grandTotalTwdEstimate,
+        hasForeignCurrency: activeCurrencies.some(c => c !== "TWD")
+      });
+    } catch (err) {
+      console.error("Export DOCX failed:", err);
+      // Fallback to legacy .doc if docx packaging throws
+      handleExportWordLegacyDoc();
+    } finally {
+      setIsExportingWord(false);
+    }
+  };
 
-    const emptyRowsHtml = Array(emptyRowsCount).fill(0).map(() => `
-      <tr>
-        <td style="border:1px solid #000; padding:16px;">&nbsp;</td>
-        <td style="border:1px solid #000; padding:16px;">&nbsp;</td>
-        <td style="border:1px solid #000; padding:16px;">&nbsp;</td>
-        <td style="border:1px solid #000; padding:16px;">&nbsp;</td>
-        <td style="border:1px solid #000; padding:16px;">&nbsp;</td>
-        <td style="border:1px solid #000; padding:16px;">&nbsp;</td>
-      </tr>
-    `).join("");
+  // Export to Word (.doc / MHTML template with embedded base64 image)
+  const handleExportWordLegacyDoc = () => {
+    const mhtmlContent = generateRequisitionMhtmlContent({
+      requisitionNo: primaryReq.requisitionNo || "",
+      requisitionDate,
+      applicant,
+      assistantReviewer,
+      professorReviewer,
+      isApproved: primaryReq.status === "approved" || primaryReq.status === "purchased",
+      flattenedLines: flattenedLines.map(l => ({
+        nameWithSpec: l.nameWithSpec,
+        productUrl: l.productUrl,
+        unitPrice: l.unitPrice,
+        currency: l.currency,
+        quantity: l.quantity,
+        unit: l.unit,
+        subtotal: l.subtotal,
+        purpose: l.purpose,
+        vendorAndPlatform: l.vendorAndPlatform
+      })),
+      currencyUnitLabel: getCurrencyUnitLabel(),
+      primaryTotalAmount
+    });
 
-    const wordContent = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office" 
-            xmlns:w="urn:schemas-microsoft-com:office:word" 
-            xmlns="http://www.w3.org/TR/REC-html40">
-      <head>
-        <meta charset="utf-8">
-        <title>環境生物技術暨生物煉製實驗室請購單</title>
-        <!--[if gte mso 9]>
-        <xml>
-          <w:WordDocument>
-            <w:View>Print</w:View>
-            <w:Zoom>100</w:Zoom>
-            <w:DoNotOptimizeForBrowser/>
-          </w:WordDocument>
-        </xml>
-        <![endif]-->
-        <style>
-          @page {
-            size: A4 portrait;
-            margin: 2cm 2cm 2cm 2cm;
-          }
-          body {
-            font-family: '標楷體', 'DFKai-SB', '新細明體', 'PMingLiU', serif;
-            font-size: 12pt;
-            color: #000;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            margin-bottom: 12px;
-          }
-          th, td {
-            border: 1px solid #000;
-            padding: 8px 6px;
-            text-align: center;
-          }
-        </style>
-      </head>
-      <body>
-        <table style="border:none; margin-bottom: 10px;">
-          <tr style="border:none;">
-            <td style="border:none; text-align:left; vertical-align:middle;">
-              <h2 style="margin:0; font-family:'標楷體','DFKai-SB'; font-size:20pt; font-weight:bold; letter-spacing:1px;">
-                環境生物技術暨生物煉製實驗室請購單
-              </h2>
-            </td>
-            <td style="border:none; text-align:right; width:90px; vertical-align:middle;">
-              <img src="https://www.nsysu.edu.tw/var/file/0/1000/msys_1000_5682857_38476.png" width="75" height="75" alt="國立中山大學校徽" />
-            </td>
-          </tr>
-        </table>
-
-        <div style="text-align:left; font-size:12pt; margin-bottom:8px; font-weight:bold;">
-          申請日期：${requisitionDate}
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th style="width:28%; font-size:12pt;">產品名稱及規格</th>
-              <th style="width:12%; font-size:12pt;">單價</th>
-              <th style="width:10%; font-size:12pt;">數量</th>
-              <th style="width:12%; font-size:12pt;">小計</th>
-              <th style="width:20%; font-size:12pt;">用途</th>
-              <th style="width:18%; font-size:12pt;">備註(廠商)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${tableRowsHtml}
-            ${emptyRowsHtml}
-            <tr>
-              <td style="font-weight:bold; font-size:12pt; letter-spacing:4px;">總　計</td>
-              <td style="font-size:11pt; font-weight:bold;">${getCurrencyUnitLabel()}</td>
-              <td>&nbsp;</td>
-              <td style="font-size:12pt; font-weight:bold;">${primaryTotalAmount.toLocaleString()}</td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-            </tr>
-            <tr>
-              <td style="font-weight:bold; font-size:12pt;">老師核准</td>
-              <td style="font-size:12pt;">${primaryReq.status === "approved" || primaryReq.status === "purchased" ? professorReviewer : ""}</td>
-              <td style="font-weight:bold; font-size:12pt;">審核人</td>
-              <td style="font-size:12pt;">${assistantReviewer}</td>
-              <td style="font-weight:bold; font-size:12pt;">申請人</td>
-              <td style="font-size:12pt;">${applicant}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div style="margin-top:14px; font-size:10pt; line-height:1.7; font-family:'標楷體','DFKai-SB';">
-          1. 凡購買物品者，請先填寫請購單，經審核人與老師同意後，始可購買。單價或總價金額超過 3,000 元，需事先詢價三家廠商並徵得老師同意簽可後，始可購買。<br/>
-          2. 耗材類、藥品類由miao負責審核，其他類由老師直接審核。<br/>
-          3. 審核人需確定物品是否還有庫存、是否需要增購，也要參考過去購買紀錄，審核本次請購價錢與數量是否合理。
-        </div>
-      </body>
-      </html>
-    `;
-
-    const blob = new Blob([wordContent], { type: "application/msword;charset=utf-8" });
+    const blob = new Blob([mhtmlContent], { type: "application/msword;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -326,6 +254,9 @@ export default function ProcurementOfficialRequisition({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+
+  // Default export action (points to the robust native docx export)
+  const handleExportWord = handleExportWordDocx;
 
   // Export to CSV
   const handleExportCsv = () => {
@@ -409,13 +340,29 @@ export default function ProcurementOfficialRequisition({
 
             <button
               type="button"
-              onClick={handleExportWord}
-              className="px-2.5 sm:px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 shadow whitespace-nowrap cursor-pointer"
-              title="匯出為標準 Word (.doc) 格式"
+              disabled={isExportingWord}
+              onClick={handleExportWordDocx}
+              className="px-2.5 sm:px-3.5 py-1.5 bg-blue-700 hover:bg-blue-800 disabled:opacity-60 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 shadow whitespace-nowrap cursor-pointer"
+              title="匯出為標準 Word (.docx) 格式 (包含內嵌校徽，完美支援離線與各種 Word 版本)"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">匯出 Word (.doc)</span>
-              <span className="inline sm:hidden">Word</span>
+              {isExportingWord ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              <span className="hidden sm:inline">匯出 Word (.docx)</span>
+              <span className="inline sm:hidden">Word (.docx)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportWordLegacyDoc}
+              className="px-2 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium transition flex items-center gap-1 border border-slate-600 whitespace-nowrap cursor-pointer"
+              title="匯出為舊版相容 Word (.doc) 格式"
+            >
+              <FileCode className="w-3.5 h-3.5 text-slate-300" />
+              <span className="hidden md:inline">.doc 相容版</span>
+              <span className="inline md:hidden">.doc</span>
             </button>
 
             {isAdmin && (
@@ -578,7 +525,7 @@ export default function ProcurementOfficialRequisition({
                 1. 凡購買物品者，請先填寫請購單，經審核人與老師同意後，始可購買。單價或總價金額超過 3,000 元，需事先詢價三家廠商並徵得老師同意簽可後，始可購買。
               </p>
               <p>
-                2. 耗材類、藥品類由miao負責審核，其他類由老師直接審核。
+                2. 耗材類、藥品類由子瑩負責審核，其他類由老師直接審核。
               </p>
               <p>
                 3. 審核人需確定物品是否還有庫存、是否需要增購，也要參考過去購買紀錄，審核本次請購價錢與數量是否合理。
@@ -618,11 +565,26 @@ export default function ProcurementOfficialRequisition({
             </button>
             <button
               type="button"
-              onClick={handleExportWord}
-              className="px-3.5 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow"
+              disabled={isExportingWord}
+              onClick={handleExportWordDocx}
+              className="px-3.5 py-1.5 bg-blue-700 hover:bg-blue-800 disabled:opacity-60 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow cursor-pointer"
+              title="匯出為標準 Word (.docx) 格式 (內嵌校徽，離線與各版本Office完美開啟)"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>匯出 Word</span>
+              {isExportingWord ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              <span>匯出 Word (.docx)</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportWordLegacyDoc}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium transition flex items-center gap-1.5 border border-slate-700 cursor-pointer"
+              title="匯出為相容舊版 Word (.doc) 格式"
+            >
+              <FileCode className="w-3.5 h-3.5 text-slate-400" />
+              <span>.doc 相容版</span>
             </button>
             <button
               type="button"

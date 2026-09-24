@@ -317,7 +317,7 @@ export default function ExportDateRangeModal({
               <option value="ALL">全部審核狀態 (包含待審、已核准、已採購等所有案件)</option>
               <option value="approved">僅核准案件 (Approved - 待採購)</option>
               <option value="purchased">僅已採購完成入庫案件 (Purchased)</option>
-              <option value="pending_assistant">僅待 Admin/助理初審案件</option>
+              <option value="pending_assistant">僅待Admin初審案件</option>
               <option value="pending_professor">僅待教授終審案件</option>
               <option value="rejected">僅已退回案件 (Rejected)</option>
             </select>
