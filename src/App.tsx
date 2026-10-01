@@ -88,7 +88,8 @@ export default function App() {
 
   // Search queries
   const [searchQuery, setSearchQuery] = useState("");
-  const [calendarView, setCalendarView] = useState<"week" | "month" | "list">("week");
+  const [calendarView, setCalendarView] = useState<"month" | "week" | "list">("month");
+  const [scheduleCategory, setScheduleCategory] = useState<"all" | "meeting_competition" | "progress_journal">("all");
 
   // Mobile menu drawer
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -337,6 +338,18 @@ export default function App() {
   const isExchangeRole = (role?: string, roleEn?: string): boolean => {
     const combined = `${role || ""} ${roleEn || ""}`.toLowerCase();
     return combined.includes("交換") || combined.includes("exchange");
+  };
+
+  // Helper to get English label for role filter buttons
+  const getRoleEnglishLabel = (role: string): string => {
+    if (role.includes("博") || role.toLowerCase().includes("ph.d")) return "Ph.D. Students";
+    if (role.includes("碩") || role.toLowerCase().includes("master")) return "Master's Students";
+    if (role.includes("交換") || role.toLowerCase().includes("exchange")) return "Exchange Students";
+    if (role.includes("助理") || role.toLowerCase().includes("assistant")) return "Research Assistants";
+    if (role.includes("專題") || role.includes("大學") || role.toLowerCase().includes("undergrad")) return "Undergraduates";
+    if (role.includes("教") || role.includes("主持") || role.toLowerCase().includes("pi") || role.toLowerCase().includes("professor")) return "Principal Investigator";
+    if (role.includes("後") || role.toLowerCase().includes("postdoc")) return "Postdocs";
+    return role;
   };
 
   // Extract unique roles for directory filter (unifying all exchange students into a single '交換學生' tag)
@@ -744,7 +757,7 @@ export default function App() {
         <div 
           className="fixed bottom-0 left-0 right-0 h-4 z-30 pointer-events-auto cursor-pointer"
           onMouseEnter={() => setIsBottomNavVisibleOnWeb(true)}
-          title="移至此處浮現快速導覽列"
+          title="Hover here to show quick navigation bar"
         />
       )}
 
@@ -1151,7 +1164,7 @@ export default function App() {
                             : "bg-white text-slate-600 border border-[#e5e5e0] hover:bg-[#f8f8f5]"
                         }`}
                       >
-                        {role}
+                        {getRoleEnglishLabel(role)}
                       </button>
                     ))}
                   </div>
@@ -1430,7 +1443,15 @@ export default function App() {
             {/* NESTED VIEW C: Lab Duties & Responsibilities Overview */}
             {membersSubTab === "duties" && (
               <MemberDutiesOverview 
-                members={activeMembers} 
+                members={activeMembers}
+                onUpdateMembers={(updatedMembers) => {
+                  setActiveMembers(updatedMembers);
+                  try {
+                    localStorage.setItem(MEMBERS_STORAGE_KEY, JSON.stringify(updatedMembers));
+                  } catch (e) {
+                    console.error("Failed to save members to localStorage", e);
+                  }
+                }}
                 onOpenStudio={() => handleOpenStudio("members")} 
               />
             )}
@@ -1486,20 +1507,49 @@ export default function App() {
                 </p>
               </div>
               
-              {/* Calendar tab toggler with Week View, Month View, Agenda View */}
+              {/* Calendar tab toggler with Week View, Month View, Agenda View & Category Filter */}
               <div className="flex flex-wrap items-center gap-2">
+                {/* Category Filter */}
                 <div className="flex items-center bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm p-1 shadow-xs text-xs font-bold">
                   <button 
-                    onClick={() => setCalendarView("week")}
-                    className={`px-3.5 py-1.5 rounded-sm transition-all ${
-                      calendarView === "week" 
+                    type="button"
+                    onClick={() => setScheduleCategory("all")}
+                    className={`px-3 py-1.5 rounded-sm transition-all ${
+                      scheduleCategory === "all" 
                         ? "bg-[#1b4372] text-white shadow-xs" 
                         : "text-slate-700 hover:bg-[#fafafa]"
                     }`}
                   >
-                    Week View (週視圖)
+                    All Categories
                   </button>
                   <button 
+                    type="button"
+                    onClick={() => setScheduleCategory("meeting_competition")}
+                    className={`px-3 py-1.5 rounded-sm transition-all ${
+                      scheduleCategory === "meeting_competition" 
+                        ? "bg-purple-700 text-white shadow-xs" 
+                        : "text-slate-700 hover:bg-[#fafafa]"
+                    }`}
+                  >
+                    Meeting & Competition
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setScheduleCategory("progress_journal")}
+                    className={`px-3 py-1.5 rounded-sm transition-all ${
+                      scheduleCategory === "progress_journal" 
+                        ? "bg-[#1b4372] text-white shadow-xs" 
+                        : "text-slate-700 hover:bg-[#fafafa]"
+                    }`}
+                  >
+                    Progress & Journal
+                  </button>
+                </div>
+
+                {/* View Mode (Order: Month View, Week View, List View) */}
+                <div className="flex items-center bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm p-1 shadow-xs text-xs font-bold">
+                  <button 
+                    type="button"
                     onClick={() => setCalendarView("month")}
                     className={`px-3.5 py-1.5 rounded-sm transition-all ${
                       calendarView === "month" 
@@ -1507,9 +1557,21 @@ export default function App() {
                         : "text-slate-700 hover:bg-[#fafafa]"
                     }`}
                   >
-                    Month View (月視圖)
+                    Month View
                   </button>
                   <button 
+                    type="button"
+                    onClick={() => setCalendarView("week")}
+                    className={`px-3.5 py-1.5 rounded-sm transition-all ${
+                      calendarView === "week" 
+                        ? "bg-[#1b4372] text-white shadow-xs" 
+                        : "text-slate-700 hover:bg-[#fafafa]"
+                    }`}
+                  >
+                    Week View
+                  </button>
+                  <button 
+                    type="button"
                     onClick={() => setCalendarView("list")}
                     className={`px-3.5 py-1.5 rounded-sm transition-all ${
                       calendarView === "list" 
@@ -1517,7 +1579,7 @@ export default function App() {
                         : "text-slate-700 hover:bg-[#fafafa]"
                     }`}
                   >
-                    Agenda View (清單)
+                    List View
                   </button>
                 </div>
 
@@ -1543,8 +1605,12 @@ export default function App() {
                     <span className="text-[#555]">Progress Report</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#1b4372] block"></span>
+                    <span className="w-3 h-3 rounded-full bg-[#0B8043] block"></span>
                     <span className="text-[#555]">Journal Club</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-purple-600 block"></span>
+                    <span className="text-purple-900 font-bold">Meeting & Competition</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-blue-500 block"></span>
@@ -1553,15 +1619,25 @@ export default function App() {
                 </div>
 
                 <span className="text-[11px] text-slate-500 font-mono hidden md:inline">
-                  Current View: {calendarView === "week" ? "Week View (Less Crowded)" : calendarView === "month" ? "Month View" : "Agenda View"}
+                  Current View: {calendarView === "month" ? "Month View" : calendarView === "week" ? "Week View" : "List View"}
                 </span>
               </div>
 
               {/* Google Calendar Iframe Render */}
               <iframe 
-                src={`https://calendar.google.com/calendar/embed?mode=${
-                  calendarView === "week" ? "WEEK" : calendarView === "month" ? "MONTH" : "AGENDA"
-                }&showNav=1&showTitle=0&showTabs=0&src=ebblab115%40gmail.com&color=%23F09300&src=4576ed913eb7922183266a6a8b02606c412a539451ccc8ac5bbd427701d6fe97%40group.calendar.google.com&color=%230B8043&src=zh-tw.taiwan%23holiday%40group.v.calendar.google.com&color=%23039BE5&ctz=Asia%2FTaipei`}
+                src={
+                  scheduleCategory === "meeting_competition"
+                    ? `https://calendar.google.com/calendar/embed?mode=${
+                        calendarView === "month" ? "MONTH" : calendarView === "week" ? "WEEK" : "AGENDA"
+                      }&showNav=1&showTitle=0&showTabs=0&src=ee34f526fd8c89578b5c749bfea362c90dac8068b6eba20f8daf1008a2a8943b%40group.calendar.google.com&color=%238E24AA&ctz=Asia%2FTaipei`
+                    : scheduleCategory === "progress_journal"
+                    ? `https://calendar.google.com/calendar/embed?mode=${
+                        calendarView === "month" ? "MONTH" : calendarView === "week" ? "WEEK" : "AGENDA"
+                      }&showNav=1&showTitle=0&showTabs=0&src=ebblab115%40gmail.com&color=%23F09300&src=4576ed913eb7922183266a6a8b02606c412a539451ccc8ac5bbd427701d6fe97%40group.calendar.google.com&color=%230B8043&src=zh-tw.taiwan%23holiday%40group.v.calendar.google.com&color=%23039BE5&ctz=Asia%2FTaipei`
+                    : `https://calendar.google.com/calendar/embed?mode=${
+                        calendarView === "month" ? "MONTH" : calendarView === "week" ? "WEEK" : "AGENDA"
+                      }&showNav=1&showTitle=0&showTabs=0&src=ebblab115%40gmail.com&color=%23F09300&src=4576ed913eb7922183266a6a8b02606c412a539451ccc8ac5bbd427701d6fe97%40group.calendar.google.com&color=%230B8043&src=ee34f526fd8c89578b5c749bfea362c90dac8068b6eba20f8daf1008a2a8943b%40group.calendar.google.com&color=%238E24AA&src=zh-tw.taiwan%23holiday%40group.v.calendar.google.com&color=%23039BE5&ctz=Asia%2FTaipei`
+                }
                 style={{ border: 0 }} 
                 className="w-full flex-1 rounded-sm border border-[#e5e5e0]/60 block" 
                 frameBorder="0" 

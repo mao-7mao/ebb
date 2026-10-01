@@ -484,65 +484,65 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
       </div>
 
       {/* STUDIO TABS */}
-      <div className="flex items-center gap-2 border-b border-[#e5e5e0] pb-2 text-xs font-bold font-serif">
+      <div className="flex items-center gap-2 border-b border-[#e5e5e0] pb-2 text-xs font-bold font-serif overflow-x-auto">
         <button
           onClick={() => setActiveTab("members")}
-          className={`px-4 py-2 rounded-sm transition flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-sm transition flex items-center gap-2 whitespace-nowrap ${
             activeTab === "members"
               ? "bg-[#1b4372] text-white shadow-sm"
               : "bg-[#f8f8f5] text-slate-700 hover:bg-[#fafafa]"
           }`}
         >
           <UserPlus className="w-4 h-4" />
-          <span>成員與主題管理 ({membersList.length})</span>
+          <span>Members Management ({membersList.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab("meetings")}
-          className={`px-4 py-2 rounded-sm transition flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-sm transition flex items-center gap-2 whitespace-nowrap ${
             activeTab === "meetings"
               ? "bg-[#1b4372] text-white shadow-sm"
               : "bg-[#f8f8f5] text-slate-700 hover:bg-[#fafafa]"
           }`}
         >
           <CalendarPlus className="w-4 h-4" />
-          <span>會議與期刊導讀 ({meetingsList.length})</span>
+          <span>Meetings & Journal Club ({meetingsList.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab("progress")}
-          className={`px-4 py-2 rounded-sm transition flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-sm transition flex items-center gap-2 whitespace-nowrap ${
             activeTab === "progress"
               ? "bg-[#1b4372] text-white shadow-sm"
               : "bg-[#f8f8f5] text-slate-700 hover:bg-[#fafafa]"
           }`}
         >
           <TrendingUp className="w-4 h-4" />
-          <span>成員進度追蹤 (Progress Tracking)</span>
+          <span>Progress Tracking</span>
         </button>
 
         <button
           onClick={() => setActiveTab("instruments")}
-          className={`px-4 py-2 rounded-sm transition flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-sm transition flex items-center gap-2 whitespace-nowrap ${
             activeTab === "instruments"
               ? "bg-[#1b4372] text-white shadow-sm"
               : "bg-[#f8f8f5] text-slate-700 hover:bg-[#fafafa]"
           }`}
         >
           <Wrench className="w-4 h-4 text-amber-300" />
-          <span>儀器管理 (Instrument Management)</span>
+          <span>Instrument Management</span>
         </button>
 
         <button
           onClick={() => setActiveTab("export")}
-          className={`px-4 py-2 rounded-sm transition flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-sm transition flex items-center gap-2 whitespace-nowrap ${
             activeTab === "export"
               ? "bg-[#1b4372] text-white shadow-sm"
               : "bg-[#f8f8f5] text-slate-700 hover:bg-[#fafafa]"
           }`}
         >
           <Code className="w-4 h-4" />
-          <span>生成 labData.ts / JSON 匯出匯入</span>
+          <span>Data Export & Sync</span>
         </button>
       </div>
 
