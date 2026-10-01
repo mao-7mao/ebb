@@ -641,7 +641,7 @@ export async function generateRequisitionDocxBlob(options: RequisitionDocxOption
       spacing: { after: 60 },
       children: [
         new TextRun({
-          text: "2. 耗材類、藥品類由miao負責審核，其他類由老師直接審核。",
+          text: "2. 耗材類、藥品類由子瑩負責審核，其他類由老師直接審核。",
           font: "標楷體",
           size: 20
         })
@@ -842,7 +842,7 @@ export function generateRequisitionMhtmlContent(options: RequisitionDocxOptions)
           ${tableRowsHtml}
           ${emptyRowsHtml}
           <tr>
-            <td style="font-weight:bold; font-size:12pt; letter-spacing:4px;">總 計</td>
+            <td style="font-weight:bold; font-size:12pt; letter-spacing:4px;">總　計</td>
             <td style="font-size:11pt; font-weight:bold;">${currencyUnitLabel}</td>
             <td>&nbsp;</td>
             <td style="font-size:12pt; font-weight:bold;">${primaryTotalAmount.toLocaleString()}</td>
@@ -862,7 +862,7 @@ export function generateRequisitionMhtmlContent(options: RequisitionDocxOptions)
 
       <div style="margin-top:14px; font-size:10pt; line-height:1.7; font-family:'標楷體','DFKai-SB';">
         1. 凡購買物品者，請先填寫請購單，經審核人與老師同意後，始可購買。單價或總價金額超過 3,000 元，需事先詢價三家廠商並徵得老師同意簽可後，始可購買。<br/>
-        2. 耗材類、藥品類由miao負責審核，其他類由老師直接審核。<br/>
+        2. 耗材類、藥品類由子瑩負責審核，其他類由老師直接審核。<br/>
         3. 審核人需確定物品是否還有庫存、是否需要增購，也要參考過去購買紀錄，審核本次請購價錢與數量是否合理。
       </div>
     </body>

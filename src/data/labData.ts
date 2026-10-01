@@ -12,6 +12,7 @@ export interface Member {
   role_en?: string;
   research_topic: ResearchTopic;
   description: string;
+  duties?: string[];
 }
 
 export interface Meeting {
@@ -41,7 +42,11 @@ export const members: Member[] = [
         "液體地膜"
       ]
     },
-    "description": "研發創新的液態生物質地膜技術，旨在提升農作效益並減少傳統塑膠地膜污染。 / Devoted to developing innovative liquid biomass mulch film technology, aiming to enhance agricultural efficiency and mitigate conventional plastic film pollution."
+    "description": "研發創新的液態生物質地膜技術，旨在提升農作效益並減少傳統塑膠地膜污染。 / Devoted to developing innovative liquid biomass mulch film technology, aiming to enhance agricultural efficiency and mitigate conventional plastic film pollution.",
+    "duties": [
+      "耗材使用登記管理",
+      "能資源及環境管理系統-安全衛生含輻射防護檢查員（安全衛生防護自主檢查表、作業環境暨危險機械及設備調查）"
+    ]
   },
   {
     "id": "kalin",
@@ -57,7 +62,11 @@ export const members: Member[] = [
         "生物基聚酯"
       ]
     },
-    "description": "專注於開發具有高阻隔性能的新一代生物基聚酯材料（PEF），探索其製程優化與未來應用。 / Focusing on the development of next-generation bio-based polyester materials (PEF) with high-barrier properties, exploring process optimization and prospective applications."
+    "description": "專注於開發具有高阻隔性能的新一代生物基聚酯材料（PEF），探索其製程優化與未來應用。 / Focusing on the development of next-generation bio-based polyester materials (PEF) with high-barrier properties, exploring process optimization and prospective applications.",
+    "duties": [
+      "藥品、耗材、氣體詢價及訂購",
+      "實驗室其他事項支援"
+    ]
   },
   {
     "id": "kevin",
@@ -74,7 +83,11 @@ export const members: Member[] = [
         "低碳材料"
       ]
     },
-    "description": "研究利用高鈣貝殼廢棄物與農業生物質，調配無水泥之綠色低碳膠結材料，應用於海岸線生態修複。 / Researching the utilization of high-calcium shell waste and agricultural biomass to formulate cement-free green low-carbon binder materials for coastline ecological restoration."
+    "description": "研究利用高鈣貝殼廢棄物與農業生物質，調配無水泥之綠色低碳膠結材料，應用於海岸線生態修複。 / Researching the utilization of high-calcium shell waste and agricultural biomass to formulate cement-free green low-carbon binder materials for coastline ecological restoration.",
+    "duties": [
+      "藥品及 SDS 清單管理",
+      "能資源及環境管理系統-藥品管理員（化學品、毒化物申報）"
+    ]
   },
   {
     "id": "eko",
@@ -91,7 +104,8 @@ export const members: Member[] = [
         "異味處理"
       ]
     },
-    "description": "探索利用藻類生物質來製造環保塑膠的可能性，以及養豬場異味除臭與減碳之環境控制技術。 / Exploring the feasibility of utilizing algal biomass for eco-friendly bioplastics, alongside odor control and carbon mitigation systems for swine farm environments."
+    "description": "探索利用藻類生物質來製造環保塑膠的可能性，以及養豬場異味除臭與減碳之環境控制技術。 / Exploring the feasibility of utilizing algal biomass for eco-friendly bioplastics, alongside odor control and carbon mitigation systems for swine farm environments.",
+    "duties": []
   },
   {
     "id": "martin",
@@ -107,7 +121,12 @@ export const members: Member[] = [
         "油塑膠"
       ]
     },
-    "description": "負責優化生質材料的商品化製程，包含可降解種子名片的量產工藝以及生質油塑膠的配方開發。 / Responsible for optimizing the commercialization process of bio-based materials, including the mass production craft of biodegradable seed name cards and formulation development of bio-oil plastics."
+    "description": "負責優化生質材料的商品化製程，包含可降解種子名片的量產工藝以及生質油塑膠的配方開發。 / Responsible for optimizing the commercialization process of bio-based materials, including the mass production craft of biodegradable seed name cards and formulation development of bio-oil plastics.",
+    "duties": [
+      "藥瓶清理回收",
+      "魚缸管理",
+      "能資源及環境管理系統-藥品管理員（協助家御）、節約能源自主檢查員（負責填報實驗室之每週節約能源自主檢查）"
+    ]
   },
   {
     "id": "peter",
@@ -124,7 +143,13 @@ export const members: Member[] = [
         "低碳材料"
       ]
     },
-    "description": "協同進行低碳海岸材料之長期耐鹽霧與力學強度測試，評估其結構耐久性等。 / Collaborating on long-term salt spray resistance and mechanical strength testing of low-carbon coastal materials to evaluate structural durability in extreme offshore environments."
+    "description": "協同進行低碳海岸材料之長期耐鹽霧與力學強度測試，評估其結構耐久性等。 / Collaborating on long-term salt spray resistance and mechanical strength testing of low-carbon coastal materials to evaluate structural durability in extreme offshore environments.",
+    "duties": [
+      "廢液定期清理",
+      "整理設備儀器說明書、耗材型錄",
+      "魚缸管理",
+      "協助藥品管理員"
+    ]
   },
   {
     "id": "nina",
@@ -141,7 +166,12 @@ export const members: Member[] = [
         "Bamboo Liquefaction"
       ]
     },
-    "description": "專注於竹材的快速高溫化學液化技術，製作高附加價值的生質建材。 / Concentrating on the rapid high-temperature chemical liquefaction technology of bamboo to manufacture high-value-added bio-based building materials."
+    "description": "專注於竹材的快速高溫化學液化技術，製作高附加價值的生質建材。 / Concentrating on the rapid high-temperature chemical liquefaction technology of bamboo to manufacture high-value-added bio-based building materials.",
+    "duties": [
+      "會議紀錄、收集會議簡報並上傳至 NAS 及老師",
+      "魚缸管理",
+      "協助藥品管理員"
+    ]
   },
   {
     "id": "alpha",

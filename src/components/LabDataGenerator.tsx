@@ -25,14 +25,15 @@ import {
   AlertCircle,
   Plus,
   TrendingUp,
-  Lock
+  Lock,
+  Wrench
 } from "lucide-react";
-import CalendarLogModule from "./calendar/CalendarLogModule";
+import InstrumentManagementTab from "./studio/InstrumentManagementTab";
 
 interface LabDataGeneratorProps {
   initialMembers: Member[];
   initialMeetings: Meeting[];
-  initialTab?: "members" | "meetings" | "progress" | "calendar" | "export";
+  initialTab?: "members" | "meetings" | "progress" | "instruments" | "export";
   onApplyData?: (updatedMembers: Member[], updatedMeetings: Meeting[]) => void;
   onResetToDefault?: () => void;
   onLogout?: () => void;
@@ -46,7 +47,7 @@ export default function LabDataGenerator({
   onResetToDefault,
   onLogout
 }: LabDataGeneratorProps) {
-  const [activeTab, setActiveTab] = useState<"members" | "meetings" | "progress" | "calendar" | "export">(initialTab || "members");
+  const [activeTab, setActiveTab] = useState<"members" | "meetings" | "progress" | "instruments" | "export">(initialTab || "members");
 
   useEffect(() => {
     if (initialTab) {
@@ -92,6 +93,7 @@ export default function LabDataGenerator({
     description: ""
   });
   const [keywordsInput, setKeywordsInput] = useState("");
+  const [dutiesInput, setDutiesInput] = useState("");
 
   // Form state for Editing/Adding Meeting
   const [editingMeetingId, setEditingMeetingId] = useState<string | null>(null);
@@ -140,6 +142,7 @@ export default function LabDataGenerator({
     setEditingMemberId(member.id);
     setMemberForm(member);
     setKeywordsInput(member.research_topic.keywords.join(", "));
+    setDutiesInput(member.duties && member.duties.length > 0 ? member.duties.join("\n") : "");
   };
 
   const handleResetMemberForm = () => {
@@ -155,9 +158,11 @@ export default function LabDataGenerator({
         title_en: "",
         keywords: []
       },
-      description: ""
+      description: "",
+      duties: []
     });
     setKeywordsInput("");
+    setDutiesInput("");
   };
 
   const handleSaveMember = (e: React.FormEvent) => {
@@ -172,13 +177,19 @@ export default function LabDataGenerator({
       .map((k) => k.trim())
       .filter(Boolean);
 
+    const cleanedDuties = dutiesInput
+      .split(/\r?\n/)
+      .map((line) => line.replace(/^[•\-\*]\s*/, "").trim())
+      .filter(Boolean);
+
     const updatedMember: Member = {
       ...memberForm,
       id: memberForm.id || memberForm.name_en.toLowerCase().replace(/\s+/g, ""),
       research_topic: {
         ...memberForm.research_topic,
         keywords: cleanedKeywords
-      }
+      },
+      duties: cleanedDuties
     };
 
     let updatedList: Member[];
@@ -303,6 +314,7 @@ export interface Member {
   role_en?: string;
   research_topic: ResearchTopic;
   description: string;
+  duties?: string[];
 }
 
 export interface Meeting {
@@ -373,12 +385,18 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
       const parsed = JSON.parse(jsonImportText);
       if (parsed.members && Array.isArray(parsed.members) && parsed.meetings && Array.isArray(parsed.meetings)) {
         const sortedMeetings = sortMeetingsByDateDesc(parsed.meetings);
-        setMembersList(parsed.members);
+        const normalizedMembers: Member[] = parsed.members.map((m: any) => ({
+          ...m,
+          duties: Array.isArray(m.duties)
+            ? m.duties
+            : (typeof m.duties === "string" ? m.duties.split(/\r?\n|•|,/).map((s: string) => s.trim()).filter(Boolean) : (m.duties || []))
+        }));
+        setMembersList(normalizedMembers);
         setMeetingsList(sortedMeetings);
         if (onApplyData) {
-          onApplyData(parsed.members, sortedMeetings);
+          onApplyData(normalizedMembers, sortedMeetings);
         }
-        setImportSuccess(`成功匯入 ${parsed.members.length} 位成員與 ${parsed.meetings.length} 筆會議紀錄！`);
+        setImportSuccess(`成功匯入 ${normalizedMembers.length} 位成員與 ${parsed.meetings.length} 筆會議紀錄！`);
         setJsonImportText("");
       } else {
         setImportError("JSON 格式不合規：需包含 'members' 與 'meetings' 陣列欄位。");
@@ -504,15 +522,15 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
         </button>
 
         <button
-          onClick={() => setActiveTab("calendar")}
+          onClick={() => setActiveTab("instruments")}
           className={`px-4 py-2 rounded-sm transition flex items-center gap-2 ${
-            activeTab === "calendar"
+            activeTab === "instruments"
               ? "bg-[#1b4372] text-white shadow-sm"
               : "bg-[#f8f8f5] text-slate-700 hover:bg-[#fafafa]"
           }`}
         >
-          <Calendar className="w-4 h-4 text-amber-300" />
-          <span>月曆事項與週報 (Work Log & PPTX)</span>
+          <Wrench className="w-4 h-4 text-amber-300" />
+          <span>儀器管理 (Instrument Management)</span>
         </button>
 
         <button
@@ -704,11 +722,28 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
               <div>
                 <label className="block font-bold text-slate-700 mb-1">研究說明與雙語描述</label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={memberForm.description}
                   onChange={(e) => setMemberForm({ ...memberForm, description: e.target.value })}
                   placeholder="中文說明 / English description"
                   className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372]"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700">人員負責項目 / 職責 (每行一項)</label>
+                  <span className="text-[10px] text-slate-400 font-mono">支援換行、逗號或•符號</span>
+                </div>
+                <textarea
+                  rows={3}
+                  value={dutiesInput}
+                  onChange={(e) => setDutiesInput(e.target.value)}
+                  placeholder={`每行填寫一項負責事項，例如：
+會議紀錄、收集會議簡報並上傳至 NAS 及老師
+魚缸管理
+協助藥品管理員`}
+                  className="w-full bg-white border border-[#e5e5e0] rounded-sm py-1.5 px-2.5 text-xs focus:outline-none focus:border-[#1b4372] font-sans"
                 />
               </div>
 
@@ -782,6 +817,17 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
                         </span>
                       ))}
                     </div>
+
+                    {m.duties && m.duties.length > 0 && (
+                      <div className="pt-1.5 text-[10px] text-slate-600 flex items-center gap-1.5">
+                        <span className="font-bold text-[#1b4372] bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded text-[9.5px]">
+                          負責 {m.duties.length} 項
+                        </span>
+                        <span className="truncate text-slate-500 max-w-[280px]">
+                          {m.duties.join("、")}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Member Action Controls */}
@@ -1146,10 +1192,10 @@ export const meetings: Meeting[] = ${JSON.stringify(meetingsList, null, 2)};
         </div>
       )}
 
-      {/* ==================== TAB 4: CALENDAR WORK LOG & WEEKLY REPORT (ADMIN ONLY) ==================== */}
-      {activeTab === "calendar" && (
+      {/* ==================== TAB 4: INSTRUMENT MANAGEMENT (ADMIN) ==================== */}
+      {activeTab === "instruments" && (
         <div className="pt-2 animate-in fade-in duration-200">
-          <CalendarLogModule />
+          <InstrumentManagementTab />
         </div>
       )}
     </div>

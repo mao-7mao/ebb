@@ -39,9 +39,12 @@ export const EXTERNAL_LINKS = {
   progressReportSheetUrl: "https://script.google.com/macros/s/AKfycbyQQqXMNJilRNxQjpmewgIZ3ENpHCRflRqFMyK5J2Q1L3aNrRY6USUDWkF4TPmVyFZo/exec",
 
   // ==========================================================================
-  // 3. 儀器預約系統 (Instrument Reservation)
+  // 3. 儀器預約與管理系統 (Instrument Reservation & Management)
   // ==========================================================================
   instrumentReservationScriptUrl: "https://script.google.com/macros/s/AKfycbwA4Z3wVMCMni_Uf0sMI4PsGXIETXuvZdf9_e_se-c5cY0T9PFXYH1ppphJgnhcAvRcHQ/exec",
+  
+  // Data Studio 儀器管理後台
+  instrumentManagementScriptUrl: "https://script.google.com/macros/s/AKfycbz0Hm3Bywfy_--0DLGuLNTia37rN7v3vGCp2HJKwa97v8W0_Eg0KVVFiXvXwjXqdstW/exec",
 
   // ==========================================================================
   // 4. 化學品與耗材清冊 (Chemical & Reagent Inventory)

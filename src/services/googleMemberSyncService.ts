@@ -180,11 +180,21 @@ export async function fetchMemberDataFromGoogle(webhookUrl?: string): Promise<Go
           }))
         : [];
 
+      const rawMembers = json.data.members || [];
+      const normalizedMembers: Member[] = Array.isArray(rawMembers)
+        ? rawMembers.map((m: any) => ({
+            ...m,
+            duties: Array.isArray(m.duties)
+              ? m.duties
+              : (typeof m.duties === "string" ? m.duties.split(/\r?\n|•|,/).map((s: string) => s.trim()).filter(Boolean) : (m.duties || []))
+          }))
+        : [];
+
       return {
         success: true,
         timestamp: json.timestamp || new Date().toISOString(),
         data: {
-          members: Array.isArray(json.data.members) ? json.data.members : [],
+          members: normalizedMembers,
           externalMembers: Array.isArray(json.data.externalMembers) ? json.data.externalMembers : [],
           meetings: Array.isArray(json.data.meetings) ? json.data.meetings : [],
           progressEntries: normalizedEntries

@@ -48,8 +48,10 @@ import {
   ExternalLink,
   HardDrive,
   ShoppingCart,
-  TrendingUp
+  TrendingUp,
+  ClipboardList
 } from "lucide-react";
+import MemberDutiesOverview from "./components/members/MemberDutiesOverview";
 
 export type NavPage = 
   | "home" 
@@ -67,7 +69,7 @@ export default function App() {
   // Page Routing State (Multi-page nested view architecture)
   const [currentPage, setCurrentPage] = useState<NavPage>(() => {
     const hash = window.location.hash.replace("#/", "").replace("#", "");
-    if (hash === "progress" || hash === "calendar-log" || hash === "weekly-report") {
+    if (hash === "progress" || hash === "instruments-manage") {
       return "studio";
     }
     const validPages: NavPage[] = ["home", "members", "instruments", "chemicals", "procurement", "card-generator", "schedule", "archive", "studio", "contact"];
@@ -75,7 +77,11 @@ export default function App() {
   });
 
   // Nested Tab State for Members & Topics page
-  const [membersSubTab, setMembersSubTab] = useState<"directory" | "topics">("directory");
+  const [membersSubTab, setMembersSubTab] = useState<"directory" | "topics" | "duties">(() => {
+    const hash = window.location.hash.replace("#/", "").replace("#", "");
+    if (hash === "duties" || hash === "member-duties") return "duties";
+    return "directory";
+  });
 
   // Member role filter for directory
   const [memberRoleFilter, setMemberRoleFilter] = useState<string>("ALL");
@@ -97,7 +103,20 @@ export default function App() {
       const saved = localStorage.getItem(MEMBERS_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Merge default duties if missing from cached items
+          return parsed.map((m: Member) => {
+            if (!m.duties || m.duties.length === 0) {
+              const defaultMember = initialMembersData.find(
+                (initM) => initM.id === m.id || initM.name_zh === m.name_zh
+              );
+              if (defaultMember?.duties && defaultMember.duties.length > 0) {
+                return { ...m, duties: defaultMember.duties };
+              }
+            }
+            return m;
+          });
+        }
       }
     } catch (e) {
       console.warn("Failed to load saved members from localStorage", e);
@@ -122,7 +141,7 @@ export default function App() {
   const [isSiteUnlocked, setIsSiteUnlocked] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [studioInitialTab, setStudioInitialTab] = useState<"members" | "meetings" | "progress" | "calendar" | "export">("members");
+  const [studioInitialTab, setStudioInitialTab] = useState<"members" | "meetings" | "progress" | "instruments" | "export">("members");
 
   // Collapse status for meeting archive groups
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
@@ -211,13 +230,18 @@ export default function App() {
         }
         return;
       }
-      if (hash === "calendar-log" || hash === "weekly-report") {
-        setStudioInitialTab("calendar");
+      if (hash === "instruments-manage") {
+        setStudioInitialTab("instruments");
         if (!checkIsAuthenticated()) {
           setIsAuthModalOpen(true);
         } else {
           setCurrentPage("studio");
         }
+        return;
+      }
+      if (hash === "duties" || hash === "member-duties") {
+        setCurrentPage("members");
+        setMembersSubTab("duties");
         return;
       }
       const validPages: NavPage[] = ["home", "members", "instruments", "chemicals", "procurement", "card-generator", "schedule", "archive", "studio", "contact"];
@@ -266,7 +290,7 @@ export default function App() {
   }, []);
 
   // Navigate helper with smooth window scroll to top
-  const navigateTo = (page: NavPage, subTab?: "directory" | "topics") => {
+  const navigateTo = (page: NavPage, subTab?: "directory" | "topics" | "duties") => {
     setCurrentPage(page);
     window.location.hash = `#/${page}`;
     if (subTab) {
@@ -276,7 +300,7 @@ export default function App() {
     setIsMobileMenuOpen(false);
   };
 
-  const handleOpenStudio = (tab: "members" | "meetings" | "progress" | "calendar" | "export" = "members") => {
+  const handleOpenStudio = (tab: "members" | "meetings" | "progress" | "instruments" | "export" = "members") => {
     setStudioInitialTab(tab);
     if (!isAuthenticated) {
       setIsAuthModalOpen(true);
@@ -526,7 +550,7 @@ export default function App() {
                 }`}
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span>Procurement System </span>
+                <span>Procurement System</span>
               </button>
 
               <button 
@@ -546,7 +570,7 @@ export default function App() {
                 }`}
               >
                 <Calendar className="w-4 h-4 text-[#1b4372]" />
-                <span>Meeting Schedule </span>
+                <span>Meeting Schedule</span>
               </button>
 
               <button 
@@ -562,7 +586,7 @@ export default function App() {
               <button 
                 onClick={() => { handleOpenStudio("members"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center justify-between p-3 rounded-sm text-sm font-semibold transition ${
-                  currentPage === "studio" && studioInitialTab !== "progress" && studioInitialTab !== "calendar" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
+                  currentPage === "studio" && studioInitialTab !== "progress" && studioInitialTab !== "instruments" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -645,7 +669,7 @@ export default function App() {
                 }`}
               >
                 <ShoppingCart className="w-4 h-4 text-[#1b4372]" /> 
-                <span>Procurement</span>
+                <span>Procurement System</span>
               </button>
 
               <button 
@@ -858,13 +882,13 @@ export default function App() {
                     <span>Chemicals</span>
                   </button>
 
-                  {/* 4. Procurement System (請購系統快捷按鈕) */}
+                  {/* 4. Procurement System */}
                   <button 
                     onClick={() => navigateTo("procurement")}
                     className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#fdfdfc] text-[#1a1a1a] border border-[#e5e5e0] hover:border-[#1b4372] rounded-sm text-xs sm:text-sm font-bold uppercase tracking-wider shadow-xs hover:bg-[#f8f8f5] active:scale-95 transition-all group"
                   >
                     <ShoppingCart className="w-4 h-4 text-[#1b4372] group-hover:scale-110 transition-transform" />
-                    <span>請購系統 (Procurement)</span>
+                    <span>Procurement</span>
                   </button>
 
                   {/* 5. Meeting Schedule */}
@@ -1037,12 +1061,12 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Nested Sub-Tab Switcher (English) */}
-              <div className="flex items-center bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm p-1 shadow-xs text-xs font-bold">
+              {/* Nested Sub-Tab Switcher */}
+              <div className="flex flex-wrap items-center bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm p-1 shadow-xs text-xs font-bold gap-1">
                 <button
                   type="button"
                   onClick={() => setMembersSubTab("directory")}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-sm transition ${
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-sm transition ${
                     membersSubTab === "directory"
                       ? "bg-[#1b4372] text-white shadow-xs"
                       : "text-slate-600 hover:text-slate-900"
@@ -1054,7 +1078,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setMembersSubTab("topics")}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-sm transition ${
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-sm transition ${
                     membersSubTab === "topics"
                       ? "bg-[#1b4372] text-white shadow-xs"
                       : "text-slate-600 hover:text-slate-900"
@@ -1063,11 +1087,23 @@ export default function App() {
                   <Network className="w-3.5 h-3.5" />
                   <span>Topic Overview</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setMembersSubTab("duties")}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-sm transition ${
+                    membersSubTab === "duties"
+                      ? "bg-[#1b4372] text-white shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <ClipboardList className="w-3.5 h-3.5" />
+                  <span>Lab Duties</span>
+                </button>
               </div>
             </div>
 
             {/* NESTED VIEW A: Member Directory */}
-            {membersSubTab === "directory" ? (
+            {membersSubTab === "directory" && (
               <div className="space-y-6">
                 {/* Search & Role Filter Toolbar */}
                 <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
@@ -1181,6 +1217,24 @@ export default function App() {
                                 </p>
                               )}
                             </div>
+
+                            {/* Assigned Lab Duties & Responsibilities */}
+                            {m.duties && m.duties.length > 0 && (
+                              <div className="pt-3 border-t border-dashed border-[#e5e5e0] space-y-1.5">
+                                <span className="text-[#1b4372] font-bold text-[9px] tracking-wider uppercase flex items-center gap-1 font-serif">
+                                  <ClipboardList className="w-3 h-3 text-[#1b4372]" />
+                                  負責項目 (Duties)
+                                </span>
+                                <ul className="text-xs text-slate-700 space-y-1 pl-0.5">
+                                  {m.duties.map((duty, dIdx) => (
+                                    <li key={dIdx} className="flex items-start gap-1.5 text-[11px] leading-relaxed">
+                                      <span className="text-[#8d734a] font-bold select-none shrink-0">•</span>
+                                      <span>{duty}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -1205,8 +1259,10 @@ export default function App() {
                   )}
                 </div>
               </div>
-            ) : (
-              /* NESTED VIEW B: Topic Bento Network */
+            )}
+
+            {/* NESTED VIEW B: Topic Bento Network */}
+            {membersSubTab === "topics" && (
               <div className="space-y-8">
                 <div className="relative w-full rounded-sm border border-[#e5e5e0] bg-[#fdfdfc] p-6 md:p-10 overflow-hidden shadow-xs">
                   <div className="absolute w-72 h-72 bg-[#1b4372]/5 rounded-full blur-3xl -top-10 -left-10 pointer-events-none"></div>
@@ -1370,6 +1426,14 @@ export default function App() {
                 </div>
               </div>
             )}
+
+            {/* NESTED VIEW C: Lab Duties & Responsibilities Overview */}
+            {membersSubTab === "duties" && (
+              <MemberDutiesOverview 
+                members={activeMembers} 
+                onOpenStudio={() => handleOpenStudio("members")} 
+              />
+            )}
           </div>
         )}
 
@@ -1425,17 +1489,6 @@ export default function App() {
               {/* Calendar tab toggler with Week View, Month View, Agenda View */}
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center bg-[#f8f8f5] border border-[#e5e5e0] rounded-sm p-1 shadow-xs text-xs font-bold">
-
-                  <button 
-                    onClick={() => setCalendarView("month")}
-                    className={`px-3.5 py-1.5 rounded-sm transition-all ${
-                      calendarView === "month" 
-                        ? "bg-[#1b4372] text-white shadow-xs" 
-                        : "text-slate-700 hover:bg-[#fafafa]"
-                    }`}
-                  >
-                    Month View (月視圖)
-                  </button>
                   <button 
                     onClick={() => setCalendarView("week")}
                     className={`px-3.5 py-1.5 rounded-sm transition-all ${
@@ -1445,6 +1498,16 @@ export default function App() {
                     }`}
                   >
                     Week View (週視圖)
+                  </button>
+                  <button 
+                    onClick={() => setCalendarView("month")}
+                    className={`px-3.5 py-1.5 rounded-sm transition-all ${
+                      calendarView === "month" 
+                        ? "bg-[#1b4372] text-white shadow-xs" 
+                        : "text-slate-700 hover:bg-[#fafafa]"
+                    }`}
+                  >
+                    Month View (月視圖)
                   </button>
                   <button 
                     onClick={() => setCalendarView("list")}
@@ -1761,7 +1824,7 @@ export default function App() {
             </div>
 
             <footer className="pt-8 border-t border-[#e5e5e0] flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-[#888] font-mono">
-              <p>Copyright © 2026 EBB Lab. All Rights Reserved.</p>
+              <p>Copyright © Miao. All rights reserved.</p>
               <p className="flex items-center gap-1">
                 <Code className="w-3.5 h-3.5 text-[#1b4372]" />
                 <span>Environmental Biotechnology & Biorefinery</span>
