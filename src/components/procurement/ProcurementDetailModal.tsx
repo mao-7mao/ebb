@@ -24,11 +24,14 @@ import {
   AlertTriangle,
   Receipt,
   Copy,
+  Check,
   ExternalLink,
   ShieldCheck,
   Send,
-  Edit3
+  Edit3,
+  Download
 } from "lucide-react";
+import { generateOrderChemicalTxt, exportChemicalsToCsv } from "../../utils/chemicalExportUtils";
 
 interface ProcurementDetailModalProps {
   item: ProcurementItem;
@@ -81,6 +84,16 @@ export default function ProcurementDetailModal({
   // Email preview modal state (Admin only)
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
+
+  // Chemical inventory TXT copy state
+  const [hasCopiedChemicalTxt, setHasCopiedChemicalTxt] = useState(false);
+
+  const handleCopyChemicalInventoryTxt = () => {
+    const txt = generateOrderChemicalTxt(item);
+    navigator.clipboard.writeText(txt);
+    setHasCopiedChemicalTxt(true);
+    setTimeout(() => setHasCopiedChemicalTxt(false), 2500);
+  };
 
   // Keyboard shortcut: Press Escape to close modal
   useEffect(() => {
@@ -136,6 +149,7 @@ export default function ProcurementDetailModal({
 
   const statusBadge = getStatusBadge(item.status);
   const requiresProfReview = item.requiresProfessorApproval || item.notifyProfessor || item.estimatedTotalPrice >= 3000;
+  const hasChemicals = item.category === "chemical" || (item.items && item.items.some(sub => sub.category === "chemical"));
 
   // Assistant / Admin Review Handler
   const handleAssistantAction = (approved: boolean) => {
@@ -279,6 +293,42 @@ export default function ProcurementDetailModal({
               <span className="hidden sm:inline">{lang === "zh" ? "合規請購單" : "Official Form"}</span>
               <span className="inline sm:hidden">{lang === "zh" ? "請購單" : "Form"}</span>
             </button>
+
+            {/* One-Click Copy Chemical Inventory TXT & CSV (Available to ALL users when order contains chemicals) */}
+            {hasChemicals && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleCopyChemicalInventoryTxt}
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold rounded-sm transition shadow-2xs cursor-pointer whitespace-nowrap active:scale-95"
+                  title="一鍵複製本訂單之藥品入庫 TXT 資訊，方便傳送給藥品管理同學（陳采翎）入庫登記"
+                >
+                  {hasCopiedChemicalTxt ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-700">{lang === "zh" ? "✓ 已複製入庫 TXT！" : "✓ Copied TXT!"}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-emerald-700" />
+                      <span className="hidden sm:inline">{lang === "zh" ? "一鍵複製藥品入庫 TXT" : "Copy Chemical TXT"}</span>
+                      <span className="inline sm:hidden">{lang === "zh" ? "複製入庫" : "Copy TXT"}</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => exportChemicalsToCsv([item], item.requisitionNo, "Chemical_Order")}
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-sm transition shadow-2xs cursor-pointer whitespace-nowrap active:scale-95"
+                  title="導出本單藥品 CSV (含 CAS、中英文品名、純度與價格，UTF-8 BOM)"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{lang === "zh" ? "導出藥品 CSV" : "Export CSV"}</span>
+                  <span className="inline sm:hidden">CSV</span>
+                </button>
+              </>
+            )}
 
             {/* Edit Requisition Details (Admin Only: 修正請購人書寫錯誤) */}
             {isUserAdmin && (
@@ -437,6 +487,67 @@ export default function ProcurementDetailModal({
             </div>
           </div>
 
+          {/* Dedicated Chemical Inventory Inbound Card (Open to ALL users) */}
+          {hasChemicals && (
+            <div className="p-3.5 bg-emerald-50/80 border border-emerald-300 rounded-sm space-y-2.5 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-emerald-700 text-white rounded-xs">
+                    <FlaskConical className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-emerald-950 text-xs font-serif">
+                        藥品入庫專區 (Chemical Inventory Inbound)
+                      </span>
+                      <span className="text-[10px] bg-emerald-200 text-emerald-900 font-bold px-1.5 py-0.2 rounded border border-emerald-300">
+                        非管理員亦可導出與複製
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-800 mt-0.5">
+                      本單包含化學藥品，可一鍵複製文字或導出 CSV，供藥品管理同學（陳采翎）入庫核對與櫃位建檔
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleCopyChemicalInventoryTxt}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                    title="一鍵複製本訂單之藥品入庫 TXT 資訊"
+                  >
+                    {hasCopiedChemicalTxt ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>✓ 已複製入庫 TXT</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-emerald-700" />
+                        <span>一鍵複製入庫 TXT</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => exportChemicalsToCsv([item], item.requisitionNo, "Chemical_Order")}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                    title="導出本單藥品 CSV (UTF-8 BOM，Excel 不亂碼)"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>導出本單 CSV</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-emerald-800 leading-relaxed bg-white/70 p-2 rounded border border-emerald-200">
+                💡 <strong>入庫規範提示：</strong>請購階段已載入 CAS 號碼、純度規格與價格。到貨後請核對外觀並於瓶身張貼 GHS 標籤與實驗室專屬入庫編號，再登錄至化學品清冊 (Chemical Inventory) 指定櫃位。
+              </div>
+            </div>
+          )}
+
           {/* Detailed Requisition Line Items Breakdown */}
           {(() => {
             const displayItemsList: ProcurementItemLine[] = (item.items && item.items.length > 0)
@@ -508,8 +619,13 @@ export default function ProcurementDetailModal({
                             <td className="p-2">
                               <div className="font-bold text-slate-900">{line.itemName}</div>
                               <div className="text-[11px] text-slate-500 flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
+                                {line.chemicalDetails?.chemicalEnglishName && (
+                                  <div className="font-mono text-slate-500 italic text-[11px] w-full">
+                                    {line.chemicalDetails.chemicalEnglishName}
+                                  </div>
+                                )}
                                 {line.chemicalDetails?.casNumber && (
-                                  <span className="font-mono text-emerald-800 bg-emerald-50 px-1 rounded">
+                                  <span className="font-mono text-emerald-800 bg-emerald-50 px-1 rounded font-bold">
                                     CAS: {line.chemicalDetails.casNumber}
                                   </span>
                                 )}
@@ -518,6 +634,9 @@ export default function ProcurementDetailModal({
                                 )}
                                 {line.chemicalDetails?.packageSize && (
                                   <span>包裝: {line.chemicalDetails.packageSize}</span>
+                                )}
+                                {line.chemicalDetails?.brand && (
+                                  <span>廠牌: {line.chemicalDetails.brand}</span>
                                 )}
                                 {line.consumableDetails?.specModel && (
                                   <span>規格: {line.consumableDetails.specModel}</span>

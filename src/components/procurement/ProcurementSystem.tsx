@@ -20,6 +20,8 @@ import ProcurementOfficialRequisition from "./ProcurementOfficialRequisition";
 import RolePasswordModal from "./RolePasswordModal";
 import ApprovedPurchasingTracker from "./ApprovedPurchasingTracker";
 import ExportDateRangeModal from "./ExportDateRangeModal";
+import ExportChemicalCsvModal from "./ExportChemicalCsvModal";
+import { generateOrderChemicalTxt } from "../../utils/chemicalExportUtils";
 import { 
   fetchItemsFromGasWebhook, 
   fetchItemsFromGoogleSheetCsv, 
@@ -50,6 +52,8 @@ import {
   Receipt,
   Download,
   Copy,
+  Check,
+  FlaskConical,
   ChevronRight,
   Eye,
   Trash2,
@@ -293,6 +297,8 @@ export default function ProcurementSystem() {
   const [selectedItem, setSelectedItem] = useState<ProcurementItem | null>(null);
   const [printItems, setPrintItems] = useState<ProcurementItem[] | null>(null);
   const [isExportDateRangeModalOpen, setIsExportDateRangeModalOpen] = useState(false);
+  const [isChemicalExportModalOpen, setIsChemicalExportModalOpen] = useState(false);
+  const [quickCopiedId, setQuickCopiedId] = useState<string | null>(null);
 
   // Bulk selection for batch export / print
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -899,51 +905,65 @@ export default function ProcurementSystem() {
             />
           </div>
 
-          {/* Batch Actions & Order Exports (Admin Only) */}
-          {isAdmin && (
-            <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-              {selectedIds.size > 0 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setPrintItems(items.filter(i => selectedIds.has(i.id)))}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#1b4372] text-white rounded-sm text-xs font-bold transition shadow-2xs active:scale-95"
-                  >
-                    <Printer className="w-3 h-3" />
-                    <span>{lang === "zh" ? `批次列印 (${selectedIds.size})` : `Print (${selectedIds.size})`}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleExportCSV(items.filter(i => selectedIds.has(i.id)))}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs"
-                  >
-                    <FileSpreadsheet className="w-3 h-3 text-emerald-700" />
-                    <span>{lang === "zh" ? `匯出 (${selectedIds.size})` : `Export (${selectedIds.size})`}</span>
-                  </button>
-                </>
-              )}
+          {/* Action Buttons: Chemical Export (Open to ALL) + Admin Batch Actions */}
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+            {/* 藥品入庫專用 CSV/TXT 導出 (非管理員亦可導出指定範圍藥品) */}
+            <button
+              type="button"
+              onClick={() => setIsChemicalExportModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-sm text-xs font-bold transition shadow-2xs active:scale-95 cursor-pointer"
+              title="藥品入庫專用：非管理員亦可依自訂時間範圍匯出藥品 CSV 或一鍵複製入庫 TXT 供管理學生建檔"
+            >
+              <FlaskConical className="w-3.5 h-3.5 text-emerald-200" />
+              <span>{lang === "zh" ? "藥品入庫 CSV / TXT" : "Chemical CSV / TXT"}</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setIsExportDateRangeModalOpen(true)}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-2xs active:scale-95"
-                title="依時間段或自訂日期範圍匯出 Excel (CSV)"
-              >
-                <FileSpreadsheet className="w-3 h-3 text-amber-300" />
-                <span>{lang === "zh" ? "依時間段匯出" : "Export by Date"}</span>
-              </button>
+            {/* Batch Actions & Order Exports (Admin Only) */}
+            {isAdmin && (
+              <>
+                {selectedIds.size > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setPrintItems(items.filter(i => selectedIds.has(i.id)))}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#1b4372] text-white rounded-sm text-xs font-bold transition shadow-2xs active:scale-95 cursor-pointer"
+                    >
+                      <Printer className="w-3 h-3" />
+                      <span>{lang === "zh" ? `批次列印 (${selectedIds.size})` : `Print (${selectedIds.size})`}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleExportCSV(items.filter(i => selectedIds.has(i.id)))}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs cursor-pointer"
+                    >
+                      <FileSpreadsheet className="w-3 h-3 text-emerald-700" />
+                      <span>{lang === "zh" ? `匯出 (${selectedIds.size})` : `Export (${selectedIds.size})`}</span>
+                    </button>
+                  </>
+                )}
 
-              <button
-                type="button"
-                onClick={() => handleExportCSV(filteredItems)}
-                className="inline-flex items-center gap-1 px-2 py-1.5 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs"
-                title="匯出目前列表篩選後之資料"
-              >
-                <Download className="w-3 h-3 text-slate-600" />
-                <span className="hidden sm:inline">{lang === "zh" ? "匯出視圖" : "Export View"}</span>
-              </button>
-            </div>
-          )}
+                <button
+                  type="button"
+                  onClick={() => setIsExportDateRangeModalOpen(true)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-2xs active:scale-95 cursor-pointer"
+                  title="依時間段或自訂日期範圍匯出 Excel (CSV)"
+                >
+                  <FileSpreadsheet className="w-3 h-3 text-amber-300" />
+                  <span>{lang === "zh" ? "依時間段匯出" : "Export by Date"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleExportCSV(filteredItems)}
+                  className="inline-flex items-center gap-1 px-2 py-1.5 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs cursor-pointer"
+                  title="匯出目前列表篩選後之資料"
+                >
+                  <Download className="w-3 h-3 text-slate-600" />
+                  <span className="hidden sm:inline">{lang === "zh" ? "匯出視圖" : "Export View"}</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Filter Pills & Date Range */}
@@ -1151,6 +1171,33 @@ export default function ProcurementSystem() {
                         <span>查看</span>
                       </button>
 
+                      {/* Quick Copy Chemical Inventory TXT for chemicals */}
+                      {(item.category === "chemical" || (item.items && item.items.some(sub => sub.category === "chemical"))) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const txt = generateOrderChemicalTxt(item);
+                            navigator.clipboard.writeText(txt);
+                            setQuickCopiedId(item.id);
+                            setTimeout(() => setQuickCopiedId(null), 2000);
+                          }}
+                          className="inline-flex items-center gap-0.5 py-1 px-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-sm text-[11px] font-bold transition shadow-2xs cursor-pointer"
+                          title="一鍵複製藥品入庫 TXT 資訊供管理學生建檔"
+                        >
+                          {quickCopiedId === item.id ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span className="text-[10px]">已複製</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 text-emerald-700" />
+                              <span className="text-[10px]">入庫TXT</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => setPrintItems([item])}
@@ -1293,15 +1340,37 @@ export default function ProcurementSystem() {
                           <button
                             type="button"
                             onClick={() => setSelectedItem(item)}
-                            className="p-1 hover:bg-slate-100 text-slate-600 rounded-sm"
+                            className="p-1 hover:bg-slate-100 text-slate-600 rounded-sm cursor-pointer"
                             title="查看詳細與審核"
                           >
                             <Eye className="w-3.5 h-3.5 text-[#1b4372]" />
                           </button>
+
+                          {/* Quick copy chemical inventory TXT for chemicals */}
+                          {(item.category === "chemical" || (item.items && item.items.some(sub => sub.category === "chemical"))) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const txt = generateOrderChemicalTxt(item);
+                                navigator.clipboard.writeText(txt);
+                                setQuickCopiedId(item.id);
+                                setTimeout(() => setQuickCopiedId(null), 2000);
+                              }}
+                              className="p-1 hover:bg-emerald-50 text-emerald-700 rounded-sm transition cursor-pointer"
+                              title="一鍵複製藥品入庫 TXT 資訊"
+                            >
+                              {quickCopiedId === item.id ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5 text-emerald-700" />
+                              )}
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => setPrintItems([item])}
-                            className="p-1 hover:bg-slate-100 text-slate-600 rounded-sm"
+                            className="p-1 hover:bg-slate-100 text-slate-600 rounded-sm cursor-pointer"
                             title="產生合規請購單"
                           >
                             <Printer className="w-3.5 h-3.5 text-[#8d734a]" />
@@ -1445,6 +1514,14 @@ export default function ProcurementSystem() {
   <ExportDateRangeModal
     isOpen={isExportDateRangeModalOpen}
     onClose={() => setIsExportDateRangeModalOpen(false)}
+    items={items}
+    lang={lang}
+  />
+
+  {/* Chemical Inventory Export Modal (Open to all members / non-admins) */}
+  <ExportChemicalCsvModal
+    isOpen={isChemicalExportModalOpen}
+    onClose={() => setIsChemicalExportModalOpen(false)}
     items={items}
     lang={lang}
   />

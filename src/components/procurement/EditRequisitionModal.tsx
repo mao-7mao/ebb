@@ -154,7 +154,11 @@ export default function EditRequisitionModal({
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (!line.itemName.trim()) {
-        setValidationError(lang === "zh" ? `第 ${i + 1} 項之「品名規格」不能為空！` : `Item line #${i + 1} name is required.`);
+        setValidationError(
+          lang === "zh" 
+            ? `第 ${i + 1} 項之「${line.category === "chemical" ? "中文化學品名" : "品名規格"}」不能為空！` 
+            : `Item line #${i + 1} name is required.`
+        );
         return;
       }
       if (line.quantity <= 0) {
@@ -164,6 +168,26 @@ export default function EditRequisitionModal({
       if (line.estimatedUnitPrice < 0) {
         setValidationError(lang === "zh" ? `第 ${i + 1} 項之單價不可為負數！` : `Item line #${i + 1} unit price cannot be negative.`);
         return;
+      }
+
+      // Strict validation for chemicals (mandatory for inventory intake)
+      if (line.category === "chemical") {
+        if (!line.chemicalDetails?.casNumber?.trim()) {
+          setValidationError(lang === "zh" ? `第 ${i + 1} 項為藥品，因實驗室入庫建檔需要，請填寫「CAS 號碼」！` : `Item line #${i + 1} CAS number is required.`);
+          return;
+        }
+        if (!line.chemicalDetails?.chemicalEnglishName?.trim()) {
+          setValidationError(lang === "zh" ? `第 ${i + 1} 項為藥品，請填寫「英文化學品名 (English Name)」！` : `Item line #${i + 1} English chemical name is required.`);
+          return;
+        }
+        if (!line.chemicalDetails?.purity?.trim()) {
+          setValidationError(lang === "zh" ? `第 ${i + 1} 項為藥品，請填寫「純度 (如 98%, AR, HPLC Grade)」以利入庫檢驗！` : `Item line #${i + 1} purity is required.`);
+          return;
+        }
+        if (!line.estimatedUnitPrice || line.estimatedUnitPrice <= 0) {
+          setValidationError(lang === "zh" ? `第 ${i + 1} 項為藥品，預估單價/價格必須大於 0！` : `Item line #${i + 1} unit price must be > 0.`);
+          return;
+        }
       }
     }
 
@@ -413,15 +437,15 @@ export default function EditRequisitionModal({
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                       {/* Item Name */}
                       <div className="sm:col-span-6">
-                        <label className="block text-slate-600 font-medium mb-1">
-                          品名與型號規格 *
+                        <label className="block text-slate-700 font-bold mb-1">
+                          {line.category === "chemical" ? "中文化學品名 (Chinese Chemical Name) *" : "品名與型號規格 *"}
                         </label>
                         <input
                           type="text"
                           required
                           value={line.itemName}
                           onChange={(e) => handleUpdateLine(idx, { itemName: e.target.value })}
-                          placeholder="例如: 氯化鈉 NaCl 500g 99.5% 或 保鮮盒 1000ml"
+                          placeholder={line.category === "chemical" ? "例如: 1,1,2,2-四氯乙烷 或 氯化膽鹼" : "例如: 0.22 μm PTFE 針筒過濾膜 或 燒杯 250ml"}
                           className="w-full bg-white border border-[#e5e5e0] rounded-sm p-1.5 text-xs focus:border-[#1b4372] focus:outline-none font-medium"
                         />
                       </div>
@@ -532,40 +556,61 @@ export default function EditRequisitionModal({
 
                     {/* Category-specific specs */}
                     {line.category === "chemical" && (
-                      <div className="p-2.5 bg-emerald-50/50 border border-emerald-200 rounded-sm space-y-2">
-                        <div className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
-                          <FlaskConical className="w-3 h-3 text-emerald-700" />
-                          <span>化學藥品特定欄位 (Chemical Specs)</span>
+                      <div className="p-2.5 bg-emerald-50/60 border border-emerald-300 rounded-sm space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-[11px] font-bold text-emerald-950 flex items-center gap-1">
+                            <FlaskConical className="w-3.5 h-3.5 text-emerald-700" />
+                            <span>化學藥品入庫專屬欄位 (Chemical Inventory Mandatory Fields)</span>
+                          </div>
+                          <span className="text-[10px] text-emerald-800 bg-emerald-100 font-bold px-1.5 py-0.2 rounded border border-emerald-300">
+                            入庫必填
+                          </span>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                           <div>
-                            <label className="text-[10px] text-slate-500 block mb-0.5">CAS 號碼</label>
+                            <label className="text-[10px] text-slate-700 font-bold block mb-0.5">CAS 號碼 *</label>
                             <input
                               type="text"
+                              required
                               value={line.chemicalDetails?.casNumber || ""}
                               onChange={(e) => handleUpdateLine(idx, {
                                 chemicalDetails: { ...line.chemicalDetails, casNumber: e.target.value }
                               })}
-                              placeholder="例如: 67-48-1"
+                              placeholder="例如: 79-34-5"
+                              className="w-full bg-white border border-emerald-300 rounded p-1 text-xs font-mono font-bold text-emerald-950"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-slate-700 font-bold block mb-0.5">英文品名 (English Name) *</label>
+                            <input
+                              type="text"
+                              required
+                              value={line.chemicalDetails?.chemicalEnglishName || ""}
+                              onChange={(e) => handleUpdateLine(idx, {
+                                chemicalDetails: { ...line.chemicalDetails, chemicalEnglishName: e.target.value }
+                              })}
+                              placeholder="e.g. Tetrachloroethane"
                               className="w-full bg-white border border-emerald-300 rounded p-1 text-xs font-mono"
                             />
                           </div>
 
                           <div>
-                            <label className="text-[10px] text-slate-500 block mb-0.5">純度 (Purity)</label>
+                            <label className="text-[10px] text-slate-700 font-bold block mb-0.5">純度 (Purity) *</label>
                             <input
                               type="text"
+                              required
                               value={line.chemicalDetails?.purity || ""}
                               onChange={(e) => handleUpdateLine(idx, {
                                 chemicalDetails: { ...line.chemicalDetails, purity: e.target.value }
                               })}
-                              placeholder=">=99% AR"
+                              placeholder="例如: 98% / AR / HPLC"
                               className="w-full bg-white border border-emerald-300 rounded p-1 text-xs"
                             />
                           </div>
 
                           <div>
-                            <label className="text-[10px] text-slate-500 block mb-0.5">包裝容量 (Package Size)</label>
+                            <label className="text-[10px] text-slate-600 font-medium block mb-0.5">包裝容量 (Package Size)</label>
                             <input
                               type="text"
                               value={line.chemicalDetails?.packageSize || ""}
@@ -578,14 +623,14 @@ export default function EditRequisitionModal({
                           </div>
 
                           <div>
-                            <label className="text-[10px] text-slate-500 block mb-0.5">廠牌 (Brand)</label>
+                            <label className="text-[10px] text-slate-600 font-medium block mb-0.5">原廠廠牌 (Brand)</label>
                             <input
                               type="text"
                               value={line.chemicalDetails?.brand || ""}
                               onChange={(e) => handleUpdateLine(idx, {
                                 chemicalDetails: { ...line.chemicalDetails, brand: e.target.value }
                               })}
-                              placeholder="Sigma / Acros / 景明"
+                              placeholder="Sigma / Acros / 友和"
                               className="w-full bg-white border border-emerald-300 rounded p-1 text-xs"
                             />
                           </div>

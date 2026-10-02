@@ -1,7 +1,7 @@
 import { HistoricalCatalogItem, ProcurementItem } from "../types/procurement";
 
 export const DEFAULT_VENDORS = [
-  "",
+  "Sigma-Aldrich (Merck)",
   "Echo Chemical 景明化工",
   "Acros Organics (賽默飛 Thermo Fisher)",
   "科研市集",

@@ -296,7 +296,11 @@ export default function ProcurementFormModal({
       const item = items[i];
       if (!item.itemName.trim()) {
         setActiveItemIndex(i);
-        alert(lang === "zh" ? `請輸入品項 #${i + 1} 之品名！` : `Please enter item name for item #${i + 1}!`);
+        alert(
+          lang === "zh" 
+            ? `請輸入品項 #${i + 1} 之「${item.category === "chemical" ? "中文化學品名" : "品名"}」！` 
+            : `Please enter item name for item #${i + 1}!`
+        );
         return;
       }
       if (item.quantity <= 0) {
@@ -304,6 +308,31 @@ export default function ProcurementFormModal({
         alert(lang === "zh" ? `品項 #${i + 1} 數量必須大於 0！` : `Quantity for item #${i + 1} must be > 0!`);
         return;
       }
+
+      // Specific mandatory fields for chemical category (required for laboratory inventory registration)
+      if (item.category === "chemical") {
+        if (!item.chemicalEnglishName?.trim()) {
+          setActiveItemIndex(i);
+          alert(lang === "zh" ? `品項 #${i + 1} 為藥品，因入庫管理需要，請務必填寫「英文化學品名 (English Name)」！` : `Please enter English chemical name for item #${i + 1}!`);
+          return;
+        }
+        if (!item.casNumber?.trim()) {
+          setActiveItemIndex(i);
+          alert(lang === "zh" ? `品項 #${i + 1} 為藥品，因實驗室入庫建檔需要，請務必填寫「CAS Number」！` : `Please enter CAS Number for item #${i + 1}!`);
+          return;
+        }
+        if (!item.purity?.trim()) {
+          setActiveItemIndex(i);
+          alert(lang === "zh" ? `品項 #${i + 1} 為藥品，請填寫「純度 (如 98%, AR, HPLC Grade)」以利入庫檢驗！` : `Please enter chemical purity for item #${i + 1}!`);
+          return;
+        }
+        if (!item.estimatedUnitPrice || item.estimatedUnitPrice <= 0) {
+          setActiveItemIndex(i);
+          alert(lang === "zh" ? `品項 #${i + 1} 預估單價必須大於 0！` : `Unit price for item #${i + 1} must be > 0!`);
+          return;
+        }
+      }
+
       // If platform is custom, remember it
       if (item.platform && !availablePlatforms.includes(item.platform.trim())) {
         handleAddCustomPlatform(item.platform);
@@ -589,7 +618,9 @@ export default function ProcurementFormModal({
               <div className="relative">
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-slate-700 font-bold">
-                    {lang === "zh" ? `品項名稱 (支援歷史紀錄自動帶入) *` : `Item Name (With History Autocomplete) *`}
+                    {currentItem.category === "chemical" 
+                      ? (lang === "zh" ? "中文化學品名 (Chinese Chemical Name) * [入庫必填]" : "Chinese Chemical Name *")
+                      : (lang === "zh" ? `品項名稱 (支援歷史紀錄自動帶入) *` : `Item Name (With History Autocomplete) *`)}
                   </label>
                   <span className="text-[10px] text-[#8d734a] flex items-center gap-1 font-mono">
                     <History className="w-3 h-3" />
@@ -608,7 +639,7 @@ export default function ProcurementFormModal({
                   onFocus={() => setShowSuggestions(true)}
                   placeholder={
                     currentItem.category === "chemical" 
-                      ? "例如: 氯化膽鹼 (Choline Chloride) "
+                      ? "例如: 1,1,2,2-四氯乙烷 或 氯化膽鹼"
                       : currentItem.category === "equipment" 
                         ? "例如: 數位控溫磁石攪拌器 / 旋轉黏度計"
                         : "例如: 0.22 μm PTFE 針筒過濾膜 "
@@ -749,62 +780,87 @@ export default function ProcurementFormModal({
 
               {/* Dynamic Category Specific Details */}
               {currentItem.category === "chemical" && (
-                <div className="p-4 bg-emerald-50/40 border border-emerald-200 rounded-sm space-y-3 animate-fadeIn">
-                  <div className="font-bold text-emerald-950 flex items-center gap-1.5">
-                    <FlaskConical className="w-4 h-4 text-emerald-700" />
-                    <span>{lang === "zh" ? "藥品化學品專屬欄位 (Chemical Details)" : "Chemical Specific Details"}</span>
+                <div className="p-4 bg-emerald-50/60 border border-emerald-300 rounded-sm space-y-3.5 animate-fadeIn">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-emerald-200 pb-2 gap-1.5">
+                    <div className="font-bold text-emerald-950 flex items-center gap-1.5">
+                      <FlaskConical className="w-4 h-4 text-emerald-700" />
+                      <span>{lang === "zh" ? "藥品入庫專屬欄位 (Chemical Inventory Details)" : "Chemical Inventory Details"}</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
+                      {lang === "zh" ? "入庫建檔必備資訊" : "Mandatory for Inventory"}
+                    </span>
                   </div>
+
+                  <div className="text-[11px] text-emerald-900 bg-white/80 p-2 rounded border border-emerald-200 leading-relaxed">
+                    💡 <strong>化學品入庫規範：</strong>依校內環安及實驗室規範，藥品送達後須建檔於化學品清冊並張貼標籤，請務必填妥 <strong>CAS 號碼、中英文名稱、純度、包裝規格與價格</strong>。
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">CAS Number</label>
+                      <label className="block text-slate-700 font-bold mb-1">
+                        CAS Number <span className="text-rose-600">*</span>
+                      </label>
                       <input
                         type="text"
+                        required
                         value={currentItem.casNumber}
                         onChange={(e) => handleUpdateActiveItem("casNumber", e.target.value)}
-                        placeholder="e.g. 67-48-1"
-                        className="w-full bg-white border border-[#e5e5e0] rounded-sm p-1.5 text-xs font-mono"
+                        placeholder="例如: 79-34-5 或 67-48-1"
+                        className="w-full bg-white border border-emerald-300 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 rounded-sm p-2 text-xs font-mono font-bold text-emerald-950"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">純度 (Purity / Grade)</label>
+                      <label className="block text-slate-700 font-bold mb-1">
+                        {lang === "zh" ? "純度等級 (Purity) *" : "Purity / Grade *"}
+                      </label>
                       <input
                         type="text"
+                        required
                         value={currentItem.purity}
                         onChange={(e) => handleUpdateActiveItem("purity", e.target.value)}
-                        placeholder="e.g. >=99% AR / HPLC Grade"
-                        className="w-full bg-white border border-[#e5e5e0] rounded-sm p-1.5 text-xs"
+                        placeholder="例如: 98% / AR級 / HPLC"
+                        className="w-full bg-white border border-emerald-300 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 rounded-sm p-2 text-xs font-medium"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">包裝規格 (Package Size)</label>
+                      <label className="block text-slate-700 font-bold mb-1">
+                        {lang === "zh" ? "包裝規格 (Package Size) *" : "Package Size *"}
+                      </label>
                       <input
                         type="text"
+                        required
                         value={currentItem.packageSize}
                         onChange={(e) => handleUpdateActiveItem("packageSize", e.target.value)}
-                        placeholder="e.g. 500 g / 4 L / 25 kg"
-                        className="w-full bg-white border border-[#e5e5e0] rounded-sm p-1.5 text-xs"
+                        placeholder="例如: 500g / 1L / 25kg"
+                        className="w-full bg-white border border-emerald-300 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 rounded-sm p-2 text-xs font-medium"
                       />
                     </div>
                   </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">英文化學品名 (English Name)</label>
+                      <label className="block text-slate-700 font-bold mb-1">
+                        {lang === "zh" ? "英文化學品名 (English Name) *" : "English Chemical Name *"}
+                      </label>
                       <input
                         type="text"
+                        required
                         value={currentItem.chemicalEnglishName}
                         onChange={(e) => handleUpdateActiveItem("chemicalEnglishName", e.target.value)}
-                        placeholder="e.g. Choline Chloride, ReagentPlus"
-                        className="w-full bg-white border border-[#e5e5e0] rounded-sm p-1.5 text-xs font-mono"
+                        placeholder="例如: 1,1,2,2-Tetrachloroethane"
+                        className="w-full bg-white border border-emerald-300 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 rounded-sm p-2 text-xs font-mono font-medium text-slate-800"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">原廠廠牌 (Brand)</label>
+                      <label className="block text-slate-700 font-bold mb-1">
+                        {lang === "zh" ? "原廠廠牌 / 廠商 (Brand)" : "Brand / Manufacturer"}
+                      </label>
                       <input
                         type="text"
                         value={currentItem.brand}
                         onChange={(e) => handleUpdateActiveItem("brand", e.target.value)}
-                        placeholder="e.g. Sigma-Aldrich / TCI / Acros"
-                        className="w-full bg-white border border-[#e5e5e0] rounded-sm p-1.5 text-xs"
+                        placeholder="例如: 友和 / Sigma-Aldrich / TCI / Acros"
+                        className="w-full bg-white border border-emerald-300 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 rounded-sm p-2 text-xs font-medium"
                       />
                     </div>
                   </div>
@@ -927,7 +983,7 @@ export default function ProcurementFormModal({
                   <div className="flex items-center justify-between">
                     <label className="text-slate-700 font-bold flex items-center gap-1">
                       <Coins className="w-3.5 h-3.5 text-amber-700" />
-                      <span>{lang === "zh" ? "單價幣種 (Currency) *" : "Currency & Unit Price *"}</span>
+                      <span>{lang === "zh" ? "單價幣種與價格 (Price) *" : "Currency & Unit Price *"}</span>
                     </label>
                     {/* Currency selector buttons */}
                     <div className="inline-flex rounded-sm border border-slate-200 p-0.5 bg-slate-100">

@@ -31,8 +31,12 @@ import {
   X,
   Building,
   Tag,
-  Check
+  Check,
+  Copy,
+  FlaskConical
 } from "lucide-react";
+import ExportChemicalCsvModal from "./ExportChemicalCsvModal";
+import { generateOrderChemicalTxt } from "../../utils/chemicalExportUtils";
 
 export interface FlatApprovedItem {
   key: string; // unique identifier: requisitionId + lineId
@@ -114,6 +118,8 @@ export default function ApprovedPurchasingTracker({
 
   // Print Checklist View Modal
   const [isPrintChecklistOpen, setIsPrintChecklistOpen] = useState(false);
+  const [isChemicalExportModalOpen, setIsChemicalExportModalOpen] = useState(false);
+  const [quickCopiedKey, setQuickCopiedKey] = useState<string | null>(null);
 
   // 1. Flatten all approved items from requisitions
   const allApprovedEntries: FlatApprovedItem[] = useMemo(() => {
@@ -650,73 +656,86 @@ export default function ApprovedPurchasingTracker({
             )}
           </div>
 
-          {/* Action buttons (Admin only for bulk export & batch progress) */}
-          {isUserAdmin && (
-            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-              {/* Batch actions if items selected */}
-              {selectedKeys.size > 0 && (
-                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-sm border border-slate-300">
-                  <span className="text-[10px] font-bold text-slate-700 px-1">
-                    選 {selectedKeys.size} 項：
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleBatchUpdateProgress("student_purchased")}
-                    className="px-1.5 py-0.5 bg-emerald-700 text-white rounded text-[10px] font-bold hover:bg-emerald-800"
-                    title="標記為請購人已購買"
-                  >
-                    🛒 請購人已買
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBatchUpdateProgress("professor_purchased", "Prof. K.L. Chang")}
-                    className="px-1.5 py-0.5 bg-purple-700 text-white rounded text-[10px] font-bold hover:bg-purple-800"
-                    title="標記為教授已購買"
-                  >
-                    🎓 教授已買
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBatchUpdateProgress("postpayment", "貨到後付款 (免先付)")}
-                    className="px-1.5 py-0.5 bg-blue-700 text-white rounded text-[10px] font-bold hover:bg-blue-800"
-                    title="標記為貨到後付款"
-                  >
-                    🏢 貨到付款
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBatchUpdateProgress("delivered")}
-                    className="px-1.5 py-0.5 bg-teal-700 text-white rounded text-[10px] font-bold hover:bg-teal-800"
-                    title="標記為已到貨"
-                  >
-                    📦 已到貨
-                  </button>
-                </div>
-              )}
+          {/* Action buttons: Chemical CSV/TXT (Open to ALL members) + Admin bulk actions */}
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+            {/* 藥品入庫專用 CSV/TXT 導出 (非管理員亦可導出指定範圍藥品) */}
+            <button
+              type="button"
+              onClick={() => setIsChemicalExportModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-sm text-xs font-bold transition shadow-2xs active:scale-95 cursor-pointer"
+              title="藥品入庫專用：非管理員亦可依自訂時間範圍匯出藥品 CSV 或一鍵複製入庫 TXT 供管理學生建檔"
+            >
+              <FlaskConical className="w-3.5 h-3.5 text-emerald-200" />
+              <span>{lang === "zh" ? "藥品入庫 CSV / TXT" : "Chemical CSV / TXT"}</span>
+            </button>
 
-              {/* Print shopping list */}
-              <button
-                type="button"
-                onClick={() => setIsPrintChecklistOpen(true)}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs"
-                title="列印或檢視採購採買清單"
-              >
-                <Printer className="w-3.5 h-3.5 text-[#8d734a]" />
-                <span>待購清單 ({filteredEntries.filter(e => e.purchaseProgress === "pending_purchase").length})</span>
-              </button>
+            {isUserAdmin && (
+              <>
+                {/* Batch actions if items selected */}
+                {selectedKeys.size > 0 && (
+                  <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-sm border border-slate-300">
+                    <span className="text-[10px] font-bold text-slate-700 px-1">
+                      選 {selectedKeys.size} 項：
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleBatchUpdateProgress("student_purchased")}
+                      className="px-1.5 py-0.5 bg-emerald-700 text-white rounded text-[10px] font-bold hover:bg-emerald-800"
+                      title="標記為請購人已購買"
+                    >
+                      🛒 請購人已買
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleBatchUpdateProgress("professor_purchased", "Prof. K.L. Chang")}
+                      className="px-1.5 py-0.5 bg-purple-700 text-white rounded text-[10px] font-bold hover:bg-purple-800"
+                      title="標記為教授已購買"
+                    >
+                      🎓 教授已買
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleBatchUpdateProgress("postpayment", "貨到後付款 (免先付)")}
+                      className="px-1.5 py-0.5 bg-blue-700 text-white rounded text-[10px] font-bold hover:bg-blue-800"
+                      title="標記為貨到後付款"
+                    >
+                      🏢 貨到付款
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleBatchUpdateProgress("delivered")}
+                      className="px-1.5 py-0.5 bg-teal-700 text-white rounded text-[10px] font-bold hover:bg-teal-800"
+                      title="標記為已到貨"
+                    >
+                      📦 已到貨
+                    </button>
+                  </div>
+                )}
 
-              {/* Export CSV */}
-              <button
-                type="button"
-                onClick={handleExportApprovedCSV}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-2xs"
-                title={`依目前選定之時間範圍匯出 ${filteredEntries.length} 筆資料為 Excel (CSV)`}
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>匯出 CSV ({filteredEntries.length})</span>
-              </button>
-            </div>
-          )}
+                {/* Print shopping list */}
+                <button
+                  type="button"
+                  onClick={() => setIsPrintChecklistOpen(true)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs"
+                  title="列印或檢視採購採買清單"
+                >
+                  <Printer className="w-3.5 h-3.5 text-[#8d734a]" />
+                  <span>待購清單 ({filteredEntries.filter(e => e.purchaseProgress === "pending_purchase").length})</span>
+                </button>
+
+                {/* Export CSV */}
+                <button
+                  type="button"
+                  onClick={handleExportApprovedCSV}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-2xs"
+                  title={`依目前選定之時間範圍匯出 ${filteredEntries.length} 筆資料為 Excel (CSV)`}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>匯出 CSV ({filteredEntries.length})</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Date Filtering Section with Range Picker */}
@@ -953,6 +972,33 @@ export default function ApprovedPurchasingTracker({
                       <ExternalLink className="w-2.5 h-2.5 text-[#1b4372]" />
                       <span>原單</span>
                     </button>
+
+                    {/* Quick copy chemical inventory TXT for chemicals */}
+                    {entry.category === "chemical" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const txt = generateOrderChemicalTxt(entry.originalRequisition);
+                          navigator.clipboard.writeText(txt);
+                          setQuickCopiedKey(entry.key);
+                          setTimeout(() => setQuickCopiedKey(null), 2000);
+                        }}
+                        className="py-0.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-sm text-[11px] font-bold inline-flex items-center gap-0.5 shadow-2xs shrink-0 cursor-pointer"
+                        title="一鍵複製本訂單之藥品入庫 TXT 資訊，方便傳送給藥品管理同學（陳采翎）入庫登記"
+                      >
+                        {quickCopiedKey === entry.key ? (
+                          <>
+                            <Check className="w-2.5 h-2.5 text-emerald-600" />
+                            <span>已複製</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-2.5 h-2.5 text-emerald-700" />
+                            <span>入庫TXT</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -1143,6 +1189,28 @@ export default function ApprovedPurchasingTracker({
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
+
+                          {/* Quick copy chemical inventory TXT for chemicals */}
+                          {entry.category === "chemical" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const txt = generateOrderChemicalTxt(entry.originalRequisition);
+                                navigator.clipboard.writeText(txt);
+                                setQuickCopiedKey(entry.key);
+                                setTimeout(() => setQuickCopiedKey(null), 2000);
+                              }}
+                              className="p-1 hover:bg-emerald-50 text-emerald-700 rounded-sm transition cursor-pointer"
+                              title="一鍵複製藥品入庫 TXT 資訊供管理學生建檔"
+                            >
+                              {quickCopiedKey === entry.key ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5 text-emerald-700" />
+                              )}
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => onViewRequisitionDetail(entry.originalRequisition)}
@@ -1487,6 +1555,14 @@ export default function ApprovedPurchasingTracker({
           </div>
         </div>
       )}
+
+      {/* Chemical Inventory CSV Export & TXT Modal (Open to all members) */}
+      <ExportChemicalCsvModal
+        isOpen={isChemicalExportModalOpen}
+        onClose={() => setIsChemicalExportModalOpen(false)}
+        items={items}
+        lang={lang}
+      />
 
     </div>
   );
