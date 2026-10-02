@@ -183,12 +183,12 @@ export default function ExportChemicalCsvModal({
                   {lang === "zh" ? "藥品入庫專用 CSV 匯出與 TXT 同步" : "Chemical Inventory CSV Export & TXT Sync"}
                 </h3>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-900 text-emerald-200 border border-emerald-600">
-                  {lang === "zh" ? "免管理員權限 · 全員可用" : "Open Access / All Members"}
+                  {lang === "zh" ? "免管理員權限 " : "Open Access "}
                 </span>
               </div>
               <p className="text-[11px] text-emerald-100 font-sans mt-0.5">
                 {lang === "zh" 
-                  ? "專為化學品管理學生（陳采翎）設計：自訂時間段篩選藥品、產生標準入庫 CSV 或一鍵複製登記文字" 
+                  ? "自訂時間段篩選藥品、產生標準入庫 CSV 或一鍵複製登記文字" 
                   : "Filter chemical items by custom date range, export standard CSV, or copy inventory TXT"}
               </p>
             </div>
@@ -208,7 +208,7 @@ export default function ExportChemicalCsvModal({
           <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-sm flex items-start gap-2.5 text-emerald-900">
             <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
             <div className="leading-relaxed">
-              <strong>入庫管理說明：</strong>請購階段已強制填寫 CAS 號碼、中英文品名、純度與規格。您可於下方選擇時間範圍（如本月或指定日期），匯出含有完整 CAS 與規格之 CSV，或一鍵複製 TXT 傳送給藥品管理同學（陳采翎）進行實體驗收與櫃位建檔。
+              <strong>入庫管理說明：</strong>請購階段已填寫 CAS 號碼、中英文品名、純度與規格。可於下方選擇時間範圍（如本月或指定日期），匯出含有完整 CAS 與規格之 CSV，或一鍵複製 TXT 傳送給藥品管理同學進行實體驗收與櫃位建檔。
             </div>
           </div>
 
@@ -398,7 +398,7 @@ export default function ExportChemicalCsvModal({
         <div className="px-5 py-3.5 bg-[#f8f8f5] border-t border-[#e5e5e0] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-600 block"></span>
-            <span>匯出檔案含 UTF-8 BOM，Excel 開啟不亂碼；可直接匯入化學品清冊系統。</span>
+            <span>匯出檔案含 UTF-8 BOM</span>
           </div>
 
           <div className="flex items-center gap-2">

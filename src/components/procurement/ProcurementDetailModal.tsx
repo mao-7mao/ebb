@@ -301,7 +301,7 @@ export default function ProcurementDetailModal({
                   type="button"
                   onClick={handleCopyChemicalInventoryTxt}
                   className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold rounded-sm transition shadow-2xs cursor-pointer whitespace-nowrap active:scale-95"
-                  title="一鍵複製本訂單之藥品入庫 TXT 資訊，方便傳送給藥品管理同學（陳采翎）入庫登記"
+                  title="一鍵複製本訂單之藥品入庫 TXT 資訊，方便傳送給藥品管理同學入庫登記"
                 >
                   {hasCopiedChemicalTxt ? (
                     <>
@@ -505,7 +505,7 @@ export default function ProcurementDetailModal({
                       </span>
                     </div>
                     <p className="text-[11px] text-emerald-800 mt-0.5">
-                      本單包含化學藥品，可一鍵複製文字或導出 CSV，供藥品管理同學（陳采翎）入庫核對與櫃位建檔
+                      本單包含化學藥品，可一鍵複製文字或導出 CSV，供藥品管理同學入庫核對與櫃位建檔
                     </p>
                   </div>
                 </div>

@@ -984,7 +984,7 @@ export default function ApprovedPurchasingTracker({
                           setTimeout(() => setQuickCopiedKey(null), 2000);
                         }}
                         className="py-0.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-sm text-[11px] font-bold inline-flex items-center gap-0.5 shadow-2xs shrink-0 cursor-pointer"
-                        title="一鍵複製本訂單之藥品入庫 TXT 資訊，方便傳送給藥品管理同學（陳采翎）入庫登記"
+                        title="一鍵複製本訂單之藥品入庫 TXT 資訊，方便傳送給藥品管理同學入庫登記"
                       >
                         {quickCopiedKey === entry.key ? (
                           <>
