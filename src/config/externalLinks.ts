@@ -44,7 +44,7 @@ export const EXTERNAL_LINKS = {
   instrumentReservationScriptUrl: "https://script.google.com/macros/s/AKfycbwA4Z3wVMCMni_Uf0sMI4PsGXIETXuvZdf9_e_se-c5cY0T9PFXYH1ppphJgnhcAvRcHQ/exec",
   
   // Data Studio 儀器管理後台
-  instrumentManagementScriptUrl: "https://script.google.com/macros/s/AKfycbyZaJdW-TRPo_SSoOUT_xnjdnKW0-YWGlrU_ZkGYTubHAVvrLEbC3vgoWeAHpc4eafu/exec",
+  instrumentManagementScriptUrl: "https://script.google.com/macros/s/AKfycbxFXy0bwNEpAdTfEkny19rGYwUSJ5qTVUr-hj5WQ2YPTdfuL-NrFcIWRvh9r8TXFsJW/exec",
 
   // ==========================================================================
   // 4. 化學品與耗材清冊 (Chemical & Reagent Inventory)
