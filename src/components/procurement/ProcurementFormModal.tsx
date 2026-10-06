@@ -1197,8 +1197,8 @@ export default function ProcurementFormModal({
                   </div>
                   <p className="text-[11px] text-emerald-800 leading-relaxed">
                     {lang === "zh"
-                      ? "總額未滿 3,000 元之小額請購，可由單一廠商直接採購，免附多家廠商比價。Admin 初審確認後，一樣會發送通知信呈送教授審核簽可。"
-                      : "Requisitions under 3,000 TWD allow single-vendor purchase without comparison quotes. Admin will forward to PI for review and approval."}
+                      ? "總額未滿 3,000 元之小額請購，可由單一廠商直接採購，免附多家廠商比價。"
+                      : "Requisitions under 3,000 TWD allow single-vendor purchase without comparison quotes."}
                   </p>
                   <div className="bg-white/80 p-2.5 rounded border border-emerald-200 text-[11px] text-slate-700 space-y-1">
                     <div className="font-semibold text-slate-900 flex items-center gap-1">

@@ -1,10 +1,11 @@
 import { HistoricalCatalogItem, ProcurementItem } from "../types/procurement";
 
 export const DEFAULT_VENDORS = [
-  "Sigma-Aldrich (Merck)",
+  "科研市集",
+  "麗文",
+  "Sigma-Aldrich ",
   "Echo Chemical 景明化工",
   "Acros Organics (賽默飛 Thermo Fisher)",
-  "科研市集",
   "Alfa Aesar",
   "友和生技 Uni-Onward",
   "伯昂興業 Ber-An",
@@ -18,10 +19,11 @@ export const DEFAULT_VENDORS = [
 // 常用與預設購物平台清單 (支援使用者即時新增與本地記憶)
 export const DEFAULT_SHOPPING_PLATFORMS: string[] = [
   "蝦皮購物 (Shopee)",
+  "麗文",
   "淘寶 (Taobao)",
   "京東 (JD)",
   "1688",
-  "Sigma-Aldrich (默克)",
+  "Sigma-Aldrich",
   "TCI 梯希愛",
   "景明化工",
   "德記儀器",
