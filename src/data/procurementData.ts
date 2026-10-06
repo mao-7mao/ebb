@@ -126,8 +126,8 @@ function doPost(e) {
 
       const isOver3000 = (item.estimatedTotalPrice >= 3000);
       const modeLabel = isOver3000 
-        ? "達3,000元(需附多家比價，Admin初審後送教授終審)" 
-        : "未滿3,000元小額(免比價，Admin初審後送教授終審)";
+        ? "達3,000元(需附多家比價)" 
+        : "未滿3,000元小額(免比價)";
 
       sheet.appendRow([
         item.requisitionNo || "",
