@@ -461,7 +461,7 @@ export default function ProcurementSystem() {
           ...item,
           status: nextStatus,
           assistantReview: {
-            reviewerName: "Lab Admin (系統管理者/admin)",
+            reviewerName: "Lab Admin",
             reviewedAt: now,
             approved,
             comment
