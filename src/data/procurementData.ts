@@ -80,7 +80,7 @@ export const GOOGLE_APPS_SCRIPT_SAMPLE = `/**
  * 1. 支援接收請購系統前端網頁的 POST 請求 (doPost)。
  * 2. 支援前端 (Admin 或 任何使用者) GET 請求 (doGet)，即時回傳試算表中的請購資料清單。
  * 3. 自動在 Google Sheets 中記錄請購清單與採購進程。
- * 4. 自動透過 Gmail 寄送審批通知與採購進度更新給助理、教授與申請學生。
+ * 4. 自動透過 Gmail 寄送審批通知與採購進度更新給admin、教授與申請學生。
  * 
  * 設定步驟：
  * 1. 開啟您的 Google 試算表（例如「EBB Lab 請購與採購紀錄表」）。

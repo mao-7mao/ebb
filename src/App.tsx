@@ -345,7 +345,7 @@ export default function App() {
     if (role.includes("博") || role.toLowerCase().includes("ph.d")) return "Ph.D. Students";
     if (role.includes("碩") || role.toLowerCase().includes("master")) return "Master's Students";
     if (role.includes("交換") || role.toLowerCase().includes("exchange")) return "Exchange Students";
-    if (role.includes("助理") || role.toLowerCase().includes("assistant")) return "Research Assistants";
+    if (role.includes("admin") || role.toLowerCase().includes("assistant")) return "Research Assistants";
     if (role.includes("專題") || role.includes("大學") || role.toLowerCase().includes("undergrad")) return "Undergraduates";
     if (role.includes("教") || role.includes("主持") || role.toLowerCase().includes("pi") || role.toLowerCase().includes("professor")) return "Principal Investigator";
     if (role.includes("後") || role.toLowerCase().includes("postdoc")) return "Postdocs";
