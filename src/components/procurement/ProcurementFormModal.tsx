@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   ProcurementCategory, 
   ProcurementItem, 
@@ -113,6 +113,10 @@ export default function ProcurementFormModal({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [autoFilledNotice, setAutoFilledNotice] = useState<string | null>(null);
 
+  // Vendor quotes visibility & auto-initialization states
+  const [manualShowQuotes, setManualShowQuotes] = useState(false);
+  const autoInitializedQuotesRef = useRef<{ [itemId: string]: boolean }>({});
+
   function createDefaultItemLine(initialCategory: ProcurementCategory = "chemical"): FormItemLine {
     return {
       id: `line_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
@@ -139,9 +143,7 @@ export default function ProcurementFormModal({
       warrantyPeriod: "1 年保固",
       requiresInstallation: false,
       requiresTraining: false,
-      quotes: [
-        { id: `q_${Date.now()}`, vendorName: DEFAULT_VENDORS[0], unitPrice: 0, currency: "NTD", note: "建議報價", isRecommended: true }
-      ]
+      quotes: []
     };
   }
 
@@ -225,21 +227,26 @@ export default function ProcurementFormModal({
     }
   };
 
+  // Reset manual quotes visibility state when switching items
+  useEffect(() => {
+    setManualShowQuotes(false);
+  }, [activeItemIndex]);
+
   // Vendor Quotes handlers for active item
   const handleAddQuote = () => {
     const newQuote: VendorQuote = {
-      id: `q_${Date.now()}`,
-      vendorName: DEFAULT_VENDORS[0],
+      id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      vendorName: "",
       unitPrice: currentItem.estimatedUnitPrice || 0,
       currency: "NTD",
       note: "",
-      isRecommended: false
+      isRecommended: (!currentItem.quotes || currentItem.quotes.length === 0)
     };
-    handleUpdateActiveItem("quotes", [...currentItem.quotes, newQuote]);
+    handleUpdateActiveItem("quotes", [...(currentItem.quotes || []), newQuote]);
   };
 
   const handleUpdateQuote = (quoteId: string, field: keyof VendorQuote, value: any) => {
-    const updated = currentItem.quotes.map(q => {
+    const updated = (currentItem.quotes || []).map(q => {
       if (field === "isRecommended" && value === true) {
         return q.id === quoteId ? { ...q, isRecommended: true } : { ...q, isRecommended: false };
       }
@@ -248,7 +255,7 @@ export default function ProcurementFormModal({
     handleUpdateActiveItem("quotes", updated);
     if (field === "isRecommended" && value === true) {
       const targetQuote = updated.find(q => q.id === quoteId);
-      if (targetQuote) {
+      if (targetQuote && targetQuote.vendorName) {
         handleUpdateActiveItem("vendorName", targetQuote.vendorName);
         if (targetQuote.unitPrice > 0) {
           handleUpdateActiveItem("estimatedUnitPrice", targetQuote.unitPrice);
@@ -258,8 +265,11 @@ export default function ProcurementFormModal({
   };
 
   const handleRemoveQuote = (quoteId: string) => {
-    if (currentItem.quotes.length <= 1) return;
-    handleUpdateActiveItem("quotes", currentItem.quotes.filter(q => q.id !== quoteId));
+    const updated = (currentItem.quotes || []).filter(q => q.id !== quoteId);
+    handleUpdateActiveItem("quotes", updated);
+    if (updated.length === 0 && !isOver3000) {
+      setManualShowQuotes(false);
+    }
   };
 
   // Calculated Grand Total in TWD equivalent
@@ -268,6 +278,48 @@ export default function ProcurementFormModal({
     const twdEstimate = convertToTwdEstimate(lineTotal, item.currency || "TWD");
     return sum + twdEstimate;
   }, 0);
+
+  // Check 3,000 TWD threshold: item subtotal, item unit price, or requisition grand total
+  const activeItemSubtotalTwd = convertToTwdEstimate(
+    currentItem.quantity * currentItem.estimatedUnitPrice,
+    currentItem.currency || "TWD"
+  );
+  const activeItemUnitTwd = convertToTwdEstimate(
+    currentItem.estimatedUnitPrice,
+    currentItem.currency || "TWD"
+  );
+  const isItemOver3000 = activeItemSubtotalTwd >= 3000 || activeItemUnitTwd >= 3000;
+  const isRequisitionOver3000 = grandTotal >= 3000 || items.some(it => 
+    convertToTwdEstimate(it.estimatedUnitPrice, it.currency || "TWD") >= 3000 ||
+    convertToTwdEstimate(it.quantity * it.estimatedUnitPrice, it.currency || "TWD") >= 3000
+  );
+  const isOver3000 = isItemOver3000 || isRequisitionOver3000;
+
+  // Auto-appear quotes when exceeding 3000: if quotes is empty, create a clean blank quote ready to fill
+  useEffect(() => {
+    if (isOver3000) {
+      if (!autoInitializedQuotesRef.current[currentItem.id]) {
+        autoInitializedQuotesRef.current[currentItem.id] = true;
+        if (!currentItem.quotes || currentItem.quotes.length === 0) {
+          const autoQuote: VendorQuote = {
+            id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            vendorName: "",
+            unitPrice: currentItem.estimatedUnitPrice || 0,
+            currency: "NTD",
+            note: "",
+            isRecommended: true
+          };
+          handleUpdateActiveItem("quotes", [autoQuote]);
+        }
+      }
+    } else {
+      // If price dropped below 3000, allow re-initialization if it exceeds 3000 again later
+      autoInitializedQuotesRef.current[currentItem.id] = false;
+    }
+  }, [isOver3000, currentItem.id, currentItem.estimatedUnitPrice, currentItem.quantity]);
+
+  const hasUserQuotes = Boolean(currentItem.quotes && currentItem.quotes.length > 0);
+  const shouldShowQuotes = isOver3000 || manualShowQuotes || hasUserQuotes;
 
   const handleAddCustomPlatform = (newPlatform: string) => {
     const trimmed = newPlatform.trim();
@@ -287,7 +339,7 @@ export default function ProcurementFormModal({
 
     // Validate overall purpose
     if (!overallPurpose.trim()) {
-      alert(lang === "zh" ? "請填寫請購目的（研究用途/原因），以利審核與報帳核銷！" : "Please provide overall procurement purpose for audit compliance!");
+      alert(lang === "zh" ? "請填寫請購目的（研究用途/原因等），以利審核與報帳核銷！" : "Please provide overall procurement purpose for audit compliance!");
       return;
     }
 
@@ -354,7 +406,7 @@ export default function ProcurementFormModal({
       purpose: it.purpose.trim() || overallPurpose.trim(),
       vendorName: it.platform ? `${it.platform} (${it.vendorName || "直購"})` : it.vendorName,
       status: "pending_assistant",
-      quotes: it.quotes,
+      quotes: it.quotes ? it.quotes.filter(q => q.vendorName.trim() || q.unitPrice > 0) : [],
       chemicalDetails: it.category === "chemical" ? {
         casNumber: it.casNumber.trim(),
         purity: it.purity.trim(),
@@ -400,7 +452,7 @@ export default function ProcurementFormModal({
       vendorName: primaryItem.platform ? `${primaryItem.platform} (${primaryItem.vendorName})` : primaryItem.vendorName,
       platform: primaryItem.platform?.trim() || undefined,
       productUrl: primaryItem.productUrl.trim() || undefined,
-      quotes: primaryItem.quotes,
+      quotes: primaryItem.quotes ? primaryItem.quotes.filter(q => q.vendorName.trim() || q.unitPrice > 0) : [],
       items: lineItems,
       chemicalDetails: primaryItem.category === "chemical" ? lineItems[0].chemicalDetails : undefined,
       consumableDetails: primaryItem.category === "consumable" ? lineItems[0].consumableDetails : undefined,
@@ -1042,83 +1094,149 @@ export default function ProcurementFormModal({
                 </div>
               </div>
 
-              {/* Multi-Vendor Quotes & Price Comparison */}
-              <div className="p-3 bg-[#fbfbfa] border border-[#e5e5e0] rounded-sm space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold text-slate-800 text-xs font-serif">
-                      {lang === "zh" ? "廠商報價與比價機制 (Vendor Quotes Comparison)" : "Multi-Vendor Quotes Comparison"}
-                    </h4>
-                    <p className="text-[11px] text-slate-500">
-                      {lang === "zh" ? "可新增多家廠商報價，並點選「推薦採購」" : "Add quotes to compare prices and tag recommended vendor"}
-                    </p>
+              {/* Multi-Vendor Quotes & Price Comparison (Default Blank; Auto-appears when > 3000) */}
+              {!shouldShowQuotes ? (
+                <div className="p-3 bg-slate-50/70 border border-dashed border-slate-200 rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-300"></span>
+                    <span className="text-slate-700 font-medium">
+                      {lang === "zh" ? "廠商報價與比價機制" : "Vendor Quotes & Price Comparison"}
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      {lang === "zh"
+                        ? "（未滿 3,000 元免附，預設空白；金額超過 3,000 元將自動出現）"
+                        : "(Not required under NT$3,000, blank by default; auto-appears when > NT$3,000)"}
+                    </span>
                   </div>
                   <button
                     type="button"
-                    onClick={handleAddQuote}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-[11px] font-bold"
+                    onClick={() => {
+                      setManualShowQuotes(true);
+                      if (!currentItem.quotes || currentItem.quotes.length === 0) {
+                        handleAddQuote();
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 self-start sm:self-auto px-2.5 py-1 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-sm text-[11px] font-medium transition shadow-2xs"
                   >
                     <Plus className="w-3 h-3 text-[#1b4372]" />
-                    <span>{lang === "zh" ? "新增報價廠商" : "Add Vendor Quote"}</span>
+                    <span>{lang === "zh" ? "自選填寫報價 (選填)" : "Add Quote (Optional)"}</span>
                   </button>
                 </div>
-
-                <div className="space-y-2">
-                  {currentItem.quotes.map((q) => (
-                    <div key={q.id} className="p-2.5 bg-white border border-[#e5e5e0] rounded-sm flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={q.vendorName}
-                          onChange={(e) => handleUpdateQuote(q.id, "vendorName", e.target.value)}
-                          placeholder="廠商名稱 (如: Sigma / TCI / 景明)"
-                          className="w-full border border-slate-200 rounded-sm p-1.5 text-xs font-medium"
-                        />
-                      </div>
-                      <div className="w-32">
-                        <input
-                          type="number"
-                          value={q.unitPrice || ""}
-                          onChange={(e) => handleUpdateQuote(q.id, "unitPrice", parseInt(e.target.value) || 0)}
-                          placeholder="單價 (NT$)"
-                          className="w-full border border-slate-200 rounded-sm p-1.5 text-xs font-mono font-bold"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={q.note || ""}
-                          onChange={(e) => handleUpdateQuote(q.id, "note", e.target.value)}
-                          placeholder="交期、規格或折扣備註"
-                          className="w-full border border-slate-200 rounded-sm p-1.5 text-xs text-slate-600"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateQuote(q.id, "isRecommended", true)}
-                          className={`px-2 py-1 rounded-sm text-[10px] font-bold border transition ${
-                            q.isRecommended
-                              ? "bg-[#1b4372] text-white border-[#1b4372]"
-                              : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                          }`}
-                        >
-                          {q.isRecommended ? "✓ 推薦廠商" : "設為推薦"}
-                        </button>
-                        {currentItem.quotes.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveQuote(q.id)}
-                            className="p-1 text-rose-500 hover:bg-rose-50 rounded-sm"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+              ) : (
+                <div className="p-3 bg-[#fbfbfa] border border-[#e5e5e0] rounded-sm space-y-2.5 transition-all">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-slate-800 text-xs font-serif">
+                          {lang === "zh" ? "廠商報價與比價機制 (Vendor Quotes Comparison)" : "Multi-Vendor Quotes Comparison"}
+                        </h4>
+                        {isOver3000 && (
+                          <span className="text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-1">
+                            ⚡ {lang === "zh" ? "超過 NT$ 3,000 自動開啟" : "Auto-enabled (> NT$3,000)"}
+                          </span>
                         )}
                       </div>
+                      <p className="text-[11px] text-slate-500">
+                        {lang === "zh" ? "可新增多家廠商報價，並點選「推薦採購」" : "Add quotes to compare prices and tag recommended vendor"}
+                      </p>
                     </div>
-                  ))}
+                    <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={handleAddQuote}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 rounded-sm text-[11px] font-bold shadow-2xs"
+                      >
+                        <Plus className="w-3 h-3 text-[#1b4372]" />
+                        <span>{lang === "zh" ? "新增報價廠商" : "Add Vendor Quote"}</span>
+                      </button>
+                      {!isOver3000 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setManualShowQuotes(false);
+                            handleUpdateActiveItem("quotes", []);
+                          }}
+                          className="text-[11px] text-slate-400 hover:text-slate-600 px-1.5 py-1"
+                          title={lang === "zh" ? "收合為預設空白" : "Collapse to blank"}
+                        >
+                          {lang === "zh" ? "收合空白" : "Collapse"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {(!currentItem.quotes || currentItem.quotes.length === 0) ? (
+                    <div className="p-3 bg-white border border-dashed border-slate-200 rounded-sm text-center py-4">
+                      <p className="text-xs text-slate-500 mb-2">
+                        {lang === "zh" ? "目前尚未填寫廠商報價（金額超過 3,000 元建議附 2~3 家報價比價）" : "No vendor quotes yet. 2-3 quotes recommended for items over NT$3,000."}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleAddQuote}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-[#1b4372] text-white rounded-sm text-xs font-bold hover:bg-[#15345a]"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>{lang === "zh" ? "立即新增廠商報價" : "Add Vendor Quote"}</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {currentItem.quotes.map((q) => (
+                        <div key={q.id} className="p-2.5 bg-white border border-[#e5e5e0] rounded-sm flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={q.vendorName}
+                              onChange={(e) => handleUpdateQuote(q.id, "vendorName", e.target.value)}
+                              placeholder="廠商名稱"
+                              className="w-full border border-slate-200 rounded-sm p-1.5 text-xs font-medium"
+                            />
+                          </div>
+                          <div className="w-32">
+                            <input
+                              type="number"
+                              value={q.unitPrice || ""}
+                              onChange={(e) => handleUpdateQuote(q.id, "unitPrice", parseInt(e.target.value) || 0)}
+                              placeholder="單價 (NT$)"
+                              className="w-full border border-slate-200 rounded-sm p-1.5 text-xs font-mono font-bold"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={q.note || ""}
+                              onChange={(e) => handleUpdateQuote(q.id, "note", e.target.value)}
+                              placeholder="交期、規格或折扣備註"
+                              className="w-full border border-slate-200 rounded-sm p-1.5 text-xs text-slate-600"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateQuote(q.id, "isRecommended", true)}
+                              className={`px-2 py-1 rounded-sm text-[10px] font-bold border transition ${
+                                q.isRecommended
+                                  ? "bg-[#1b4372] text-white border-[#1b4372]"
+                                  : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                              }`}
+                            >
+                              {q.isRecommended ? "✓ 推薦廠商" : "設為推薦"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveQuote(q.id)}
+                              className="p-1 text-rose-500 hover:bg-rose-50 rounded-sm"
+                              title={lang === "zh" ? "刪除此筆報價" : "Remove quote"}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
 
               {/* Item Subtotal Bar */}
               <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-sm flex items-center justify-between text-xs">
@@ -1197,8 +1315,8 @@ export default function ProcurementFormModal({
                   </div>
                   <p className="text-[11px] text-emerald-800 leading-relaxed">
                     {lang === "zh"
-                      ? "總額未滿 3,000 元之小額請購，可由單一廠商直接採購，免附多家廠商比價。"
-                      : "Requisitions under 3,000 TWD allow single-vendor purchase without comparison quotes."}
+                      ? "總額未滿 3,000 元之小額請購，可由單一廠商直接採購，免附多家廠商比價。Admin 初審確認後，一樣會發送通知信呈送教授審核簽可。"
+                      : "Requisitions under 3,000 TWD allow single-vendor purchase without comparison quotes. Admin will forward to PI for review and approval."}
                   </p>
                   <div className="bg-white/80 p-2.5 rounded border border-emerald-200 text-[11px] text-slate-700 space-y-1">
                     <div className="font-semibold text-slate-900 flex items-center gap-1">
