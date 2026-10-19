@@ -152,6 +152,7 @@ export default function ProcurementFormModal({
 
   // Filter autocomplete suggestions when currentItem's itemName changes
   useEffect(() => {
+    if (!isOpen) return;
     if (!currentItem || !currentItem.itemName.trim() || currentItem.itemName.length < 1) {
       setAutocompleteSuggestions([]);
       return;
@@ -164,9 +165,7 @@ export default function ProcurementFormModal({
         (item.casNumber && item.casNumber.includes(q))
     );
     setAutocompleteSuggestions(matched);
-  }, [currentItem?.itemName, historicalCatalog]);
-
-  if (!isOpen) return null;
+  }, [currentItem?.itemName, historicalCatalog, isOpen]);
 
   const handleUpdateActiveItem = <K extends keyof FormItemLine>(key: K, value: FormItemLine[K]) => {
     setItems(prev => prev.map((item, idx) => idx === activeItemIndex ? { ...item, [key]: value } : item));
@@ -229,8 +228,9 @@ export default function ProcurementFormModal({
 
   // Reset manual quotes visibility state when switching items
   useEffect(() => {
+    if (!isOpen) return;
     setManualShowQuotes(false);
-  }, [activeItemIndex]);
+  }, [activeItemIndex, isOpen]);
 
   // Vendor Quotes handlers for active item
   const handleAddQuote = () => {
@@ -297,6 +297,7 @@ export default function ProcurementFormModal({
 
   // Auto-appear quotes when exceeding 3000: if quotes is empty, create a clean blank quote ready to fill
   useEffect(() => {
+    if (!isOpen) return;
     if (isOver3000) {
       if (!autoInitializedQuotesRef.current[currentItem.id]) {
         autoInitializedQuotesRef.current[currentItem.id] = true;
@@ -316,7 +317,7 @@ export default function ProcurementFormModal({
       // If price dropped below 3000, allow re-initialization if it exceeds 3000 again later
       autoInitializedQuotesRef.current[currentItem.id] = false;
     }
-  }, [isOver3000, currentItem.id, currentItem.estimatedUnitPrice, currentItem.quantity]);
+  }, [isOver3000, currentItem.id, currentItem.estimatedUnitPrice, currentItem.quantity, isOpen]);
 
   const hasUserQuotes = Boolean(currentItem.quotes && currentItem.quotes.length > 0);
   const shouldShowQuotes = isOver3000 || manualShowQuotes || hasUserQuotes;
@@ -339,7 +340,7 @@ export default function ProcurementFormModal({
 
     // Validate overall purpose
     if (!overallPurpose.trim()) {
-      alert(lang === "zh" ? "請填寫請購目的（研究用途/原因等），以利審核與報帳核銷！" : "Please provide overall procurement purpose for audit compliance!");
+      alert(lang === "zh" ? "請填寫請購目的（研究用途/原因），以利審核與報帳核銷！" : "Please provide overall procurement purpose for audit compliance!");
       return;
     }
 
@@ -464,6 +465,8 @@ export default function ProcurementFormModal({
     onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
       <div className="bg-white border border-[#e5e5e0] rounded-sm shadow-2xl max-w-4xl w-full my-auto flex flex-col max-h-[92vh]">
@@ -546,7 +549,7 @@ export default function ProcurementFormModal({
               rows={2}
               value={overallPurpose}
               onChange={(e) => setOverallPurpose(e.target.value)}
-              placeholder={lang === "zh" ? "請敘明本次請購品項之總體研究用途、進行之實驗主題或必要性 (作為admin初審與教授核定依據)..." : "State the overall research purpose and experiment justification..."}
+              placeholder={lang === "zh" ? "請敘明本次請購品項之總體研究用途、進行之實驗主題或必要性 (作為助理初審與教授核定依據)..." : "State the overall research purpose and experiment justification..."}
               className="w-full bg-white border border-[#e5e5e0] rounded-sm p-2.5 text-xs focus:border-[#1b4372] focus:outline-none"
             />
           </div>
@@ -1132,7 +1135,7 @@ export default function ProcurementFormModal({
                         </h4>
                         {isOver3000 && (
                           <span className="text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-1">
-                            ⚡ {lang === "zh" ? "超過 NT$ 3,000 自動開啟" : "Auto-enabled (> NT$3,000)"}
+                            ⚡ {lang === "zh" ? "超過 NT$ 3,000 " : "Auto-enabled (> NT$3,000)"}
                           </span>
                         )}
                       </div>
@@ -1188,7 +1191,7 @@ export default function ProcurementFormModal({
                               type="text"
                               value={q.vendorName}
                               onChange={(e) => handleUpdateQuote(q.id, "vendorName", e.target.value)}
-                              placeholder="廠商名稱"
+                              placeholder="廠商名稱 "
                               className="w-full border border-slate-200 rounded-sm p-1.5 text-xs font-medium"
                             />
                           </div>
@@ -1290,15 +1293,10 @@ export default function ProcurementFormModal({
                   </div>
                   <p className="text-[11px] text-amber-800 leading-relaxed">
                     {lang === "zh"
-                      ? "依實驗室採購規定：單價或總額達 3,000 元以上，需事先詢價多家廠商（建議檢附 2~3 家報價比價）。由 Admin 完成初審確認後，系統將一併呈送教授審核核定。"
+                      ? "依實驗室採購規定：單價或總額達 3,000 元以上，需事先詢價多家廠商（建議檢附 2~3 家報價比價）。"
                       : "Items with unit or total price reaching 3,000 TWD require 2-3 vendor price comparisons. Admin will review before forwarding to PI for final approval."}
                   </p>
-                  <div className="bg-white/80 p-2.5 rounded border border-amber-200 text-[11px] text-slate-700 space-y-1">
-                    <div className="font-semibold text-slate-900 flex items-center gap-1">
-                      <span>審核流程：</span>
-                      <span className="font-mono text-amber-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過（回覆抄送admin與請購人）</span>
-                    </div>
-                  </div>
+
                 </div>
               );
             } else {
@@ -1315,15 +1313,10 @@ export default function ProcurementFormModal({
                   </div>
                   <p className="text-[11px] text-emerald-800 leading-relaxed">
                     {lang === "zh"
-                      ? "總額未滿 3,000 元之小額請購，可由單一廠商直接採購，免附多家廠商比價。Admin 初審確認後，一樣會發送通知信呈送教授審核簽可。"
+                      ? "總額未滿 3,000 元之小額請購，可由單一廠商直接採購，免附多家廠商比價。"
                       : "Requisitions under 3,000 TWD allow single-vendor purchase without comparison quotes. Admin will forward to PI for review and approval."}
                   </p>
-                  <div className="bg-white/80 p-2.5 rounded border border-emerald-200 text-[11px] text-slate-700 space-y-1">
-                    <div className="font-semibold text-slate-900 flex items-center gap-1">
-                      <span>審核流程：</span>
-                      <span className="font-mono text-emerald-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過（回覆抄送admin與請購人）</span>
-                    </div>
-                  </div>
+
                 </div>
               );
             }
