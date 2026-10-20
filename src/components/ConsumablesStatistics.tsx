@@ -32,7 +32,8 @@ import {
   Cloud,
   ListFilter,
   Tag,
-  Info
+  Info,
+  Globe
 } from "lucide-react";
 import { members as initialMembers, Member } from "../data/labData";
 import { 
@@ -52,25 +53,65 @@ import { EXTERNAL_LINKS } from "../config/externalLinks";
 import { 
   fetchConsumablesFromCloud, 
   sendConsumablesWebhook, 
-  getConsumablesWebhookUrl 
+  sendConsumablesAdminAction,
+  getValidAdminToken,
+  getConsumablesWebhookUrl,
+  CONSUMABLES_ADMIN_PASSWORD,
+  ADMIN_GAS_TOKEN_KEY
 } from "../services/consumablesSyncService";
 
-const STORAGE_KEY_ITEMS = "ebblab_consumables_items_v2";
-const STORAGE_KEY_LOGS = "ebblab_consumables_logs_v2";
-const STORAGE_KEY_AUDITS = "ebblab_consumables_audits_v2";
-const STORAGE_KEY_TOKEN = "ebblab_consumables_admin_token";
+const STORAGE_KEY_ITEMS = "ebblab_consumables_items_sheet_v4";
+const STORAGE_KEY_LOGS = "ebblab_consumables_logs_sheet_v4";
+const STORAGE_KEY_AUDITS = "ebblab_consumables_audits_sheet_v4";
+const STORAGE_KEY_ADMIN_LOGGED_IN = "ebblab_consumables_admin_logged_in_v4";
+const STORAGE_KEY_LANG = "ebblab_consumables_lang";
+
+export const CATEGORY_TRANSLATIONS: Record<string, { zh: string; en: string }> = {
+  "全部類別": { zh: "全部類別", en: "All Categories" },
+  "離心管與樣品瓶": { zh: "離心管與樣品瓶", en: "Centrifuge Tubes & Vials" },
+  "滴管吸頭與針筒": { zh: "滴管吸頭與針筒", en: "Pipette Tips & Syringes" },
+  "手套與防護用品": { zh: "手套與防護用品", en: "Gloves & PPE" },
+  "濾膜與透析耗材": { zh: "濾膜與透析耗材", en: "Filters & Membranes" },
+  "擦拭與清潔耗材": { zh: "擦拭與清潔耗材", en: "Wipes & Cleaning" },
+  "培養與玻璃塑膠": { zh: "培養與玻璃塑膠", en: "Culture & Labware" },
+  "封口標籤與滅菌": { zh: "封口標籤與滅菌", en: "Films, Labels & Sterilization" },
+  "其他耗材": { zh: "其他耗材", en: "Other Consumables" }
+};
 
 export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?: () => void }) {
   // --------------------------------------------------------------------------
-  // 1. Data State (Items, Logs, Audits)
+  // Language State: 'zh' (繁體中文) or 'en' (English) - 一鍵切換
+  // --------------------------------------------------------------------------
+  const [lang, setLang] = useState<"zh" | "en">(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_LANG);
+      if (saved === "en" || saved === "zh") return saved;
+    } catch (e) {}
+    return "zh";
+  });
+
+  const toggleLanguage = () => {
+    const nextLang = lang === "zh" ? "en" : "zh";
+    setLang(nextLang);
+    try {
+      localStorage.setItem(STORAGE_KEY_LANG, nextLang);
+    } catch (e) {}
+  };
+
+  const getCategoryLabel = (cat: string) => {
+    if (lang === "en") {
+      return CATEGORY_TRANSLATIONS[cat]?.en || cat;
+    }
+    return CATEGORY_TRANSLATIONS[cat]?.zh || cat;
+  };
+
+  // --------------------------------------------------------------------------
+  // 1. Data State (Items, Logs, Audits) - 數據均自 Google 試算表動態同步
   // --------------------------------------------------------------------------
   const [items, setItems] = useState<ConsumableItem[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_ITEMS);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 1) return parsed;
-      }
+      if (saved) return JSON.parse(saved);
     } catch (e) {
       console.error(e);
     }
@@ -80,10 +121,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
   const [transactions, setTransactions] = useState<ConsumableTransaction[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_LOGS);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 1) return parsed;
-      }
+      if (saved) return JSON.parse(saved);
     } catch (e) {
       console.error(e);
     }
@@ -99,6 +137,21 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
     }
     return INITIAL_AUDIT_HISTORY;
   });
+
+  // 清除舊版本包含假資料的快取
+  useEffect(() => {
+    try {
+      localStorage.removeItem("ebblab_consumables_items_v3");
+      localStorage.removeItem("ebblab_consumables_logs_v3");
+      localStorage.removeItem("ebblab_consumables_audits_v3");
+      localStorage.removeItem("ebblab_consumables_items_v2");
+      localStorage.removeItem("ebblab_consumables_logs_v2");
+      localStorage.removeItem("ebblab_consumables_audits_v2");
+      localStorage.removeItem("ebblab_consumables_items");
+      localStorage.removeItem("ebblab_consumables_logs");
+      localStorage.removeItem("ebblab_consumables_audits");
+    } catch (e) {}
+  }, []);
 
   // Sync to local storage
   useEffect(() => {
@@ -130,13 +183,13 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
     try {
       const res = await fetchConsumablesFromCloud();
       if (res.success) {
-        if (res.items && res.items.length > 0) {
+        if (Array.isArray(res.items)) {
           setItems(res.items);
         }
-        if (res.transactions && res.transactions.length > 0) {
+        if (Array.isArray(res.transactions)) {
           setTransactions(res.transactions);
         }
-        if (res.audits && res.audits.length > 0) {
+        if (Array.isArray(res.audits)) {
           setAudits(res.audits);
         }
         const timeStr = new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
@@ -161,7 +214,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
   // --------------------------------------------------------------------------
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     try {
-      return localStorage.getItem(STORAGE_KEY_TOKEN) === "authorized_ebbthings";
+      return localStorage.getItem(STORAGE_KEY_ADMIN_LOGGED_IN) === "true";
     } catch (e) {
       return false;
     }
@@ -170,28 +223,38 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
   const [loginPasswordInput, setLoginPasswordInput] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loginPasswordInput.trim() === "ebbthings") {
+    const inputPass = loginPasswordInput.trim();
+    if (inputPass === "ebbthings" || inputPass === CONSUMABLES_ADMIN_PASSWORD) {
       setIsAdmin(true);
       try {
-        localStorage.setItem(STORAGE_KEY_TOKEN, "authorized_ebbthings");
+        localStorage.setItem(STORAGE_KEY_ADMIN_LOGGED_IN, "true");
       } catch (e) {}
+
+      // 背景向 Google Apps Script 取得正式 token_xxx 存入本地
+      try {
+        await getValidAdminToken(true);
+      } catch (err) {
+        console.warn("GAS admin_login background error:", err);
+      }
+
       setIsLoginModalOpen(false);
       setLoginPasswordInput("");
       setLoginError("");
-      showToast("管理員身分已驗證成功！", "success");
+      showToast(lang === "en" ? "Administrator authenticated successfully!" : "管理員身分已驗證成功！", "success");
     } else {
-      setLoginError("密碼錯誤，請確認後重試 (提示: 密碼由實驗室負責人分發)");
+      setLoginError(lang === "en" ? "Incorrect password. (Contact lab PI/manager)" : "密碼錯誤，請確認後重試 (提示: 密碼由實驗室負責人分發)");
     }
   };
 
   const handleAdminLogout = () => {
     setIsAdmin(false);
     try {
-      localStorage.removeItem(STORAGE_KEY_TOKEN);
+      localStorage.removeItem(STORAGE_KEY_ADMIN_LOGGED_IN);
+      localStorage.removeItem(ADMIN_GAS_TOKEN_KEY);
     } catch (e) {}
-    showToast("已登出管理員身分", "info");
+    showToast(lang === "en" ? "Logged out from administrator" : "已登出管理員身分", "info");
   };
 
   // --------------------------------------------------------------------------
@@ -216,7 +279,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
   const lastPickupMap = useMemo(() => {
     const map = new Map<string, ConsumableTransaction>();
     const pickupTxs = transactions
-      .filter(t => t.type === "領取")
+      .filter(t => t.type === "領取" || t.type === "pickup")
       .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
     for (const tx of pickupTxs) {
       if (!map.has(tx.consumableId)) {
@@ -230,7 +293,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
   const itemPickupStatsMap = useMemo(() => {
     const map = new Map<string, { count: number; totalQty: number }>();
     for (const tx of transactions) {
-      if (tx.type === "領取") {
+      if (tx.type === "領取" || tx.type === "pickup") {
         const prev = map.get(tx.consumableId) || { count: 0, totalQty: 0 };
         map.set(tx.consumableId, {
           count: prev.count + 1,
@@ -292,29 +355,31 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
     setIsMemberDropdownOpen(false);
   };
 
-  const handleConfirmPickup = (e: React.FormEvent) => {
+  const handleConfirmPickup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPickupItem) return;
 
     if (pickupQty <= 0) {
-      alert("領取數量必須為大於 0 的正整數！");
+      alert(lang === "en" ? "Pickup quantity must be greater than 0!" : "領取數量必須為大於 0 的正整數！");
       return;
     }
 
     if (pickupQty > selectedPickupItem.currentStock) {
-      alert(`領取數量不可超過目前庫存 (${selectedPickupItem.currentStock} ${selectedPickupItem.unit})！`);
+      alert(lang === "en" 
+        ? `Pickup quantity cannot exceed current in-stock (${selectedPickupItem.currentStock} ${selectedPickupItem.unit})!` 
+        : `領取數量不可超過目前庫存 (${selectedPickupItem.currentStock} ${selectedPickupItem.unit})！`);
       return;
     }
 
     const finalOperator = isOtherOperator ? otherOperatorName.trim() : pickupOperator.trim();
     if (!finalOperator) {
-      alert("請選擇領取人姓名或填寫自訂姓名！");
+      alert(lang === "en" ? "Please select or enter the user name!" : "請選擇領取人姓名或填寫自訂姓名！");
       return;
     }
 
     setIsSubmittingPickup(true);
 
-    setTimeout(() => {
+    try {
       const nowStr = new Date().toLocaleString("zh-TW", {
         timeZone: "Asia/Taipei",
         year: "numeric",
@@ -328,7 +393,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
       const prevStock = selectedPickupItem.currentStock;
       const afterStock = prevStock - pickupQty;
 
-      // 1. Update item stock
+      // 1. Update item stock locally for immediate visual response
       setItems(prevItems => 
         prevItems.map(it => 
           it.id === selectedPickupItem.id 
@@ -337,7 +402,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
         )
       );
 
-      // 2. Append transaction record
+      // 2. Append transaction record locally
       const newTx: ConsumableTransaction = {
         id: `TX-${Date.now()}`,
         timestamp: nowStr,
@@ -355,24 +420,43 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
       setTransactions(prev => [newTx, ...prev]);
 
       // 3. 雲端 Google Sheet 同步
-      sendConsumablesWebhook({
+      const cloudRes = await sendConsumablesWebhook({
         action: "pickup",
         itemId: selectedPickupItem.id,
         itemName: selectedPickupItem.name,
+        quantity: pickupQty,
         amount: pickupQty,
+        operator: finalOperator,
         userName: finalOperator,
+        isListedMember: !isOtherOperator,
         inList: isOtherOperator ? "否" : "是",
         notes: pickupNotes.trim()
-      }).then(cloudRes => {
-        if (cloudRes && cloudRes.success) {
-          console.log("Cloud pickup sync success:", cloudRes);
-        }
-      }).catch(e => console.warn("Cloud pickup sync error:", e));
+      });
 
+      if (cloudRes && cloudRes.success) {
+        // 成功後立即同步雲端資料，確保即時性與單一數據來源
+        await syncWithCloud(true);
+        showToast(
+          lang === "en"
+            ? `Pickup logged! Retrieved ${pickupQty} ${selectedPickupItem.unit} of "${selectedPickupItem.name}". Synced with Google Sheets!`
+            : `登記成功！已領取「${selectedPickupItem.name}」${pickupQty} ${selectedPickupItem.unit}，已即時同步至 Google 試算表！`,
+          "success"
+        );
+        setSelectedPickupItem(null);
+      } else {
+        showToast(
+          lang === "en"
+            ? `Pickup sync warning: ${cloudRes?.error || cloudRes?.message || "Failed to write to Google Sheets"}`
+            : `領取登記雲端同步提醒：${cloudRes?.error || cloudRes?.message || "未寫入 Google 試算表"}`,
+          "error"
+        );
+      }
+    } catch (e: any) {
+      console.warn("Cloud pickup sync error:", e);
+      showToast(lang === "en" ? "Connection error: saved locally only" : "領取已登記於本機，雲端連線失敗", "error");
+    } finally {
       setIsSubmittingPickup(false);
-      setSelectedPickupItem(null);
-      showToast(`登記成功！已領取「${selectedPickupItem.name}」${pickupQty} ${selectedPickupItem.unit}。`, "success");
-    }, 300);
+    }
   };
 
   // --------------------------------------------------------------------------
@@ -382,53 +466,53 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
   const [restockItemId, setRestockItemId] = useState("");
   const [restockQty, setRestockQty] = useState<number>(5);
   const [restockNotes, setRestockNotes] = useState("常態採購到貨入庫");
+  const [isSubmittingRestock, setIsSubmittingRestock] = useState(false);
 
-  const handleConfirmRestock = (e: React.FormEvent) => {
+  const handleConfirmRestock = async (e: React.FormEvent) => {
     e.preventDefault();
     const item = items.find(i => i.id === restockItemId);
     if (!item) {
-      alert("請選擇要補貨的耗材！");
+      alert(lang === "en" ? "Please select a consumable to restock!" : "請選擇要補貨的耗材！");
       return;
     }
     if (restockQty <= 0) {
-      alert("入庫數量需大於 0！");
+      alert(lang === "en" ? "Restock quantity must be greater than 0!" : "入庫數量需大於 0！");
       return;
     }
 
-    const nowStr = new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei", hour12: false }).replace(/\//g, "-");
-    const prevStock = item.currentStock;
-    const afterStock = prevStock + restockQty;
+    setIsSubmittingRestock(true);
+    try {
+      const cloudRes = await sendConsumablesAdminAction("restock", {
+        itemId: item.id,
+        quantity: restockQty,
+        amount: restockQty,
+        operator: "管理員 (Admin)",
+        notes: restockNotes.trim()
+      });
 
-    setItems(prev => prev.map(it => it.id === item.id ? { ...it, currentStock: afterStock, updatedAt: nowStr } : it));
-
-    const newTx: ConsumableTransaction = {
-      id: `TX-${Date.now()}`,
-      timestamp: nowStr,
-      consumableId: item.id,
-      consumableName: item.name,
-      type: "補貨入庫",
-      changeQty: restockQty,
-      prevStock,
-      afterStock,
-      operator: "管理員 (Admin)",
-      isListedMember: "是",
-      notes: restockNotes.trim()
-    };
-
-    setTransactions(prev => [newTx, ...prev]);
-
-    // 雲端同步
-    sendConsumablesWebhook({
-      action: "restock",
-      token: "authorized_ebbthings",
-      itemId: item.id,
-      amount: restockQty,
-      operator: "管理員 (Admin)",
-      notes: restockNotes.trim()
-    }).catch(e => console.warn(e));
-
-    setIsRestockModalOpen(false);
-    showToast(`入庫成功！「${item.name}」已增加 ${restockQty} ${item.unit}。`, "success");
+      if (cloudRes && cloudRes.success) {
+        showToast(
+          lang === "en"
+            ? `Restock successful! "${item.name}" added ${restockQty} ${item.unit}. Synced to Google Sheets!`
+            : `入庫成功！「${item.name}」已增加 ${restockQty} ${item.unit}，已即時同步至 Google 試算表！`,
+          "success"
+        );
+        await syncWithCloud(true);
+        setIsRestockModalOpen(false);
+      } else {
+        showToast(
+          lang === "en"
+            ? `Restock failed: ${cloudRes?.error || cloudRes?.message || "Failed to write to Google Sheets"}`
+            : `入庫同步失敗：${cloudRes?.error || cloudRes?.message || "未成功寫入試算表"}`,
+          "error"
+        );
+      }
+    } catch (e: any) {
+      console.warn("Restock sync error:", e);
+      showToast(lang === "en" ? "Cloud restock connection error" : "入庫雲端連線失敗", "error");
+    } finally {
+      setIsSubmittingRestock(false);
+    }
   };
 
   // Manual Adjust Modal
@@ -436,6 +520,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
   const [adjustItem, setAdjustItem] = useState<ConsumableItem | null>(null);
   const [adjustNewStock, setAdjustNewStock] = useState<number>(0);
   const [adjustReason, setAdjustReason] = useState("");
+  const [isSubmittingAdjust, setIsSubmittingAdjust] = useState(false);
 
   const openAdjustModal = (item: ConsumableItem) => {
     setAdjustItem(item);
@@ -444,57 +529,59 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
     setIsAdjustModalOpen(true);
   };
 
-  const handleConfirmAdjust = (e: React.FormEvent) => {
+  const handleConfirmAdjust = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!adjustItem) return;
     if (adjustNewStock < 0) {
-      alert("庫存不可為負數！");
+      alert(lang === "en" ? "Stock cannot be negative!" : "庫存不可為負數！");
       return;
     }
     if (!adjustReason.trim()) {
-      alert("手動修正庫存必須填寫修正原因！");
+      alert(lang === "en" ? "Adjustment reason is required!" : "手動修正庫存必須填寫修正原因！");
       return;
     }
 
-    const nowStr = new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei", hour12: false }).replace(/\//g, "-");
     const prevStock = adjustItem.currentStock;
     const diff = adjustNewStock - prevStock;
 
     if (diff === 0) {
-      alert("新庫存與當前庫存相同，無須修正！");
+      alert(lang === "en" ? "New stock is identical to current stock!" : "新庫存與當前庫存相同，無須修正！");
       return;
     }
 
-    setItems(prev => prev.map(it => it.id === adjustItem.id ? { ...it, currentStock: adjustNewStock, updatedAt: nowStr } : it));
+    setIsSubmittingAdjust(true);
+    try {
+      const cloudRes = await sendConsumablesAdminAction("manual_adjust", {
+        itemId: adjustItem.id,
+        newStock: adjustNewStock,
+        operator: "管理員 (Admin)",
+        notes: adjustReason.trim(),
+        reason: adjustReason.trim()
+      });
 
-    const newTx: ConsumableTransaction = {
-      id: `TX-${Date.now()}`,
-      timestamp: nowStr,
-      consumableId: adjustItem.id,
-      consumableName: adjustItem.name,
-      type: "手動修正",
-      changeQty: diff,
-      prevStock,
-      afterStock: adjustNewStock,
-      operator: "管理員 (Admin)",
-      isListedMember: "是",
-      notes: adjustReason.trim()
-    };
-
-    setTransactions(prev => [newTx, ...prev]);
-
-    // 雲端同步
-    sendConsumablesWebhook({
-      action: "manual_adjust",
-      token: "authorized_ebbthings",
-      itemId: adjustItem.id,
-      newStock: adjustNewStock,
-      operator: "管理員 (Admin)",
-      reason: adjustReason.trim()
-    }).catch(e => console.warn(e));
-
-    setIsAdjustModalOpen(false);
-    showToast(`庫存已修正！「${adjustItem.name}」校正為 ${adjustNewStock} ${adjustItem.unit}。`, "success");
+      if (cloudRes && cloudRes.success) {
+        showToast(
+          lang === "en"
+            ? `Stock adjusted! "${adjustItem.name}" updated to ${adjustNewStock} ${adjustItem.unit}. Synced to Google Sheets!`
+            : `庫存已修正！「${adjustItem.name}」校正為 ${adjustNewStock} ${adjustItem.unit}，已同步至 Google 試算表。`,
+          "success"
+        );
+        await syncWithCloud(true);
+        setIsAdjustModalOpen(false);
+      } else {
+        showToast(
+          lang === "en"
+            ? `Adjustment failed: ${cloudRes?.error || cloudRes?.message || "Failed to write to Google Sheets"}`
+            : `庫存校正同步失敗：${cloudRes?.error || cloudRes?.message || "未成功寫入試算表"}`,
+          "error"
+        );
+      }
+    } catch (e: any) {
+      console.warn("Manual adjust sync error:", e);
+      showToast(lang === "en" ? "Adjustment cloud connection error" : "校正雲端連線失敗", "error");
+    } finally {
+      setIsSubmittingAdjust(false);
+    }
   };
 
   // --------------------------------------------------------------------------
@@ -502,6 +589,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
   // --------------------------------------------------------------------------
   const [isItemFormModalOpen, setIsItemFormModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ConsumableItem | null>(null);
+  const [isSubmittingItem, setIsSubmittingItem] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     category: "離心管與樣品瓶",
@@ -540,106 +628,127 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
     setIsItemFormModalOpen(true);
   };
 
-  const handleSaveItemForm = (e: React.FormEvent) => {
+  const handleSaveItemForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      alert("耗材名稱不可為空！");
+      alert(lang === "en" ? "Consumable name cannot be empty!" : "耗材名稱不可為空！");
       return;
     }
 
-    const nowStr = new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei", hour12: false }).replace(/\//g, "-");
-
-    if (editingItem) {
-      // Edit
-      const updatedItem = {
-        id: editingItem.id,
-        name: formData.name.trim(),
-        category: formData.category,
-        spec: formData.spec.trim(),
-        unit: formData.unit.trim(),
-        safeStock: Number(formData.safeStock) || 0,
-        notes: formData.notes.trim()
-      };
-
-      setItems(prev => prev.map(it => it.id === editingItem.id ? {
-        ...it,
-        ...updatedItem,
-        updatedAt: nowStr
-      } : it));
-
-      // 雲端同步
-      sendConsumablesWebhook({
-        action: "update_item",
-        token: "authorized_ebbthings",
-        item: updatedItem
-      }).catch(e => console.warn(e));
-
-      showToast("耗材資料已更新！", "success");
-    } else {
-      // Add
-      const nextId = `CON-${String(items.length + 1).padStart(3, "0")}`;
-      const newItem: ConsumableItem = {
-        id: nextId,
-        name: formData.name.trim(),
-        category: formData.category,
-        spec: formData.spec.trim(),
-        unit: formData.unit.trim(),
-        currentStock: Number(formData.currentStock) || 0,
-        safeStock: Number(formData.safeStock) || 0,
-        notes: formData.notes.trim(),
-        status: "active",
-        createdAt: nowStr,
-        updatedAt: nowStr
-      };
-
-      setItems(prev => [...prev, newItem]);
-
-      // 雲端同步
-      sendConsumablesWebhook({
-        action: "add_item",
-        token: "authorized_ebbthings",
-        item: newItem
-      }).catch(e => console.warn(e));
-
-      // If initial stock > 0, log an initial entry
-      if (newItem.currentStock > 0) {
-        const initTx: ConsumableTransaction = {
-          id: `TX-${Date.now()}`,
-          timestamp: nowStr,
-          consumableId: nextId,
-          consumableName: newItem.name,
-          type: "補貨入庫",
-          changeQty: newItem.currentStock,
-          prevStock: 0,
-          afterStock: newItem.currentStock,
-          operator: "管理員 (建檔)",
-          isListedMember: "是",
-          notes: "新品項初始建檔入庫"
+    setIsSubmittingItem(true);
+    try {
+      if (editingItem) {
+        // Edit existing item
+        const updatedItem = {
+          id: editingItem.id,
+          name: formData.name.trim(),
+          category: formData.category,
+          spec: formData.spec.trim(),
+          unit: formData.unit.trim(),
+          safeStock: Number(formData.safeStock) || 0,
+          notes: formData.notes.trim()
         };
-        setTransactions(prev => [initTx, ...prev]);
-      }
-      showToast("耗材品項新增成功！", "success");
-    }
 
-    setIsItemFormModalOpen(false);
+        const cloudRes = await sendConsumablesAdminAction("update_item", {
+          item: updatedItem
+        });
+
+        if (cloudRes && cloudRes.success) {
+          showToast(
+            lang === "en" 
+              ? `Item "${updatedItem.name}" updated and synced to Google Sheets!` 
+              : `品項資訊已更新並同步至 Google 試算表！`, 
+            "success"
+          );
+          await syncWithCloud(true);
+          setIsItemFormModalOpen(false);
+        } else {
+          showToast(
+            lang === "en" 
+              ? `Update failed: ${cloudRes?.error || cloudRes?.message || "Failed to update Google Sheets"}` 
+              : `更新同步失敗：${cloudRes?.error || cloudRes?.message || "未寫入試算表"}`, 
+            "error"
+          );
+        }
+      } else {
+        // Add new item directly to Google Sheets
+        const cloudRes = await sendConsumablesAdminAction("add_item", {
+          item: {
+            name: formData.name.trim(),
+            category: formData.category,
+            spec: formData.spec.trim(),
+            unit: formData.unit.trim(),
+            currentStock: Number(formData.currentStock) || 0,
+            safeStock: Number(formData.safeStock) || 0,
+            notes: formData.notes.trim()
+          }
+        });
+
+        if (cloudRes && cloudRes.success) {
+          showToast(
+            lang === "en" 
+              ? `Consumable "${formData.name.trim()}" successfully created and saved to Google Sheets!` 
+              : `耗材品項「${formData.name.trim()}」已成功新增並寫入 Google 試算表！`, 
+            "success"
+          );
+          // 重新從 Google 試算表載入官方資料與 ID
+          await syncWithCloud(true);
+          setIsItemFormModalOpen(false);
+        } else {
+          showToast(
+            lang === "en" 
+              ? `Cloud save failed: ${cloudRes?.error || cloudRes?.message || "Failed to write to Google Sheets"}` 
+              : `品項雲端新增失敗：${cloudRes?.error || cloudRes?.message || "未能寫入 Google 試算表"}`, 
+            "error"
+          );
+        }
+      }
+    } catch (err: any) {
+      console.warn("Item save error:", err);
+      showToast(lang === "en" ? `Cloud error: ${err.message || err}` : `雲端同步異常：${err.message || err}`, "error");
+    } finally {
+      setIsSubmittingItem(false);
+    }
   };
 
   // Toggle Active/Inactive
-  const handleToggleStatus = (item: ConsumableItem) => {
+  const handleToggleStatus = async (item: ConsumableItem) => {
     const nextStatus = item.status === "active" ? "inactive" : "active";
-    const statusText = nextStatus === "active" ? "啟用" : "停用";
-    if (confirm(`確定要將「${item.name}」變更為【${statusText}】嗎？`)) {
-      setItems(prev => prev.map(it => it.id === item.id ? { ...it, status: nextStatus } : it));
+    const statusText = nextStatus === "active" 
+      ? (lang === "en" ? "Activate" : "啟用") 
+      : (lang === "en" ? "Deactivate" : "停用");
 
-      // 雲端同步
-      sendConsumablesWebhook({
-        action: "toggle_status",
-        token: "authorized_ebbthings",
+    const confirmMsg = lang === "en" 
+      ? `Are you sure you want to change "${item.name}" to [${statusText}]?` 
+      : `確定要將「${item.name}」變更為【${statusText}】嗎？`;
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const cloudRes = await sendConsumablesAdminAction("toggle_status", {
         itemId: item.id,
         newStatus: nextStatus
-      }).catch(e => console.warn(e));
+      });
 
-      showToast(`已將「${item.name}」設定為${statusText}！`, "info");
+      if (cloudRes && cloudRes.success) {
+        showToast(
+          lang === "en" 
+            ? `"${item.name}" is now set to ${statusText} and synced to Google Sheets!` 
+            : `已將「${item.name}」設定為${statusText}並同步至 Google 試算表！`, 
+          "info"
+        );
+        await syncWithCloud(true);
+      } else {
+        showToast(
+          lang === "en" 
+            ? `Status sync warning: ${cloudRes?.error || cloudRes?.message}` 
+            : `狀態變更同步提醒：${cloudRes?.error || cloudRes?.message}`, 
+          "error"
+        );
+      }
+    } catch (e: any) {
+      console.warn(e);
+      showToast(lang === "en" ? "Connection error" : "連線異常", "error");
     }
   };
 
@@ -708,6 +817,12 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
     setAudits(prev => [newAudit, ...prev]);
     setActiveAuditDetails(details);
     showToast(`盤點單 ${auditId} 已發起！已鎖定帳面庫存快照。`, "success");
+
+    // 雲端同步發起盤點
+    sendConsumablesAdminAction("start_audit", {
+      operator: "管理員 (Admin)",
+      notes: "定期庫存盤點 (進行中)"
+    }).catch(e => console.warn("Start audit sync error:", e));
   };
 
   // Update a single item's counted qty in active audit
@@ -746,6 +861,13 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
       details: activeAuditDetails
     } : a));
     showToast("盤點草稿已暫存！可隨時返回繼續填寫。", "success");
+
+    // 雲端同步暫存草稿
+    sendConsumablesAdminAction("save_audit_draft", {
+      auditId: activeAudit.auditId,
+      details: activeAuditDetails,
+      notes: auditNotes
+    }).catch(e => console.warn("Save audit draft sync error:", e));
   };
 
   // Complete Audit (Finalize and overwrite inventory)
@@ -808,12 +930,16 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
     } : a));
 
     // 3. 雲端同步
-    sendConsumablesWebhook({
-      action: "complete_audit",
-      token: "authorized_ebbthings",
+    sendConsumablesAdminAction("complete_audit", {
       auditId: activeAudit.auditId,
       details: activeAuditDetails,
       notes: auditNotes
+    }).then(cloudRes => {
+      if (cloudRes && cloudRes.success) {
+        syncWithCloud(true);
+      } else {
+        showToast(`盤點同步提醒：${cloudRes?.error || cloudRes?.message || "未同步"}`, "error");
+      }
     }).catch(e => console.warn(e));
 
     showToast(`盤點已圓滿完成！共校正 ${diffCount} 項庫存差異。`, "success");
@@ -987,31 +1113,47 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-serif flex items-center gap-2">
             <Boxes className="w-7 h-7 text-[#1b4372]" />
-            <span>Lab Consumables Statistics</span>
+            <span>{lang === "en" ? "Lab Consumables & Stock Inventory" : "Lab Consumables 耗材統計與領用"}</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 mt-1">
-            實驗室耗材種類與數量實時統計 · 線上自助領用登記 · 低庫存預警與定期盤點系統
+            {lang === "en" 
+              ? "Real-time Laboratory Consumables Stock Tracking · Self-service Online Pickup · Regular Stocktake"
+              : "實驗室耗材種類與數量實時統計 · 線上自助領用登記 · 低庫存預警與定期盤點系統"}
           </p>
         </div>
 
-        {/* Admin Login / Logout & Cloud Sync Section */}
+        {/* Action Buttons: Language Toggle, Sync, Admin, Back */}
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {/* One-Click Language Toggle Button */}
+          <button
+            type="button"
+            onClick={toggleLanguage}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border border-[#1b4372]/30 hover:border-[#1b4372] text-[#1b4372] rounded-sm text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+            title={lang === "zh" ? "切換至英文介面 (Switch to English)" : "切換至繁體中文 (Switch to Traditional Chinese)"}
+          >
+            <Globe className="w-3.5 h-3.5 text-[#1b4372]" />
+            <span>{lang === "zh" ? "English" : "繁體中文"}</span>
+          </button>
+
           {/* Cloud Sync Button */}
           <button
             type="button"
             onClick={() => syncWithCloud(false)}
             disabled={isSyncing}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-sm text-xs font-bold transition shadow-2xs cursor-pointer disabled:opacity-60 whitespace-nowrap"
-            title={lastSyncTime ? `上次同步：${lastSyncTime}（點擊重新同步 Google 試算表最新庫存）` : "立即與 Google 試算表雙向同步最新耗材與領用資料"}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-sm text-xs font-bold transition shadow-2xs cursor-pointer disabled:opacity-60 whitespace-nowrap active:scale-95"
+            title={lastSyncTime 
+              ? (lang === "en" ? `Last synced: ${lastSyncTime} (Click to re-sync Google Sheet)` : `上次同步：${lastSyncTime}（點擊重新同步 Google 試算表最新庫存）`)
+              : (lang === "en" ? "Sync with Google Sheet immediately" : "立即與 Google 試算表雙向同步最新耗材與領用資料")}
           >
             <RefreshCw className={`w-3.5 h-3.5 text-emerald-700 ${isSyncing ? "animate-spin" : ""}`} />
-            <span>{isSyncing ? "同步中..." : "同步雲端"}</span>
+            <span>{isSyncing ? (lang === "en" ? "Syncing..." : "同步中...") : (lang === "en" ? "Sync Cloud" : "同步雲端")}</span>
           </button>
+
           {isAdmin ? (
             <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-300 px-3 py-1.5 rounded-sm">
               <ShieldCheck className="w-4 h-4 text-emerald-700" />
               <div className="text-left text-xs">
-                <span className="text-emerald-900 font-bold block">耗材管理已解鎖</span>
+                <span className="text-emerald-900 font-bold block">{lang === "en" ? "Admin Mode" : "耗材管理員已解鎖"}</span>
                 <span className="text-emerald-700 text-[10px] font-mono">Token Active (2h)</span>
               </div>
               <button
@@ -1019,7 +1161,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 onClick={handleAdminLogout}
                 className="ml-2 px-2 py-1 bg-white hover:bg-slate-50 border border-emerald-300 text-emerald-800 rounded text-xs font-bold transition shadow-2xs"
               >
-                登出
+                {lang === "en" ? "Logout" : "登出"}
               </button>
             </div>
           ) : (
@@ -1033,7 +1175,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 border border-[#e5e5e0] text-slate-700 hover:text-[#1b4372] rounded-sm text-xs font-bold transition shadow-2xs cursor-pointer"
             >
               <Lock className="w-3.5 h-3.5 text-amber-600" />
-              <span>管理員登入</span>
+              <span>{lang === "en" ? "Admin Login" : "管理員登入"}</span>
             </button>
           )}
 
@@ -1041,9 +1183,9 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
             <button
               type="button"
               onClick={onBackToHome}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-sm text-xs font-medium transition"
+              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-sm text-xs font-medium transition cursor-pointer"
             >
-              返回首頁
+              {lang === "en" ? "Home" : "返回首頁"}
             </button>
           )}
         </div>
@@ -1055,8 +1197,10 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-amber-600 shrink-0" />
             <span>
-              <strong>定期盤點提醒：</strong>
-              距上次完成盤點已逾 <strong>{daysSinceLastAudit} 天</strong>（設定警戒為 30 天）。建議管理員於本週排定全面盤點，以確保帳實相符！
+              <strong>{lang === "en" ? "Audit Reminder: " : "定期盤點提醒："}</strong>
+              {lang === "en" 
+                ? `Last stocktake was ${daysSinceLastAudit} days ago (Alert threshold: 30 days). A comprehensive stocktake is recommended this week!`
+                : `距上次完成盤點已逾 ${daysSinceLastAudit} 天（設定警戒為 30 天）。建議管理員於本週排定全面盤點，以確保帳實相符！`}
             </span>
           </div>
           {isAdmin && (
@@ -1065,7 +1209,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               onClick={() => setCurrentTab("audit")}
               className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[11px] font-bold shrink-0 transition"
             >
-              前往盤點
+              {lang === "en" ? "Go to Stocktake" : "前往盤點"}
             </button>
           )}
         </div>
@@ -1074,18 +1218,22 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
       {/* -------------------- Top Overview Metric Cards -------------------- */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <div className="p-3.5 bg-white border border-[#e5e5e0] rounded-sm shadow-2xs space-y-1">
-          <span className="text-[11px] text-slate-500 font-medium block">啟用中耗材品項</span>
+          <span className="text-[11px] text-slate-500 font-medium block">
+            {lang === "en" ? "Active Consumables" : "啟用中耗材品項"}
+          </span>
           <div className="flex items-baseline justify-between">
             <span className="text-2xl font-bold font-mono text-[#1b4372]">{stats.activeCount}</span>
-            <span className="text-[11px] text-slate-400">種品項</span>
+            <span className="text-[11px] text-slate-400">{lang === "en" ? "Items" : "種品項"}</span>
           </div>
         </div>
 
         <div className="p-3.5 bg-white border border-[#e5e5e0] rounded-sm shadow-2xs space-y-1">
-          <span className="text-[11px] text-slate-500 font-medium block">在庫總量統計</span>
+          <span className="text-[11px] text-slate-500 font-medium block">
+            {lang === "en" ? "Total In-Stock Units" : "在庫總量統計"}
+          </span>
           <div className="flex items-baseline justify-between">
             <span className="text-2xl font-bold font-mono text-slate-800">{stats.totalUnits.toLocaleString()}</span>
-            <span className="text-[11px] text-slate-400">件/單位</span>
+            <span className="text-[11px] text-slate-400">{lang === "en" ? "Units" : "件/單位"}</span>
           </div>
         </div>
 
@@ -1094,7 +1242,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
         }`}>
           <div className="flex items-center justify-between">
             <span className={`text-[11px] font-medium block ${stats.lowStockCount > 0 ? "text-rose-700" : "text-slate-500"}`}>
-              庫存偏低警示
+              {lang === "en" ? "Low Stock Alerts" : "庫存偏低警示"}
             </span>
             {stats.lowStockCount > 0 && (
               <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
@@ -1104,34 +1252,42 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
             <span className={`text-2xl font-bold font-mono ${stats.lowStockCount > 0 ? "text-rose-700" : "text-slate-800"}`}>
               {stats.lowStockCount}
             </span>
-            <span className="text-[11px] text-rose-600 font-medium">需補貨</span>
+            <span className="text-[11px] text-rose-600 font-medium">
+              {lang === "en" ? "Restock Needed" : "需補貨"}
+            </span>
           </div>
         </div>
 
         <div 
           onClick={() => setIsAllPickupsModalOpen(true)}
           className="p-3.5 bg-white hover:bg-slate-50 border border-[#e5e5e0] hover:border-[#1b4372]/40 rounded-sm shadow-2xs space-y-1 cursor-pointer transition group"
-          title="點擊查看實驗室全部耗材領用登記明細"
+          title={lang === "en" ? "Click to view all lab pickup registration records" : "點擊查看實驗室全部耗材領用登記明細"}
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-slate-500 font-medium block group-hover:text-[#1b4372] transition">
-              本月累計領用
+              {lang === "en" ? "Monthly Pickups" : "本月累計領用"}
             </span>
             <History className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1b4372] transition" />
           </div>
           <div className="flex items-baseline justify-between">
             <span className="text-2xl font-bold font-mono text-emerald-700">{stats.monthlyPickupCount}</span>
-            <span className="text-[11px] text-slate-400 group-hover:text-[#1b4372] transition">次登記 ↗</span>
+            <span className="text-[11px] text-slate-400 group-hover:text-[#1b4372] transition">
+              {lang === "en" ? "Logs ↗" : "次登記 ↗"}
+            </span>
           </div>
         </div>
 
         <div className="col-span-2 sm:col-span-2 lg:col-span-1 p-3.5 bg-white border border-[#e5e5e0] rounded-sm shadow-2xs space-y-1">
-          <span className="text-[11px] text-slate-500 font-medium block">距上次盤點</span>
+          <span className="text-[11px] text-slate-500 font-medium block">
+            {lang === "en" ? "Days Since Audit" : "距上次盤點"}
+          </span>
           <div className="flex items-baseline justify-between">
             <span className={`text-2xl font-bold font-mono ${isAuditOverdue ? "text-amber-700" : "text-[#1b4372]"}`}>
               {daysSinceLastAudit !== null ? daysSinceLastAudit : "-"}
             </span>
-            <span className="text-[11px] text-slate-400">天前</span>
+            <span className="text-[11px] text-slate-400">
+              {lang === "en" ? "days ago" : "天前"}
+            </span>
           </div>
         </div>
       </div>
@@ -1148,7 +1304,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 : "border-transparent text-slate-600 hover:text-slate-900"
             }`}
           >
-            耗材清單與線上領取
+            {lang === "en" ? "Consumables & Pickup" : "耗材清單與線上領取"}
           </button>
 
           <button
@@ -1160,7 +1316,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 : "border-transparent text-slate-600 hover:text-slate-900"
             }`}
           >
-            <span>低庫存清單</span>
+            <span>{lang === "en" ? "Low Stock List" : "低庫存清單"}</span>
             {stats.lowStockCount > 0 && (
               <span className="px-1.5 py-0.2 rounded-full bg-rose-100 text-rose-700 text-[10px] font-mono font-bold">
                 {stats.lowStockCount}
@@ -1177,7 +1333,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 : "border-transparent text-slate-600 hover:text-slate-900"
             }`}
           >
-            全部異動紀錄
+            {lang === "en" ? "All Activity Logs" : "全部異動紀錄"}
           </button>
 
           {/* Admin Tabs */}
@@ -1193,7 +1349,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 }`}
               >
                 <ClipboardCheck className="w-3.5 h-3.5 text-[#8d734a]" />
-                <span>定期盤點系統</span>
+                <span>{lang === "en" ? "Regular Stocktake" : "定期盤點系統"}</span>
                 {activeAudit && (
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
                 )}
@@ -1209,7 +1365,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 }`}
               >
                 <Edit3 className="w-3.5 h-3.5 text-[#1b4372]" />
-                <span>品項入庫與管理</span>
+                <span>{lang === "en" ? "Item Catalog & Stock" : "品項入庫與管理"}</span>
               </button>
             </>
           )}
@@ -1224,7 +1380,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#1b4372] hover:bg-[#15345a] text-white rounded-sm text-xs font-bold transition shadow-2xs"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>新增耗材</span>
+              <span>{lang === "en" ? "New Item" : "新增耗材"}</span>
             </button>
 
             <button
@@ -1238,7 +1394,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-sm text-xs font-bold transition shadow-2xs"
             >
               <TrendingUp className="w-3.5 h-3.5" />
-              <span>補貨入庫</span>
+              <span>{lang === "en" ? "Restock" : "補貨入庫"}</span>
             </button>
           </div>
         )}
@@ -1256,7 +1412,9 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="搜尋耗材品名、規格型號、編號或類別 (如: 離心管、Tips、手套)..."
+                placeholder={lang === "en" 
+                  ? "Search consumable name, spec, ID or category (e.g., tube, tips, gloves)..." 
+                  : "搜尋耗材品名、規格型號、編號或類別 (如: 離心管、Tips、手套)..."}
                 className="w-full pl-9 pr-8 py-1.5 bg-[#fcfcfc] border border-slate-200 rounded-sm text-xs focus:border-[#1b4372] focus:outline-none"
               />
               {searchQuery && (
@@ -1275,7 +1433,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-slate-400 shrink-0 flex items-center gap-1">
                   <Filter className="w-3 h-3" />
-                  <span>類別:</span>
+                  <span>{lang === "en" ? "Category:" : "類別:"}</span>
                 </span>
                 <select
                   value={selectedCategory}
@@ -1283,7 +1441,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                   className="bg-[#fcfcfc] border border-slate-200 rounded-sm px-2 py-1 text-xs text-slate-700 font-medium focus:border-[#1b4372] focus:outline-none"
                 >
                   {CONSUMABLE_CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                    <option key={cat} value={cat}>{getCategoryLabel(cat)}</option>
                   ))}
                 </select>
               </div>
@@ -1293,10 +1451,10 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 type="button"
                 onClick={() => setIsAllPickupsModalOpen(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f0f4f9] hover:bg-[#e2ebf7] border border-[#1b4372]/30 text-[#1b4372] rounded-sm text-xs font-bold transition shadow-2xs whitespace-nowrap cursor-pointer active:scale-95"
-                title="點擊彈窗檢視全實驗室所有領用登記紀錄明細"
+                title={lang === "en" ? "View all laboratory pickup records" : "點擊彈窗檢視全實驗室所有領用登記紀錄明細"}
               >
                 <History className="w-3.5 h-3.5 text-[#1b4372]" />
-                <span>查看全部領用紀錄</span>
+                <span>{lang === "en" ? "View All Pickups" : "查看全部領用紀錄"}</span>
                 <span className="px-1.5 py-0.2 bg-[#1b4372] text-white text-[10px] rounded-full font-mono">
                   {totalPickupCount}
                 </span>
@@ -1310,26 +1468,47 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               <table className="w-full text-left text-xs">
                 <thead className="bg-[#f8f8f5] text-slate-700 font-bold border-b border-[#e5e5e0] select-none">
                   <tr>
-                    <th className="p-3 w-20">編號</th>
-                    <th className="p-3">耗材名稱與型號規格</th>
-                    <th className="p-3 w-28">分類</th>
-                    <th className="p-3 text-right w-24">目前庫存</th>
-                    <th className="p-3 text-right w-20">安全庫存</th>
-                    <th className="p-3 w-24 text-center">庫存狀態</th>
+                    <th className="p-3 w-20">{lang === "en" ? "ID" : "編號"}</th>
+                    <th className="p-3">{lang === "en" ? "Name & Specification" : "耗材名稱與型號規格"}</th>
+                    <th className="p-3 w-28">{lang === "en" ? "Category" : "分類"}</th>
+                    <th className="p-3 text-right w-24">{lang === "en" ? "Current Stock" : "目前庫存"}</th>
+                    <th className="p-3 text-right w-20">{lang === "en" ? "Safety Stock" : "安全庫存"}</th>
+                    <th className="p-3 w-24 text-center">{lang === "en" ? "Stock Status" : "庫存狀態"}</th>
                     <th className="p-3 w-48">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5 text-slate-500" />
-                        <span>上次領用人 / 時間</span>
+                        <span>{lang === "en" ? "Last Pickup (User / Time)" : "上次領用人 / 時間"}</span>
                       </span>
                     </th>
-                    <th className="p-3 text-right w-44">操作</th>
+                    <th className="p-3 text-right w-44">{lang === "en" ? "Actions" : "操作"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredItems.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="p-8 text-center text-slate-400 text-xs">
-                        查無符合篩選條件的耗材品項。請嘗試清除搜尋字詞或切換類別！
+                      <td colSpan={8} className="p-10 text-center text-slate-400 text-xs">
+                        {isSyncing ? (
+                          <div className="flex flex-col items-center justify-center gap-2 py-4">
+                            <RefreshCw className="w-5 h-5 text-[#1b4372] animate-spin" />
+                            <span className="text-slate-600 font-medium">
+                              {lang === "en" ? "Syncing consumables from Google Sheet, please wait..." : "正在從 Google 試算表同步耗材資料中，請稍候..."}
+                            </span>
+                          </div>
+                        ) : items.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center gap-2 py-6">
+                            <Boxes className="w-8 h-8 text-slate-300" />
+                            <span className="text-slate-700 font-medium text-sm">
+                              {lang === "en" ? "No consumables found in Google Sheet" : "Google 試算表中目前尚無耗材品項"}
+                            </span>
+                            <span className="text-slate-400 text-xs">
+                              {lang === "en" ? "Click 'Sync Cloud' or login as Admin to add items" : "可點擊右上角「同步雲端」重新整理，或登入管理員新增品項"}
+                            </span>
+                          </div>
+                        ) : (
+                          <span>
+                            {lang === "en" ? "No matching consumables found. Try clearing filters or search query." : "查無符合篩選條件的耗材品項。請嘗試清除搜尋字詞或切換類別！"}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ) : (
@@ -1357,7 +1536,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                               <span>{item.name}</span>
                               {isInactive && (
                                 <span className="px-1.5 py-0.2 rounded bg-slate-200 text-slate-600 text-[10px] font-normal">
-                                  已停用
+                                  {lang === "en" ? "Inactive" : "已停用"}
                                 </span>
                               )}
                             </div>
@@ -1366,7 +1545,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                             </div>
                             {item.notes && (
                               <div className="text-slate-400 text-[11px] mt-0.5 italic">
-                                備註: {item.notes}
+                                {lang === "en" ? "Notes" : "備註"}: {item.notes}
                               </div>
                             )}
                           </td>
@@ -1374,7 +1553,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                           {/* Category */}
                           <td className="p-3 text-slate-600">
                             <span className="px-2 py-0.5 bg-slate-100 rounded text-[11px]">
-                              {item.category}
+                              {getCategoryLabel(item.category)}
                             </span>
                           </td>
 
@@ -1403,15 +1582,15 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                           <td className="p-3 text-center">
                             {isOutOfStock ? (
                               <span className="px-2 py-0.5 bg-rose-100 text-rose-800 rounded text-[10px] font-bold">
-                                已無庫存
+                                {lang === "en" ? "Out of Stock" : "已無庫存"}
                               </span>
                             ) : isLowStock ? (
                               <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded text-[10px] font-bold">
-                                庫存偏低
+                                {lang === "en" ? "Low Stock" : "庫存偏低"}
                               </span>
                             ) : (
                               <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[10px] font-medium">
-                                充裕正常
+                                {lang === "en" ? "In Stock" : "充裕正常"}
                               </span>
                             )}
                           </td>
@@ -1426,7 +1605,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                                   setItemHistorySearch("");
                                 }}
                                 className="group cursor-pointer p-1.5 -m-1 rounded hover:bg-slate-100 transition"
-                                title="點擊查看該品項所有歷史領用紀錄"
+                                title={lang === "en" ? "Click to view pickup history for this item" : "點擊查看該品項所有歷史領用紀錄"}
                               >
                                 <div className="font-semibold text-slate-800 text-xs flex items-center gap-1.5">
                                   <User className="w-3.5 h-3.5 text-[#1b4372] shrink-0" />
@@ -1439,14 +1618,14 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                                   <span>{lastPickup.timestamp}</span>
                                 </div>
                                 <div className="text-[10px] text-slate-400 truncate max-w-[170px] mt-0.5">
-                                  領取 {Math.abs(lastPickup.changeQty)} {item.unit}
+                                  {lang === "en" ? "Took" : "領取"} {Math.abs(lastPickup.changeQty)} {item.unit}
                                   {lastPickup.notes ? ` · ${lastPickup.notes}` : ""}
                                 </div>
                               </div>
                             ) : (
                               <div className="text-slate-400 text-xs italic flex items-center gap-1">
                                 <Clock className="w-3 h-3 text-slate-300" />
-                                <span>尚無領用紀錄</span>
+                                <span>{lang === "en" ? "No pickup record" : "尚無領用紀錄"}</span>
                               </div>
                             )}
                           </td>
@@ -1461,11 +1640,11 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                                 setHistoryScope("pickup_only");
                                 setItemHistorySearch("");
                               }}
-                              title="查看此品項的所有歷史領用紀錄"
+                              title={lang === "en" ? "View all pickup history for this item" : "查看此品項的所有歷史領用紀錄"}
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 rounded-sm text-xs font-medium transition cursor-pointer active:scale-95 shadow-2xs"
                             >
                               <History className="w-3.5 h-3.5 text-slate-500" />
-                              <span>領用紀錄</span>
+                              <span>{lang === "en" ? "History" : "領用紀錄"}</span>
                             </button>
 
                             {/* General Pickup Button */}
@@ -1479,7 +1658,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                                   : "bg-[#1b4372] hover:bg-[#122e4f] text-white cursor-pointer active:scale-95"
                               }`}
                             >
-                              {isOutOfStock ? "已無庫存" : "領取登記"}
+                              {isOutOfStock ? (lang === "en" ? "Out of Stock" : "已無庫存") : (lang === "en" ? "Pickup" : "領取登記")}
                             </button>
 
                             {/* Admin Quick Adjust Button */}
@@ -1487,10 +1666,10 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                               <button
                                 type="button"
                                 onClick={() => openAdjustModal(item)}
-                                title="修正庫存"
+                                title={lang === "en" ? "Adjust stock" : "修正庫存"}
                                 className="px-2 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-sm text-xs transition cursor-pointer"
                               >
-                                校正
+                                {lang === "en" ? "Adjust" : "校正"}
                               </button>
                             )}
                           </td>
@@ -2453,16 +2632,28 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                   Consumables Checkout
                 </span>
                 <h3 className="text-lg font-bold text-slate-900 font-serif">
-                  耗材領取登記
+                  {lang === "en" ? "Consumable Pickup Registration" : "耗材領取登記"}
                 </h3>
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedPickupItem(null)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {/* One-Click Language Switch inside Modal */}
+                <button
+                  type="button"
+                  onClick={toggleLanguage}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold border border-[#1b4372]/30 rounded bg-blue-50/50 hover:bg-blue-50 text-[#1b4372] transition shadow-2xs cursor-pointer active:scale-95"
+                  title={lang === "zh" ? "切換至英文 (Switch to English)" : "切換至中文 (Switch to Chinese)"}
+                >
+                  <Globe className="w-3.5 h-3.5 text-[#1b4372]" />
+                  <span>{lang === "zh" ? "English" : "繁體中文"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPickupItem(null)}
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Target Item Info */}
@@ -2470,7 +2661,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               <div className="font-bold text-sm text-slate-900">{selectedPickupItem.name}</div>
               <div className="text-slate-500">{selectedPickupItem.spec}</div>
               <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-slate-600">
-                <span>目前在席庫存：</span>
+                <span>{lang === "en" ? "Current In-Stock:" : "目前在席庫存："}</span>
                 <span className="font-mono font-bold text-sm text-[#1b4372]">
                   {selectedPickupItem.currentStock} {selectedPickupItem.unit}
                 </span>
@@ -2481,13 +2672,13 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               {/* Quantity Stepper */}
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5">
-                  領取數量 ({selectedPickupItem.unit}) *
+                  {lang === "en" ? `Pickup Quantity (${selectedPickupItem.unit}) *` : `領取數量 (${selectedPickupItem.unit}) *`}
                 </label>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setPickupQty(Math.max(1, pickupQty - 1))}
-                    className="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700"
+                    className="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700 cursor-pointer"
                   >
                     -
                   </button>
@@ -2502,34 +2693,35 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                   <button
                     type="button"
                     onClick={() => setPickupQty(Math.min(selectedPickupItem.currentStock, pickupQty + 1))}
-                    className="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700"
+                    className="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700 cursor-pointer"
                   >
                     +
                   </button>
                   <button
                     type="button"
                     onClick={() => setPickupQty(selectedPickupItem.currentStock)}
-                    className="px-2 py-1 text-[11px] text-[#1b4372] border border-slate-200 hover:bg-slate-50 rounded"
+                    className="px-2 py-1 text-[11px] text-[#1b4372] border border-slate-200 hover:bg-slate-50 rounded cursor-pointer"
                   >
-                    全領 ({selectedPickupItem.currentStock})
+                    {lang === "en" ? `Take All (${selectedPickupItem.currentStock})` : `全領 (${selectedPickupItem.currentStock})`}
                   </button>
                 </div>
                 <div className="text-[11px] text-slate-500 mt-1">
-                  領取後剩餘庫存：<strong>{selectedPickupItem.currentStock - pickupQty}</strong> {selectedPickupItem.unit}
+                  {lang === "en" ? "Remaining after pickup: " : "領取後剩餘庫存："}
+                  <strong>{selectedPickupItem.currentStock - pickupQty}</strong> {selectedPickupItem.unit}
                 </div>
               </div>
 
               {/* Picker Dropdown (from Lab Members List) */}
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  領取人姓名 *
+                  {lang === "en" ? "User / Collector Name *" : "領取人姓名 *"}
                 </label>
                 {!isOtherOperator ? (
                   <div className="space-y-1.5">
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="搜尋或輸入學生姓名..."
+                        placeholder={lang === "en" ? "Search or select member name..." : "搜尋或輸入學生姓名..."}
                         value={memberSearchTerm}
                         onChange={e => {
                           setMemberSearchTerm(e.target.value);
@@ -2559,7 +2751,9 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                           </div>
                         ))}
                         {filteredMemberList.length === 0 && (
-                          <div className="p-2 text-slate-400 text-center">無符合姓名</div>
+                          <div className="p-2 text-slate-400 text-center">
+                            {lang === "en" ? "No matching name" : "無符合姓名"}
+                          </div>
                         )}
                       </div>
                     )}
@@ -2571,9 +2765,9 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                           setIsOtherOperator(true);
                           setIsMemberDropdownOpen(false);
                         }}
-                        className="text-[11px] text-[#1b4372] hover:underline"
+                        className="text-[11px] text-[#1b4372] hover:underline cursor-pointer"
                       >
-                        不在名單內？切換至「其他（手動輸入姓名）」
+                        {lang === "en" ? "Not on list? Enter visitor/custom name manually" : "不在名單內？切換至「其他（手動輸入姓名）」"}
                       </button>
                     </div>
                   </div>
@@ -2583,16 +2777,16 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                       type="text"
                       value={otherOperatorName}
                       onChange={e => setOtherOperatorName(e.target.value)}
-                      placeholder="請輸入領取人姓名 (如: 訪客學者、協同實驗室同學)..."
+                      placeholder={lang === "en" ? "Enter collector name (e.g., visitor, student)..." : "請輸入領取人姓名 (如: 訪客學者、協同實驗室同學)..."}
                       className="w-full p-2 border border-slate-300 rounded-sm text-xs focus:border-[#1b4372] focus:outline-none"
                     />
                     <div className="text-right">
                       <button
                         type="button"
                         onClick={() => setIsOtherOperator(false)}
-                        className="text-[11px] text-[#1b4372] hover:underline"
+                        className="text-[11px] text-[#1b4372] hover:underline cursor-pointer"
                       >
-                        返回選擇實驗室固定名冊
+                        {lang === "en" ? "Back to member selection list" : "返回選擇實驗室固定名冊"}
                       </button>
                     </div>
                   </div>
@@ -2602,13 +2796,13 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               {/* Notes */}
               <div>
                 <label className="block font-medium text-slate-600 mb-1">
-                  用途 / 實驗名稱備註 (選填):
+                  {lang === "en" ? "Purpose / Experiment Notes (Optional):" : "用途 / 實驗名稱備註 (選填):"}
                 </label>
                 <input
                   type="text"
                   value={pickupNotes}
                   onChange={e => setPickupNotes(e.target.value)}
-                  placeholder=""
+                  placeholder={lang === "en" ? "e.g., Cell culture, PCR assay, western blot..." : "例如：分生實驗、細胞培養、PCR檢驗..."}
                   className="w-full p-2 border border-slate-200 rounded-sm text-xs focus:border-[#1b4372] focus:outline-none"
                 />
               </div>
@@ -2618,16 +2812,21 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 <button
                   type="button"
                   onClick={() => setSelectedPickupItem(null)}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm text-xs font-medium"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm text-xs font-medium cursor-pointer"
                 >
-                  取消
+                  {lang === "en" ? "Cancel" : "取消"}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingPickup}
-                  className="px-4 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-sm disabled:opacity-50"
+                  className="px-4 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
-                  {isSubmittingPickup ? "寫入中..." : "確認登記領取"}
+                  {isSubmittingPickup && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>
+                    {isSubmittingPickup 
+                      ? (lang === "en" ? "Saving to Cloud..." : "寫入中...") 
+                      : (lang === "en" ? "Confirm Pickup" : "確認登記領取")}
+                  </span>
                 </button>
               </div>
             </form>
@@ -2647,7 +2846,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                   Administrator Portal
                 </span>
                 <h3 className="text-base font-bold text-slate-900 font-serif">
-                  耗材管理驗證
+                  耗材管理員驗證
                 </h3>
               </div>
               <button
@@ -2661,7 +2860,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
 
             <form onSubmit={handleAdminLogin} className="space-y-3 text-xs">
               <p className="text-slate-600">
-                請輸入耗材管理專屬密碼，驗證通過後即可進行新增品項、補貨入庫、手動校正與定期盤點作業。
+                請輸入耗材管理員專屬密碼，驗證通過後即可進行新增品項、補貨入庫、手動校正與定期盤點作業。
               </p>
 
               <div>
@@ -2764,15 +2963,17 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 <button
                   type="button"
                   onClick={() => setIsRestockModalOpen(false)}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm text-xs"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm text-xs cursor-pointer"
                 >
-                  取消
+                  {lang === "en" ? "Cancel" : "取消"}
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-sm text-xs font-bold transition shadow-sm"
+                  disabled={isSubmittingRestock}
+                  className="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-sm text-xs font-bold transition shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
-                  確認入庫
+                  {isSubmittingRestock && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{isSubmittingRestock ? (lang === "en" ? "Saving to Sheet..." : "寫入中...") : (lang === "en" ? "Confirm Restock" : "確認入庫")}</span>
                 </button>
               </div>
             </form>
@@ -2792,13 +2993,13 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                   Direct Stock Correction
                 </span>
                 <h3 className="text-base font-bold text-slate-900 font-serif">
-                  手動庫存直接修正
+                  {lang === "en" ? "Direct Stock Adjustment" : "手動庫存直接修正"}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAdjustModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2806,12 +3007,17 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
 
             <div className="p-3 bg-slate-50 rounded text-xs space-y-1">
               <div className="font-bold text-slate-900">{adjustItem.name}</div>
-              <div className="text-slate-500">目前庫存：{adjustItem.currentStock} {adjustItem.unit}</div>
+              <div className="text-slate-500">
+                {lang === "en" ? "Current In-Stock: " : "目前庫存："}
+                {adjustItem.currentStock} {adjustItem.unit}
+              </div>
             </div>
 
             <form onSubmit={handleConfirmAdjust} className="space-y-3 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">目標修正後庫存 ({adjustItem.unit}) *</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  {lang === "en" ? `Target Adjusted Stock (${adjustItem.unit}) *` : `目標修正後庫存 (${adjustItem.unit}) *`}
+                </label>
                 <input
                   type="number"
                   min={0}
@@ -2822,12 +3028,14 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">修正原因/說明 (必填) *</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  {lang === "en" ? "Adjustment Reason (Required) *" : "修正原因/說明 (必填) *"}
+                </label>
                 <input
                   type="text"
                   value={adjustReason}
                   onChange={e => setAdjustReason(e.target.value)}
-                  placeholder="例: 發現破損報廢 2 盒、遺失尋回"
+                  placeholder={lang === "en" ? "e.g., Damaged package, inventory recount correction" : "例: 發現破損報廢 2 盒、遺失尋回"}
                   required
                   className="w-full p-2 border border-slate-300 rounded-sm text-xs"
                 />
@@ -2837,15 +3045,17 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 <button
                   type="button"
                   onClick={() => setIsAdjustModalOpen(false)}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm text-xs"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm text-xs cursor-pointer"
                 >
-                  取消
+                  {lang === "en" ? "Cancel" : "取消"}
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-sm"
+                  disabled={isSubmittingAdjust}
+                  className="px-4 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
-                  確認修正
+                  {isSubmittingAdjust && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{isSubmittingAdjust ? (lang === "en" ? "Saving to Sheet..." : "寫入中...") : (lang === "en" ? "Confirm Adjust" : "確認修正")}</span>
                 </button>
               </div>
             </form>
@@ -2865,13 +3075,15 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                   {editingItem ? "Edit Consumable Item" : "Create New Consumable Item"}
                 </span>
                 <h3 className="text-base font-bold text-slate-900 font-serif">
-                  {editingItem ? "編輯耗材品項" : "新增耗材品項"}
+                  {editingItem 
+                    ? (lang === "en" ? "Edit Consumable Item" : "編輯耗材品項") 
+                    : (lang === "en" ? "Add New Consumable Item" : "新增耗材品項")}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsItemFormModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2879,12 +3091,14 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
 
             <form onSubmit={handleSaveItemForm} className="space-y-3 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">耗材名稱 *</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  {lang === "en" ? "Consumable Name *" : "耗材名稱 *"}
+                </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="如: 1.5 mL 微量離心管 (Microcentrifuge Tubes)"
+                  placeholder={lang === "en" ? "e.g., 1.5 mL Microcentrifuge Tubes" : "如: 1.5 mL 微量離心管 (Microcentrifuge Tubes)"}
                   required
                   className="w-full p-2 border border-slate-300 rounded-sm text-xs focus:border-[#1b4372] focus:outline-none"
                 />
@@ -2892,25 +3106,29 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">所屬類別 *</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    {lang === "en" ? "Category *" : "所屬類別 *"}
+                  </label>
                   <select
                     value={formData.category}
                     onChange={e => setFormData({ ...formData, category: e.target.value })}
                     className="w-full p-2 border border-slate-300 rounded-sm text-xs"
                   >
                     {CONSUMABLE_CATEGORIES.filter(c => c !== "全部類別").map(c => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c} value={c}>{getCategoryLabel(c)}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">計量單位 *</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    {lang === "en" ? "Unit *" : "計量單位 *"}
+                  </label>
                   <input
                     type="text"
                     value={formData.unit}
                     onChange={e => setFormData({ ...formData, unit: e.target.value })}
-                    placeholder="如: 盒、包、捲、個"
+                    placeholder={lang === "en" ? "e.g., box, pack, roll, pcs" : "如: 盒、包、捲、個"}
                     required
                     className="w-full p-2 border border-slate-300 rounded-sm text-xs"
                   />
@@ -2918,12 +3136,14 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               </div>
 
               <div>
-                <label className="block font-medium text-slate-700 mb-1">規格與型號說明:</label>
+                <label className="block font-medium text-slate-700 mb-1">
+                  {lang === "en" ? "Specification & Model:" : "規格與型號說明:"}
+                </label>
                 <input
                   type="text"
                   value={formData.spec}
                   onChange={e => setFormData({ ...formData, spec: e.target.value })}
-                  placeholder="如: 500支/包"
+                  placeholder={lang === "en" ? "e.g., 500 pcs/pack, sterile, non-slip" : "如: 500支/包、已滅菌、麻面防滑"}
                   className="w-full p-2 border border-slate-300 rounded-sm text-xs"
                 />
               </div>
@@ -2931,7 +3151,9 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               <div className="grid grid-cols-2 gap-3">
                 {!editingItem && (
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">初始入庫數量 *</label>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      {lang === "en" ? "Initial Stock Quantity *" : "初始入庫數量 *"}
+                    </label>
                     <input
                       type="number"
                       min={0}
@@ -2943,7 +3165,9 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 )}
 
                 <div className={editingItem ? "col-span-2" : ""}>
-                  <label className="block font-bold text-slate-700 mb-1">安全庫存警戒值 *</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    {lang === "en" ? "Safety Stock Threshold *" : "安全庫存警戒值 *"}
+                  </label>
                   <input
                     type="number"
                     min={0}
@@ -2951,17 +3175,21 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                     onChange={e => setFormData({ ...formData, safeStock: parseInt(e.target.value, 10) || 0 })}
                     className="w-full p-2 border border-slate-300 rounded-sm text-xs font-mono"
                   />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">庫存小於或等於此值時將出現紅色警戒</span>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    {lang === "en" ? "Alert triggers when stock falls at or below this level" : "庫存小於或等於此值時將出現紅色警戒"}
+                  </span>
                 </div>
               </div>
 
               <div>
-                <label className="block font-medium text-slate-600 mb-1">補充備註說明:</label>
+                <label className="block font-medium text-slate-600 mb-1">
+                  {lang === "en" ? "Additional Notes:" : "補充備註說明:"}
+                </label>
                 <input
                   type="text"
                   value={formData.notes}
                   onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="如: 需定期補貨、採購廠牌、使用注意事項"
+                  placeholder={lang === "en" ? "e.g., Molecular bio only, stored in Cabinet B" : "如: 分子生物專用、放置於 B 櫃"}
                   className="w-full p-2 border border-slate-200 rounded-sm text-xs"
                 />
               </div>
@@ -2970,15 +3198,23 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 <button
                   type="button"
                   onClick={() => setIsItemFormModalOpen(false)}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm text-xs font-medium"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm text-xs font-medium cursor-pointer"
                 >
-                  取消
+                  {lang === "en" ? "Cancel" : "取消"}
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-sm"
+                  disabled={isSubmittingItem}
+                  className="px-4 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
-                  {editingItem ? "儲存修改" : "確認新增"}
+                  {isSubmittingItem && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>
+                    {isSubmittingItem 
+                      ? (lang === "en" ? "Saving to Google Sheet..." : "正在寫入 Google 試算表...") 
+                      : (editingItem 
+                          ? (lang === "en" ? "Save Changes" : "儲存修改") 
+                          : (lang === "en" ? "Confirm Add Item" : "確認新增"))}
+                  </span>
                 </button>
               </div>
             </form>

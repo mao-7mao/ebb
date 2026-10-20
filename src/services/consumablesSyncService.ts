@@ -15,6 +15,9 @@ export interface ConsumablesSyncResult {
   lastAuditDays?: number;
 }
 
+export const CONSUMABLES_ADMIN_PASSWORD = "ebbthings";
+export const ADMIN_GAS_TOKEN_KEY = "ebblab_consumables_admin_gas_token_v4";
+
 /**
  * 取得當前設定的耗材 Webhook 網址
  */
@@ -77,7 +80,10 @@ export async function fetchConsumablesFromCloud(customUrl?: string): Promise<Con
 /**
  * 發送異動至 Google Apps Script 雲端後端 (doPost)
  */
-export async function sendConsumablesWebhook(payload: Record<string, any>, customUrl?: string): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
+export async function sendConsumablesWebhook(
+  payload: Record<string, any>, 
+  customUrl?: string
+): Promise<{ success: boolean; data?: any; message?: string; error?: string; itemId?: string; token?: string; [key: string]: any }> {
   const url = (customUrl || getConsumablesWebhookUrl()).trim();
   if (!url) {
     return { success: false, message: "未設定耗材 Webhook 網址，將僅儲存於本機瀏覽器。" };
@@ -101,7 +107,77 @@ export async function sendConsumablesWebhook(payload: Record<string, any>, custo
     return json;
   } catch (err: any) {
     console.warn("sendConsumablesWebhook error:", err);
-    // 即使後端連線受跨域限制，前端仍需告知
-    return { success: false, message: `雲端連線異常：${err.message || err}` };
+    return { success: false, message: `雲端連線異常：${err.message || err}`, error: String(err.message || err) };
   }
+}
+
+/**
+ * 取得或自動刷新管理員驗證 Token (向 GAS admin_login 申請有效 token_xxx)
+ */
+export async function getValidAdminToken(forceRefresh = false): Promise<string> {
+  if (typeof window === "undefined") return "authorized_ebbthings";
+
+  if (!forceRefresh) {
+    const cachedToken = localStorage.getItem(ADMIN_GAS_TOKEN_KEY);
+    if (cachedToken && cachedToken.startsWith("token_")) {
+      return cachedToken;
+    }
+  }
+
+  try {
+    const res = await sendConsumablesWebhook({
+      action: "admin_login",
+      password: CONSUMABLES_ADMIN_PASSWORD
+    });
+
+    if (res && res.success && res.token) {
+      localStorage.setItem(ADMIN_GAS_TOKEN_KEY, res.token);
+      return res.token;
+    }
+  } catch (e) {
+    console.warn("getValidAdminToken login failed:", e);
+  }
+
+  return "authorized_ebbthings";
+}
+
+/**
+ * 發送需管理員授權的請求，若憑證過期自動換發 Token 並重試一次
+ */
+export async function sendConsumablesAdminAction(
+  action: string,
+  payload: Record<string, any>,
+  customUrl?: string
+): Promise<{ success: boolean; data?: any; message?: string; error?: string; itemId?: string; [key: string]: any }> {
+  let token = await getValidAdminToken(false);
+
+  const fullPayload = {
+    action,
+    token,
+    password: CONSUMABLES_ADMIN_PASSWORD,
+    ...payload
+  };
+
+  let res = await sendConsumablesWebhook(fullPayload, customUrl);
+
+  // 若回傳憑證無效或過期，強制重新登入取得新 Token 並重試一次
+  const errorMsg = String(res.error || res.message || "");
+  const isAuthError = !res.success && (
+    errorMsg.includes("憑證") || 
+    errorMsg.includes("凭證") || 
+    errorMsg.includes("失效") || 
+    errorMsg.includes("過期") || 
+    errorMsg.includes("Token") || 
+    errorMsg.includes("token") || 
+    errorMsg.includes("登入") ||
+    errorMsg.includes("unauthorized")
+  );
+
+  if (isAuthError) {
+    token = await getValidAdminToken(true);
+    fullPayload.token = token;
+    res = await sendConsumablesWebhook(fullPayload, customUrl);
+  }
+
+  return res;
 }

@@ -1495,7 +1495,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ================= PAGE: CONSUMABLES STATISTICS ================= */}
+        {/* ================= PAGE: Consumables ================= */}
         {currentPage === "consumables" && (
           <div className="py-6 sm:py-8 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-4 animate-in fade-in duration-200">
             <ConsumablesStatistics onBackToHome={() => navigateTo("home")} />
