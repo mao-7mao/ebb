@@ -110,7 +110,7 @@ export const EXTERNAL_LINKS = {
   // 5. 實驗室耗材統計與領用盤點系統 (Consumables Inventory & Audit System)
   // Google Apps Script Webhook 網址 (部署為網頁應用程式後的 URL，以 /exec 結尾)
   // ==========================================================================
-  consumablesWebhookUrl: ((typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_CONSUMABLES_GAS_WEBHOOK_URL) as string) || "https://script.google.com/macros/s/AKfycby7IVEQjWzDsywYEfsn4kan7mBMN8vCgqTobZRGhmthLWcrJZUxlEO5_8i5uf8In6la/exec",
-  consumablesScriptUrl: "https://script.google.com/macros/s/AKfycby7IVEQjWzDsywYEfsn4kan7mBMN8vCgqTobZRGhmthLWcrJZUxlEO5_8i5uf8In6la/exec"
+  consumablesWebhookUrl: ((typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_CONSUMABLES_GAS_WEBHOOK_URL) as string) || "https://script.google.com/macros/s/AKfycbxWK_AluW0vnAEtlXpKCoUKSWUKXqoDksocqL1eeJt-2s_4lBsHA42bvvDvmyMBqsAa/exec",
+  consumablesScriptUrl: "https://script.google.com/macros/s/AKfycbxWK_AluW0vnAEtlXpKCoUKSWUKXqoDksocqL1eeJt-2s_4lBsHA42bvvDvmyMBqsAa/exec"
 };
 

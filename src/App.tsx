@@ -13,7 +13,7 @@ import ConsumablesStatistics from "./components/ConsumablesStatistics";
 import ProcurementSystem from "./components/procurement/ProcurementSystem";
 import FontSizeAdjuster from "./components/FontSizeAdjuster";
 import AuthModal, { checkIsAuthenticated, setAuthenticatedState } from "./components/AuthModal";
-import SiteGateModal, { checkIsSiteUnlocked } from "./components/SiteGateModal";
+import SiteGateModal, { checkIsSiteUnlocked, checkHasConsumablesQuickAccess, setSiteUnlockedState } from "./components/SiteGateModal";
 import { getSavedMemberWebhookUrl, fetchMemberDataFromGoogle } from "./services/googleMemberSyncService";
 import { 
   Users, 
@@ -71,12 +71,19 @@ export type NavPage =
 export default function App() {
   // Page Routing State (Multi-page nested view architecture)
   const [currentPage, setCurrentPage] = useState<NavPage>(() => {
-    const hash = window.location.hash.replace("#/", "").replace("#", "");
-    if (hash === "progress" || hash === "instruments-manage") {
+    if (typeof window !== "undefined" && checkHasConsumablesQuickAccess()) {
+      return "consumables";
+    }
+    const rawHash = typeof window !== "undefined" ? window.location.hash.replace(/^#\/?/, "") : "";
+    const cleanHash = rawHash.split("?")[0];
+    if (cleanHash === "progress" || cleanHash === "instruments-manage") {
       return "studio";
     }
+    if (cleanHash === "consumables-pickup" || cleanHash === "pickup") {
+      return "consumables";
+    }
     const validPages: NavPage[] = ["home", "members", "instruments", "chemicals", "consumables", "procurement", "card-generator", "schedule", "archive", "studio", "contact"];
-    return validPages.includes(hash as NavPage) ? (hash as NavPage) : "home";
+    return validPages.includes(cleanHash as NavPage) ? (cleanHash as NavPage) : "home";
   });
 
   // Nested Tab State for Members & Topics page
@@ -219,13 +226,28 @@ export default function App() {
   }, [isHoveringBottomNav]);
 
   useEffect(() => {
-    setIsSiteUnlocked(checkIsSiteUnlocked());
+    if (checkHasConsumablesQuickAccess()) {
+      setIsSiteUnlocked(true);
+      setSiteUnlockedState(true);
+      setCurrentPage("consumables");
+    } else {
+      setIsSiteUnlocked(checkIsSiteUnlocked());
+    }
     setIsAuthenticated(checkIsAuthenticated());
 
     // Listen to hash changes for browser forward/back navigation
     const handleHashChange = () => {
-      const hash = window.location.hash.replace("#/", "").replace("#", "");
-      if (hash === "progress") {
+      if (checkHasConsumablesQuickAccess()) {
+        setIsSiteUnlocked(true);
+        setSiteUnlockedState(true);
+        setCurrentPage("consumables");
+        return;
+      }
+
+      const rawHash = window.location.hash.replace(/^#\/?/, "");
+      const cleanHash = rawHash.split("?")[0];
+
+      if (cleanHash === "progress") {
         setStudioInitialTab("progress");
         if (!checkIsAuthenticated()) {
           setIsAuthModalOpen(true);
@@ -234,7 +256,7 @@ export default function App() {
         }
         return;
       }
-      if (hash === "instruments-manage") {
+      if (cleanHash === "instruments-manage") {
         setStudioInitialTab("instruments");
         if (!checkIsAuthenticated()) {
           setIsAuthModalOpen(true);
@@ -243,14 +265,18 @@ export default function App() {
         }
         return;
       }
-      if (hash === "duties" || hash === "member-duties") {
+      if (cleanHash === "duties" || cleanHash === "member-duties") {
         setCurrentPage("members");
         setMembersSubTab("duties");
         return;
       }
+      if (cleanHash === "consumables-pickup" || cleanHash === "pickup") {
+        setCurrentPage("consumables");
+        return;
+      }
       const validPages: NavPage[] = ["home", "members", "instruments", "chemicals", "consumables", "procurement", "card-generator", "schedule", "archive", "studio", "contact"];
-      if (validPages.includes(hash as NavPage)) {
-        setCurrentPage(hash as NavPage);
+      if (validPages.includes(cleanHash as NavPage)) {
+        setCurrentPage(cleanHash as NavPage);
       }
     };
 

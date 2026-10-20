@@ -26,7 +26,7 @@ export function getConsumablesWebhookUrl(): string {
     const local = localStorage.getItem("ebblab_consumables_webhook_url");
     if (local && local.trim()) return local.trim();
   }
-  return (EXTERNAL_LINKS.consumablesWebhookUrl || "").trim();
+  return (EXTERNAL_LINKS.consumablesWebhookUrl || EXTERNAL_LINKS.consumablesScriptUrl || "").trim();
 }
 
 /**
@@ -36,6 +36,20 @@ export function saveConsumablesWebhookUrl(url: string): void {
   if (typeof window !== "undefined") {
     localStorage.setItem("ebblab_consumables_webhook_url", url.trim());
   }
+}
+
+/**
+ * 取得當前設定的耗材 Web App 網頁網址 (供嵌入與 QR Code 使用)
+ */
+export function getConsumablesScriptUrl(): string {
+  return getConsumablesWebhookUrl();
+}
+
+/**
+ * 儲存自訂耗材 Web App 網頁網址
+ */
+export function saveConsumablesScriptUrl(url: string): void {
+  saveConsumablesWebhookUrl(url);
 }
 
 /**

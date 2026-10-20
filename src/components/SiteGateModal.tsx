@@ -1,8 +1,42 @@
 import React, { useState } from "react";
 import { Lock, KeyRound, Eye, EyeOff, AlertCircle, CheckCircle, Sparkles } from "lucide-react";
 
+export function checkHasConsumablesQuickAccess(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const search = window.location.search || "";
+    const hash = window.location.hash || "";
+    const combined = search + (hash.includes("?") ? "&" + hash.split("?")[1] : "");
+    const params = new URLSearchParams(combined);
+
+    if (
+      params.get("direct") === "pickup" ||
+      params.get("quick") === "pickup" ||
+      params.get("mode") === "pickup" ||
+      params.get("pickup") === "true" ||
+      params.get("bypass") === "quick_pickup" ||
+      params.get("token") === "ebb_pickup_access" ||
+      hash.includes("direct=pickup") ||
+      hash.includes("token=ebb_pickup_access") ||
+      hash.includes("consumables-pickup")
+    ) {
+      return true;
+    }
+  } catch (e) {
+    console.warn("checkHasConsumablesQuickAccess parse error:", e);
+  }
+  return false;
+}
+
 export function checkIsSiteUnlocked(): boolean {
   if (typeof window === "undefined") return false;
+  // 若使用者透過耗材專屬 QR Code (免驗證碼直達連結) 進入，立即解鎖全站存取，免除輸入密碼
+  if (checkHasConsumablesQuickAccess()) {
+    try {
+      localStorage.setItem("ebb_site_unlocked", "true");
+    } catch (e) {}
+    return true;
+  }
   return localStorage.getItem("ebb_site_unlocked") === "true";
 }
 
@@ -25,6 +59,14 @@ export default function SiteGateModal({ onUnlocked }: SiteGateModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+
+  // 若偵測到耗材免驗證碼直達權限，自動放行進入系統
+  React.useEffect(() => {
+    if (checkHasConsumablesQuickAccess()) {
+      setSiteUnlockedState(true);
+      onUnlocked();
+    }
+  }, [onUnlocked]);
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -3,162 +3,366 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>EBB Lab - Lab Consumables (實驗室耗材統計與領用)</title>
+  <title>EBB Lab - 實驗室耗材自助領用系統 (Consumables Pickup)</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
+  <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- QR Code Scanner Library (HTML5-QRCode) -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+TC:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Noto+Serif+TC:wght@400;600;700&display=swap');
     body {
-      background-color: #f4f1ea;
+      background-color: #f7f6f2;
       color: #1a1a1a;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
     .font-serif-eb {
       font-family: 'Cinzel', 'Noto Serif TC', serif;
     }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @keyframes pulse-fast {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .animate-pulse-fast {
+      animation: pulse-fast 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printArea, #printArea * {
+        visibility: visible;
+      }
+      #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+    }
   </style>
 </head>
-<body class="p-3 sm:p-6 min-h-screen">
+<body class="p-3 sm:p-6 min-h-screen flex flex-col justify-between">
 
-  <div class="max-w-6xl mx-auto space-y-4">
-    <!-- Header -->
-    <header class="bg-[#fbfbfa] border border-[#e5e5e0] p-5 rounded-sm flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
-      <div>
-        <div class="text-[10px] font-bold text-[#8d734a] tracking-widest uppercase font-serif-eb italic">
-          EBB Lab · Consumables & Stocktake Management
+  <div class="max-w-4xl mx-auto w-full space-y-4">
+    <!-- Header Card -->
+    <header class="bg-white border border-[#e5e5e0] p-4 sm:p-5 rounded-sm shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="space-y-1">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center justify-center w-7 h-7 bg-[#1b4372] text-white rounded-sm text-xs font-bold shadow-xs">
+            EBB
+          </span>
+          <span class="text-[10px] font-bold text-[#8d734a] tracking-widest uppercase font-serif-eb italic">
+            Self-Service Inventory
+          </span>
+          <span id="networkBadge" class="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="networkBadgeText">雲端試算表已連線</span>
+          </span>
         </div>
-        <h1 class="text-xl sm:text-2xl font-bold text-slate-900 font-serif-eb flex items-center gap-2 mt-0.5">
-          <span>Lab Consumables</span>
+        <h1 class="text-xl sm:text-2xl font-bold text-slate-900 font-serif-eb tracking-tight">
+          實驗室耗材自助領用系統
         </h1>
-        <p class="text-xs text-slate-500 mt-1">
-          實驗室耗材種類與數量統計 · 自助領取登記 · 低庫存預警與定期盤點
+        <p class="text-xs text-slate-500">
+          手機快速掃碼登記 · 實時雲端扣庫 · 防止重複領取與缺貨警示
         </p>
       </div>
 
-      <div class="flex items-center gap-2">
-        <button id="adminLoginBtn" onclick="openLoginModal()" class="px-3.5 py-1.5 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-sm shadow-2xs transition">
-          管理員登入
+      <!-- Action Controls -->
+      <div class="flex items-center gap-2 self-start sm:self-center">
+        <!-- Camera Scanner Button -->
+        <button
+          type="button"
+          onclick="openQrScannerModal()"
+          class="px-3 py-1.5 bg-[#1b4372] hover:bg-[#15345a] text-white text-xs font-bold rounded-sm shadow-xs flex items-center gap-1.5 transition active:scale-95"
+          title="開啟手機鏡頭掃描條碼"
+        >
+          <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+          <span>相機掃碼</span>
         </button>
-        <div id="adminBadge" class="hidden flex items-center gap-2 bg-emerald-50 border border-emerald-300 px-3 py-1 rounded-sm text-xs">
-          <span class="text-emerald-900 font-bold">管理員已驗證</span>
-          <button onclick="adminLogout()" class="text-emerald-700 hover:underline font-bold text-[11px]">登出</button>
-        </div>
+
+        <!-- Refresh Button -->
+        <button
+          type="button"
+          onclick="loadData(true)"
+          id="refreshBtn"
+          class="px-3 py-1.5 bg-[#f8f8f5] hover:bg-slate-100 text-slate-700 border border-[#e5e5e0] text-xs font-bold rounded-sm shadow-2xs flex items-center gap-1.5 transition active:scale-95"
+          title="重新整理庫存"
+        >
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="refreshIcon"></i>
+          <span class="hidden sm:inline">重新整理</span>
+        </button>
+
+        <!-- Language Toggle -->
+        <button
+          type="button"
+          onclick="toggleLang()"
+          class="px-2.5 py-1.5 bg-[#f8f8f5] hover:bg-slate-100 text-slate-700 border border-[#e5e5e0] text-xs font-bold rounded-sm shadow-2xs flex items-center gap-1 transition"
+          title="切換中英顯示"
+        >
+          <i data-lucide="globe" class="w-3.5 h-3.5 text-[#1b4372]"></i>
+          <span id="langLabel">EN</span>
+        </button>
       </div>
     </header>
 
-    <!-- Stats Bar -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div class="p-3.5 bg-white border border-[#e5e5e0] rounded-sm shadow-2xs">
-        <span class="text-[11px] text-slate-400 block">啟用耗材</span>
-        <div class="text-2xl font-bold font-mono text-[#1b4372]" id="statActive">--</div>
+    <!-- Overview Stats Bar -->
+    <div class="grid grid-cols-3 gap-2 sm:gap-3">
+      <div class="bg-white border border-[#e5e5e0] p-3 rounded-sm shadow-2xs flex flex-col justify-between">
+        <span class="text-[11px] text-slate-400 font-medium">可領用品項</span>
+        <div class="text-xl sm:text-2xl font-bold font-mono text-[#1b4372] mt-0.5" id="statActiveCount">--</div>
       </div>
-      <div class="p-3.5 bg-white border border-[#e5e5e0] rounded-sm shadow-2xs">
-        <span class="text-[11px] text-slate-400 block">總庫存量</span>
-        <div class="text-2xl font-bold font-mono text-slate-800" id="statTotalStock">--</div>
+      <div class="bg-white border border-[#e5e5e0] p-3 rounded-sm shadow-2xs flex flex-col justify-between">
+        <span class="text-[11px] text-slate-400 font-medium">總庫存件數</span>
+        <div class="text-xl sm:text-2xl font-bold font-mono text-slate-800 mt-0.5" id="statTotalStock">--</div>
       </div>
-      <div class="p-3.5 bg-white border border-[#e5e5e0] rounded-sm shadow-2xs">
-        <span class="text-[11px] text-slate-400 block">庫存偏低</span>
-        <div class="text-2xl font-bold font-mono text-rose-600" id="statLowStock">--</div>
-      </div>
-      <div class="p-3.5 bg-white border border-[#e5e5e0] rounded-sm shadow-2xs">
-        <span class="text-[11px] text-slate-400 block">距上次盤點</span>
-        <div class="text-2xl font-bold font-mono text-[#8d734a]" id="statDaysAudit">-- 天</div>
+      <div class="bg-white border border-[#e5e5e0] p-3 rounded-sm shadow-2xs flex flex-col justify-between">
+        <span class="text-[11px] text-slate-400 font-medium">低庫存警戒</span>
+        <div class="text-xl sm:text-2xl font-bold font-mono text-rose-600 mt-0.5" id="statLowStock">--</div>
       </div>
     </div>
 
-    <!-- Alert Banner (if audit overdue) -->
-    <div id="auditAlertBanner" class="hidden p-3 bg-amber-50 border-l-4 border-amber-500 rounded-r-sm text-xs text-amber-900">
-      <strong>定期盤點提醒：</strong> 距上次完成盤點已超過 30 天，建議管理員盡快排定實盤核對以確保庫存準確！
-    </div>
+    <!-- Search & Filters Toolbar -->
+    <div class="bg-white border border-[#e5e5e0] p-3 rounded-sm shadow-2xs space-y-2.5">
+      <!-- Search Input -->
+      <div class="relative">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+        <input
+          type="text"
+          id="searchInput"
+          oninput="handleSearch(this.value)"
+          placeholder="搜尋耗材名稱、規格、存放架位或品項編號 (如: 離心管、Tips、手套、CON-001)..."
+          class="w-full pl-9 pr-8 py-2 bg-[#fcfcfc] border border-slate-200 rounded-sm text-xs focus:border-[#1b4372] focus:bg-white focus:outline-none transition"
+        />
+        <button
+          type="button"
+          id="clearSearchBtn"
+          onclick="clearSearch()"
+          class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold p-1"
+        >
+          &times;
+        </button>
+      </div>
 
-    <!-- Toolbar: Search & Filter -->
-    <div class="bg-white border border-[#e5e5e0] p-3 rounded-sm flex flex-col sm:flex-row gap-3 justify-between items-center">
-      <input type="text" id="searchInput" oninput="renderTable()" placeholder="搜尋耗材名稱、規格或編號..." class="w-full sm:w-80 p-2 text-xs border border-slate-200 rounded-sm focus:border-[#1b4372] focus:outline-none">
-      
-      <div class="flex items-center gap-2 w-full sm:w-auto">
-        <select id="categoryFilter" onchange="renderTable()" class="p-2 text-xs border border-slate-200 rounded-sm w-full sm:w-auto">
-          <option value="ALL">全部類別</option>
-          <option value="離心管與樣品瓶">離心管與樣品瓶</option>
-          <option value="滴管吸頭與針筒">滴管吸頭與針筒</option>
-          <option value="手套與防護用品">手套與防護用品</option>
-          <option value="濾膜與透析耗材">濾膜與透析耗材</option>
-          <option value="擦拭與清潔耗材">擦拭與清潔耗材</option>
-          <option value="培養與玻璃塑膠">培養與玻璃塑膠</option>
-          <option value="封口標籤與滅菌">封口標籤與滅菌</option>
-          <option value="其他耗材">其他耗材</option>
-        </select>
-
-        <button onclick="loadData()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-sm whitespace-nowrap">
-          重新整理
+      <!-- Category Filter Pills -->
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-xs">
+        <button
+          type="button"
+          onclick="setCategory('ALL')"
+          class="category-btn px-2.5 py-1 rounded-full font-bold whitespace-nowrap transition bg-[#1b4372] text-white"
+          data-cat="ALL"
+        >
+          全部品項 (<span id="catCountAll">0</span>)
+        </button>
+        <button
+          type="button"
+          onclick="setCategory('離心管與樣品瓶')"
+          class="category-btn px-2.5 py-1 rounded-full font-bold whitespace-nowrap transition bg-slate-100 text-slate-600 hover:bg-slate-200"
+          data-cat="離心管與樣品瓶"
+        >
+          離心管與樣品瓶
+        </button>
+        <button
+          type="button"
+          onclick="setCategory('滴管吸頭與針筒')"
+          class="category-btn px-2.5 py-1 rounded-full font-bold whitespace-nowrap transition bg-slate-100 text-slate-600 hover:bg-slate-200"
+          data-cat="滴管吸頭與針筒"
+        >
+          滴管吸頭與針筒
+        </button>
+        <button
+          type="button"
+          onclick="setCategory('手套與防護用品')"
+          class="category-btn px-2.5 py-1 rounded-full font-bold whitespace-nowrap transition bg-slate-100 text-slate-600 hover:bg-slate-200"
+          data-cat="手套與防護用品"
+        >
+          手套與防護
+        </button>
+        <button
+          type="button"
+          onclick="setCategory('濾膜與透析耗材')"
+          class="category-btn px-2.5 py-1 rounded-full font-bold whitespace-nowrap transition bg-slate-100 text-slate-600 hover:bg-slate-200"
+          data-cat="濾膜與透析耗材"
+        >
+          濾膜與透析
+        </button>
+        <button
+          type="button"
+          onclick="setCategory('擦拭與清潔耗材')"
+          class="category-btn px-2.5 py-1 rounded-full font-bold whitespace-nowrap transition bg-slate-100 text-slate-600 hover:bg-slate-200"
+          data-cat="擦拭與清潔"
+        >
+          擦拭與清潔
+        </button>
+        <button
+          type="button"
+          onclick="setCategory('培養與玻璃塑膠')"
+          class="category-btn px-2.5 py-1 rounded-full font-bold whitespace-nowrap transition bg-slate-100 text-slate-600 hover:bg-slate-200"
+          data-cat="培養與玻璃塑膠"
+        >
+          培養與玻璃
+        </button>
+        <button
+          type="button"
+          onclick="setCategory('封口標籤與滅菌')"
+          class="category-btn px-2.5 py-1 rounded-full font-bold whitespace-nowrap transition bg-slate-100 text-slate-600 hover:bg-slate-200"
+          data-cat="封口標籤與滅菌"
+        >
+          封口與滅菌
+        </button>
+        <button
+          type="button"
+          onclick="setCategory('其他耗材')"
+          class="category-btn px-2.5 py-1 rounded-full font-bold whitespace-nowrap transition bg-slate-100 text-slate-600 hover:bg-slate-200"
+          data-cat="其他耗材"
+        >
+          其他耗材
         </button>
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div id="loadingBox" class="py-12 text-center text-slate-500 text-xs">
-      <div class="inline-block animate-spin rounded-full h-6 w-6 border-2 border-[#1b4372] border-t-transparent mb-2"></div>
-      <p>正在載入最新耗材與庫存資料...</p>
+    <!-- Loading Box -->
+    <div id="loadingBox" class="py-16 text-center text-slate-500 bg-white border border-[#e5e5e0] rounded-sm">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-3 border-[#1b4372] border-t-transparent mb-3"></div>
+      <p class="text-xs font-bold text-slate-700">正在自 Google 試算表載入最新耗材清單與庫存...</p>
+      <p class="text-[11px] text-slate-400 mt-1">首次讀取約需 1-2 秒，請稍候</p>
     </div>
 
-    <!-- Consumables Table -->
-    <div id="tableContainer" class="hidden bg-white border border-[#e5e5e0] rounded-sm overflow-x-auto shadow-2xs">
-      <table class="w-full text-left text-xs">
-        <thead class="bg-[#f8f8f5] text-slate-700 font-bold border-b border-[#e5e5e0]">
-          <tr>
-            <th class="p-3 w-20">編號</th>
-            <th class="p-3">名稱與規格</th>
-            <th class="p-3 w-32">類別</th>
-            <th class="p-3 text-right w-24">目前庫存</th>
-            <th class="p-3 text-right w-24">安全庫存</th>
-            <th class="p-3 text-center w-24">狀態</th>
-            <th class="p-3 text-right w-28">操作</th>
-          </tr>
-        </thead>
-        <tbody id="itemsTbody" class="divide-y divide-slate-100"></tbody>
-      </table>
+    <!-- Empty Results Box -->
+    <div id="emptyBox" class="hidden py-12 text-center text-slate-500 bg-white border border-[#e5e5e0] rounded-sm">
+      <i data-lucide="package-search" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
+      <p class="text-xs font-bold text-slate-700">查無相符的耗材品項</p>
+      <p class="text-[11px] text-slate-400 mt-1">請嘗試縮減關鍵字或切換「全部品項」篩選</p>
+      <button onclick="clearSearch()" class="mt-3 px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded hover:bg-slate-200">
+        重設搜尋條件
+      </button>
     </div>
 
-    <!-- Admin Operations Toolbar (Visible when logged in) -->
-    <div id="adminPanel" class="hidden bg-white border border-[#e5e5e0] p-4 rounded-sm space-y-3">
-      <div class="font-bold text-sm text-slate-900 border-b border-slate-100 pb-2">
-        管理員進階功能
+    <!-- Consumables List Container (Mobile-first responsive cards) -->
+    <div id="itemsContainer" class="hidden space-y-2.5">
+      <!-- Dynamic Item Cards will be rendered here -->
+    </div>
+
+    <!-- Recent Pickup Log Drawer / Preview -->
+    <div class="bg-white border border-[#e5e5e0] p-4 rounded-sm shadow-2xs space-y-2">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <div class="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+          <i data-lucide="clock" class="w-3.5 h-3.5 text-[#1b4372]"></i>
+          <span>近期領用紀錄 (最近 5 筆)</span>
+        </div>
+        <span class="text-[10px] text-slate-400 font-mono" id="lastUpdatedTime">--</span>
       </div>
-      <div class="flex flex-wrap gap-2">
-        <button onclick="openAddItemModal()" class="px-3 py-1.5 bg-[#1b4372] hover:bg-[#15345a] text-white text-xs font-bold rounded-sm">
-          + 新增耗材品項
-        </button>
-        <button onclick="openRestockModal()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-sm">
-          補貨入庫
-        </button>
-        <button onclick="startAudit()" class="px-3 py-1.5 bg-[#8d734a] hover:bg-[#78613e] text-white text-xs font-bold rounded-sm">
-          發起定期盤點
-        </button>
-        <button onclick="exportLogsCSV()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-sm">
-          匯出異動紀錄 CSV
-        </button>
+      <div id="recentLogsList" class="divide-y divide-slate-100 text-xs text-slate-600">
+        <p class="text-center py-3 text-slate-400 text-[11px]">暫無近期領用紀錄</p>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Pickup (領取登記) -->
-  <div id="pickupModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white max-w-md w-full p-5 rounded-sm space-y-3 shadow-xl text-xs">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="font-bold text-sm text-slate-900 font-serif-eb">耗材自助領取登記</h3>
-        <button onclick="closePickupModal()" class="text-slate-400 hover:text-slate-600 text-base">&times;</button>
-      </div>
-      <div id="pickupItemBanner" class="p-2.5 bg-slate-50 border rounded text-slate-700"></div>
-      <form onsubmit="submitPickup(event)" class="space-y-3">
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">領取數量 *</label>
-          <input type="number" id="pickupQty" min="1" required class="w-full p-2 border rounded font-mono font-bold">
+  <!-- Footer -->
+  <footer class="max-w-4xl mx-auto w-full text-center py-6 text-slate-400 text-[11px] space-y-1">
+    <p>EBB Lab · Consumables & Stocktake Management System · Powered by Google Apps Script</p>
+    <p>管理員登入或盤點作業請使用實驗室主系統</p>
+  </footer>
+
+  <!-- ======================================================================== -->
+  <!-- MODAL 1: PICKUP FORM MODAL (領用登記視窗) -->
+  <!-- ======================================================================== -->
+  <div id="pickupModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs hidden z-50 flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white max-w-md w-full rounded-sm shadow-2xl border border-slate-200 overflow-hidden text-xs animate-in zoom-in-95 duration-150">
+      <!-- Modal Header -->
+      <div class="bg-[#1b4372] text-white p-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+          <h3 class="font-bold text-sm font-serif-eb tracking-wide" id="modalTitle">
+            耗材自助領用登記
+          </h3>
         </div>
+        <button type="button" onclick="closePickupModal()" class="text-white/80 hover:text-white text-lg font-bold p-1 leading-none">
+          &times;
+        </button>
+      </div>
+
+      <!-- Item Info Banner -->
+      <div id="pickupItemBanner" class="p-3 bg-slate-50 border-b border-slate-200">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Pickup Form -->
+      <form onsubmit="handlePickupSubmit(event)" class="p-4 space-y-3.5">
+        <!-- Quantity Input with Quick Stepper -->
         <div>
-          <label class="block font-bold text-slate-700 mb-1">領取人姓名 *</label>
-          <select id="pickupPickerSelect" onchange="togglePickerCustom(this.value)" class="w-full p-2 border rounded">
-            <option value="">-- 請選擇實驗室成員 --</option>
+          <div class="flex items-center justify-between mb-1">
+            <label class="font-bold text-slate-700 flex items-center gap-1">
+              <span>領取數量 (Quantity)</span>
+              <span class="text-rose-500 font-bold">*</span>
+            </label>
+            <span class="text-[11px] text-slate-500 font-mono">
+              當前可用庫存: <strong class="text-emerald-700 font-bold" id="modalAvailableStock">0</strong>
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              onclick="adjustPickupQty(-1)"
+              class="w-9 h-9 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-sm border border-slate-200 text-sm active:scale-95"
+            >
+              -
+            </button>
+            <input
+              type="number"
+              id="pickupQtyInput"
+              min="1"
+              value="1"
+              required
+              oninput="validatePickupQty()"
+              class="flex-1 py-1.5 px-3 text-center text-base font-bold font-mono text-slate-800 border border-slate-300 rounded-sm focus:border-[#1b4372] focus:outline-none"
+            />
+            <button
+              type="button"
+              onclick="adjustPickupQty(1)"
+              class="w-9 h-9 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-sm border border-slate-200 text-sm active:scale-95"
+            >
+              +
+            </button>
+          </div>
+
+          <!-- Quick Stepper Chips -->
+          <div class="flex items-center gap-1.5 mt-2">
+            <span class="text-[10px] text-slate-400">快速填入:</span>
+            <button type="button" onclick="setPickupQty(1)" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-mono font-bold">+1</button>
+            <button type="button" onclick="setPickupQty(2)" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-mono font-bold">+2</button>
+            <button type="button" onclick="setPickupQty(5)" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-mono font-bold">+5</button>
+            <button type="button" onclick="setPickupQty(10)" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-mono font-bold">+10</button>
+            <button type="button" onclick="setMaxPickupQty()" class="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded text-[10px] font-bold">整箱/全領</button>
+          </div>
+          <div id="qtyErrorNotice" class="hidden text-rose-600 font-bold text-[11px] mt-1 flex items-center gap-1">
+            <i data-lucide="alert-triangle" class="w-3 h-3"></i>
+            <span>領取數量不得超過當前剩餘庫存！</span>
+          </div>
+        </div>
+
+        <!-- Member Picker Dropdown -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">
+            領取人姓名 (Applicant / Picker) <span class="text-rose-500 font-bold">*</span>
+          </label>
+          <select
+            id="pickerSelect"
+            onchange="handlePickerSelectChange(this.value)"
+            required
+            class="w-full p-2 bg-[#fcfcfc] border border-slate-300 rounded-sm text-xs focus:border-[#1b4372] focus:outline-none"
+          >
+            <option value="">-- 請選擇實驗室成員姓名 --</option>
             <option value="林郁芳 (Fanny)">林郁芳 (Fanny)</option>
             <option value="陳采翎 (Kalin)">陳采翎 (Kalin)</option>
             <option value="游家御 (Kevin)">游家御 (Kevin)</option>
@@ -166,290 +370,864 @@
             <option value="陳泯熏 (Tina)">陳泯熏 (Tina)</option>
             <option value="花翊軒 (Steven)">花翊軒 (Steven)</option>
             <option value="陳采蘋 (Nina)">陳采蘋 (Nina)</option>
-            <option value="Alpha">Alpha Rowena</option>
-            <option value="Sonali">Sonali Mazumdar</option>
-            <option value="Safira">Safira Prameshwari</option>
-            <option value="OTHER">其他 (手動輸入姓名)</option>
+            <option value="Alpha Rowena">Alpha Rowena</option>
+            <option value="Sonali Mazumdar">Sonali Mazumdar</option>
+            <option value="Safira Prameshwari">Safira Prameshwari</option>
+            <option value="__OTHER__">其他專題生 / 手動輸入姓名 (Other)</option>
           </select>
-          <input type="text" id="pickupPickerCustom" placeholder="請輸入姓名" class="hidden w-full p-2 border rounded mt-1.5">
+          <input
+            type="text"
+            id="pickerCustomInput"
+            placeholder="請輸入姓名 (如: 專題生 王小明)..."
+            class="hidden w-full p-2 mt-1.5 border border-slate-300 rounded-sm text-xs focus:border-[#1b4372] focus:outline-none"
+          />
         </div>
+
+        <!-- Notes / Purpose -->
         <div>
-          <label class="block text-slate-600 mb-1">用途備註 (選填)</label>
-          <input type="text" id="pickupNotes" placeholder="如: HPLC 樣品處理" class="w-full p-2 border rounded">
+          <label class="block font-medium text-slate-600 mb-1">
+            實驗用途或備註 (選填 Notes / Purpose)
+          </label>
+          <input
+            type="text"
+            id="pickupNotesInput"
+            placeholder="例如: 離心實驗樣品製備、HPLC 前處理、PCR反應..."
+            class="w-full p-2 border border-slate-300 rounded-sm text-xs focus:border-[#1b4372] focus:outline-none"
+          />
         </div>
-        <div class="flex justify-end gap-2 pt-2 border-t">
-          <button type="button" onclick="closePickupModal()" class="px-3 py-1.5 bg-slate-100 rounded">取消</button>
-          <button type="submit" id="pickupSubmitBtn" class="px-4 py-1.5 bg-[#1b4372] text-white font-bold rounded">確認領取</button>
+
+        <!-- Modal Footer Actions -->
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+          <button
+            type="button"
+            onclick="closePickupModal()"
+            class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm font-bold transition active:scale-95"
+          >
+            取消
+          </button>
+          <button
+            type="submit"
+            id="pickupSubmitBtn"
+            class="px-5 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm font-bold shadow-xs flex items-center gap-1.5 transition active:scale-95"
+          >
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            <span id="submitBtnText">確認登記領取</span>
+          </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Modal: Admin Login -->
-  <div id="loginModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white max-w-sm w-full p-5 rounded-sm space-y-3 shadow-xl text-xs">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="font-bold text-sm text-slate-900 font-serif-eb">管理員登入</h3>
-        <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-600 text-base">&times;</button>
+  <!-- ======================================================================== -->
+  <!-- MODAL 2: ITEM QR CODE MODAL (品項專屬條碼視窗) -->
+  <!-- ======================================================================== -->
+  <div id="itemQrModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs hidden z-50 flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white max-w-sm w-full rounded-sm shadow-2xl border border-slate-200 overflow-hidden text-xs">
+      <div class="bg-[#1b4372] text-white p-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="qr-code" class="w-4 h-4 text-amber-300"></i>
+          <h3 class="font-bold text-sm font-serif-eb">置物架專屬領用條碼</h3>
+        </div>
+        <button type="button" onclick="closeItemQrModal()" class="text-white/80 hover:text-white text-lg font-bold leading-none">
+          &times;
+        </button>
       </div>
-      <form onsubmit="submitAdminLogin(event)" class="space-y-3">
-        <input type="password" id="adminPasswordInput" placeholder="請輸入管理員密碼" class="w-full p-2 border rounded">
-        <div id="loginError" class="text-rose-600 hidden"></div>
-        <div class="flex justify-end gap-2 pt-2 border-t">
-          <button type="button" onclick="closeLoginModal()" class="px-3 py-1.5 bg-slate-100 rounded">取消</button>
-          <button type="submit" class="px-4 py-1.5 bg-[#1b4372] text-white font-bold rounded">登入</button>
+
+      <div class="p-4 text-center space-y-3" id="printArea">
+        <div class="border-2 border-dashed border-slate-300 p-4 rounded-sm bg-slate-50 flex flex-col items-center">
+          <div class="text-[10px] uppercase font-bold text-[#8d734a] font-serif-eb tracking-wider mb-1">
+            EBB Lab · Consumable Shelf Tag
+          </div>
+          <div class="font-bold text-sm text-slate-900 mb-0.5" id="qrItemName">
+            --
+          </div>
+          <div class="text-[11px] text-slate-500 font-mono mb-2" id="qrItemSpec">
+            --
+          </div>
+
+          <!-- QR Code Image -->
+          <div class="w-48 h-48 bg-white p-2 border border-slate-200 rounded shadow-2xs flex items-center justify-center">
+            <img id="qrCodeImg" src="" alt="Consumable QR Code" class="w-full h-full object-contain" />
+          </div>
+
+          <div class="mt-2 text-[10px] text-slate-500">
+            架位：<strong id="qrItemLoc" class="text-slate-800 font-bold">--</strong> · 編號：<span id="qrItemId" class="font-mono font-bold text-[#1b4372]">--</span>
+          </div>
+          <p class="text-[10px] text-slate-400 mt-1">
+            手機相機掃描條碼，即可直接在手機上開啟該耗材之領用視窗
+          </p>
         </div>
-      </form>
+
+        <div class="flex items-center justify-center gap-2 pt-1">
+          <button
+            type="button"
+            onclick="copyItemQrLink()"
+            id="copyQrLinkBtn"
+            class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm font-bold transition flex items-center gap-1"
+          >
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span id="copyQrLinkText">複製直連網址</span>
+          </button>
+          <button
+            type="button"
+            onclick="window.print()"
+            class="px-3.5 py-1.5 bg-[#1b4372] hover:bg-[#15345a] text-white rounded-sm font-bold shadow-2xs transition flex items-center gap-1"
+          >
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>列印標籤</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Client-side Logic -->
-  <script>
-    let gData = { items: [], transactions: [], audits: [] };
-    let adminToken = localStorage.getItem("ebblab_gas_token") || "";
-    let activePickupItem = null;
+  <!-- ======================================================================== -->
+  <!-- MODAL 3: CAMERA QR SCANNER (手機相機條碼掃描) -->
+  <!-- ======================================================================== -->
+  <div id="cameraScannerModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs hidden z-50 flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white max-w-sm w-full rounded-sm shadow-2xl overflow-hidden text-xs">
+      <div class="bg-[#1b4372] text-white p-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="camera" class="w-4 h-4 text-emerald-300"></i>
+          <h3 class="font-bold text-sm font-serif-eb">手機鏡頭掃描條碼</h3>
+        </div>
+        <button type="button" onclick="closeQrScannerModal()" class="text-white/80 hover:text-white text-lg font-bold leading-none">
+          &times;
+        </button>
+      </div>
 
-    window.onload = function() {
-      loadData();
-      if (adminToken) {
-        document.getElementById("adminBadge").classList.remove("hidden");
-        document.getElementById("adminLoginBtn").classList.add("hidden");
-        document.getElementById("adminPanel").classList.remove("hidden");
+      <div class="p-4 space-y-3">
+        <p class="text-slate-500 text-[11px]">
+          請將相機鏡頭對準耗材外箱或架位上的 QR Code 標籤：
+        </p>
+        <!-- HTML5-QRCode Reader Container -->
+        <div id="qrReader" class="w-full bg-black rounded overflow-hidden min-h-[240px] flex items-center justify-center text-white text-xs">
+          載入相機中...
+        </div>
+        <div id="scannerStatusText" class="text-center text-[11px] text-slate-500 font-mono">
+          尋找 QR 條碼中...
+        </div>
+        <button
+          type="button"
+          onclick="closeQrScannerModal()"
+          class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-sm text-xs"
+        >
+          關閉相機
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client-side Application Logic -->
+  <script>
+    // State
+    let gAllItems = [];
+    let gFilteredItems = [];
+    let gSelectedCategory = "ALL";
+    let gSearchQuery = "";
+    let gActivePickupItem = null;
+    let gActiveQrItem = null;
+    let gLang = "zh";
+    let gHtml5QrScanner = null;
+
+    // Translation Dictionaries
+    const I18N = {
+      zh: {
+        title: "實驗室耗材自助領用系統",
+        sub: "手機快速掃碼登記 · 實時雲端扣庫 · 防止重複領取與缺貨警示",
+        activeCount: "可領用品項",
+        totalStock: "總庫存件數",
+        lowStock: "低庫存警戒",
+        searchPlaceholder: "搜尋耗材名稱、規格、存放架位或品項編號...",
+        allCats: "全部品項",
+        btnPickup: "領用",
+        btnQr: "條碼",
+        availableStock: "目前庫存",
+        safeStock: "安全庫存",
+        location: "架位",
+        spec: "規格",
+        stockLow: "庫存偏低",
+        stockEmpty: "已缺貨",
+        stockNormal: "庫存充足"
+      },
+      en: {
+        title: "Lab Consumables Self-Service Pickup",
+        sub: "Mobile QR Quick Scan · Real-time Cloud Stock Deduction · Anti-Overdraw",
+        activeCount: "Available Items",
+        totalStock: "Total Stock",
+        lowStock: "Low Stock Alert",
+        searchPlaceholder: "Search consumable name, spec, shelf or ID (e.g., tube, tips)...",
+        allCats: "All Categories",
+        btnPickup: "Pick up",
+        btnQr: "QR Tag",
+        availableStock: "Stock",
+        safeStock: "Min. Safe",
+        location: "Shelf",
+        spec: "Spec",
+        stockLow: "Low Stock",
+        stockEmpty: "Out of Stock",
+        stockNormal: "In Stock"
       }
     };
 
-    function loadData() {
-      document.getElementById("loadingBox").classList.remove("hidden");
-      document.getElementById("tableContainer").classList.add("hidden");
+    // Category translations
+    const CAT_TRANS = {
+      "離心管與樣品瓶": "Tubes & Sample Vials",
+      "滴管吸頭與針筒": "Pipette Tips & Syringes",
+      "手套與防護用品": "Gloves & PPE",
+      "濾膜與透析耗材": "Membranes & Dialysis",
+      "擦拭與清潔耗材": "Wipes & Cleaning",
+      "培養與玻璃塑膠": "Culture & Glassware",
+      "封口標籤與滅菌": "Sealing & Sterilization",
+      "其他耗材": "General Consumables"
+    };
 
+    // Initialize on page load
+    window.onload = function() {
+      lucide.createIcons();
+      loadData();
+      checkInitialUrlParams();
+    };
+
+    /**
+     * Check if opened with ?item=CON-001 or ?id=CON-001
+     */
+    function checkInitialUrlParams() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const targetId = params.get("item") || params.get("id");
+        if (targetId) {
+          window._autoOpenItemId = targetId.trim();
+        }
+      } catch (e) {
+        console.warn("URL params error:", e);
+      }
+    }
+
+    /**
+     * Load consumables & transactions data
+     */
+    function loadData(isManual = false) {
+      const refreshIcon = document.getElementById("refreshIcon");
+      if (refreshIcon) refreshIcon.classList.add("animate-spin");
+      if (!isManual) {
+        document.getElementById("loadingBox").classList.remove("hidden");
+        document.getElementById("itemsContainer").classList.add("hidden");
+      }
+
+      // Check if running inside Google Apps Script (google.script.run)
       if (typeof google !== "undefined" && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler(function(res) {
-            onDataLoaded(res);
+            onDataReceived(res);
           })
           .withFailureHandler(function(err) {
-            alert("載入失敗: " + err);
-            document.getElementById("loadingBox").classList.add("hidden");
+            console.error("GAS run error:", err);
+            fallbackFetchData();
           })
           .Consumable_getData();
       } else {
-        // Fallback fetch from same origin or mock
-        fetch("?action=data")
-          .then(r => r.json())
-          .then(res => onDataLoaded(res))
-          .catch(e => {
-            console.warn("GAS Web App Fetch not available, running standalone mode");
-            document.getElementById("loadingBox").classList.add("hidden");
-          });
+        fallbackFetchData();
       }
     }
 
-    function onDataLoaded(res) {
+    /**
+     * Fallback Fetch API call
+     */
+    function fallbackFetchData() {
+      let url = window.location.href.split("?")[0];
+      if (!url.endsWith("/exec")) {
+        url = "https://script.google.com/macros/s/AKfycby7IVEQjWzDsywYEfsn4kan7mBMN8vCgqTobZRGhmthLWcrJZUxlEO5_8i5uf8In6la/exec";
+      }
+
+      fetch(url + "?action=data")
+        .then(r => r.json())
+        .then(res => {
+          onDataReceived(res);
+        })
+        .catch(err => {
+          console.warn("Fetch failed, attempting POST get_data:", err);
+          fetch(url, {
+            method: "POST",
+            body: JSON.stringify({ action: "get_data" })
+          })
+            .then(r => r.json())
+            .then(res => onDataReceived(res))
+            .catch(finalErr => {
+              alert("無法載入耗材資料，請檢查網路連線或稍後再試！");
+              document.getElementById("loadingBox").classList.add("hidden");
+              const refreshIcon = document.getElementById("refreshIcon");
+              if (refreshIcon) refreshIcon.classList.remove("animate-spin");
+            });
+        });
+    }
+
+    /**
+     * Handle data payload
+     */
+    function onDataReceived(res) {
       document.getElementById("loadingBox").classList.add("hidden");
-      document.getElementById("tableContainer").classList.remove("hidden");
-      gData = res;
+      const refreshIcon = document.getElementById("refreshIcon");
+      if (refreshIcon) refreshIcon.classList.remove("animate-spin");
 
-      document.getElementById("statActive").innerText = res.items.filter(i => i.status === "active").length;
-      document.getElementById("statTotalStock").innerText = res.items.reduce((s, i) => s + i.currentStock, 0);
-      document.getElementById("statLowStock").innerText = res.items.filter(i => i.status === "active" && i.currentStock <= i.safeStock).length;
-      document.getElementById("statDaysAudit").innerText = (res.daysSinceLastAudit !== null ? res.daysSinceLastAudit : "-") + " 天";
+      if (res && res.items && Array.isArray(res.items)) {
+        gAllItems = res.items;
+        updateStats(res);
+        renderRecentLogs(res.transactions || []);
+        applyFilterAndRender();
 
-      if (res.isAuditOverdue) {
-        document.getElementById("auditAlertBanner").classList.remove("hidden");
-      } else {
-        document.getElementById("auditAlertBanner").classList.add("hidden");
+        if (window._autoOpenItemId) {
+          const matched = gAllItems.find(it => it.id === window._autoOpenItemId || it.name.includes(window._autoOpenItemId));
+          if (matched) {
+            openPickupModal(matched.id);
+          }
+          window._autoOpenItemId = null;
+        }
       }
-
-      renderTable();
     }
 
-    function renderTable() {
-      const q = document.getElementById("searchInput").value.trim().toLowerCase();
-      const cat = document.getElementById("categoryFilter").value;
-      const tbody = document.getElementById("itemsTbody");
-      tbody.innerHTML = "";
+    /**
+     * Update overview statistics
+     */
+    function updateStats(res) {
+      const activeItems = gAllItems.filter(it => it.status === "啟用" || it.status === "active");
+      const totalStock = activeItems.reduce((sum, it) => sum + (Number(it.currentStock) || 0), 0);
+      const lowStockCount = activeItems.filter(it => (Number(it.currentStock) || 0) <= (Number(it.safetyStock) || 0)).length;
 
-      const filtered = (gData.items || []).filter(item => {
-        if (cat !== "ALL" && item.category !== cat) return false;
-        if (q && !item.name.toLowerCase().includes(q) && !item.spec.toLowerCase().includes(q) && !item.id.toLowerCase().includes(q)) return false;
+      document.getElementById("statActiveCount").innerText = activeItems.length;
+      document.getElementById("statTotalStock").innerText = totalStock.toLocaleString();
+      document.getElementById("statLowStock").innerText = lowStockCount;
+      document.getElementById("catCountAll").innerText = activeItems.length;
+
+      document.getElementById("lastUpdatedTime").innerText = "更新於 " + new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    /**
+     * Filter and render items
+     */
+    function applyFilterAndRender() {
+      const q = gSearchQuery.trim().toLowerCase();
+      
+      gFilteredItems = gAllItems.filter(item => {
+        if (gSelectedCategory !== "ALL" && item.category !== gSelectedCategory) {
+          return false;
+        }
+
+        if (q) {
+          const matchId = (item.id || "").toLowerCase().includes(q);
+          const matchName = (item.name || "").toLowerCase().includes(q);
+          const matchSpec = (item.specification || "").toLowerCase().includes(q);
+          const matchLoc = (item.location || "").toLowerCase().includes(q);
+          const matchCat = (item.category || "").toLowerCase().includes(q);
+          if (!matchId && !matchName && !matchSpec && !matchLoc && !matchCat) {
+            return false;
+          }
+        }
+
         return true;
       });
 
-      if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400">查無耗材資料</td></tr>';
+      renderItemsList();
+    }
+
+    /**
+     * Render items cards
+     */
+    function renderItemsList() {
+      const container = document.getElementById("itemsContainer");
+      const emptyBox = document.getElementById("emptyBox");
+
+      if (gFilteredItems.length === 0) {
+        container.classList.add("hidden");
+        emptyBox.classList.remove("hidden");
+        lucide.createIcons();
         return;
       }
 
-      filtered.forEach(it => {
-        const isLow = it.currentStock <= it.safeStock;
-        const isOut = it.currentStock <= 0;
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-50 transition";
-        tr.innerHTML = `
-          <td class="p-3 font-mono font-bold text-slate-500">${it.id}</td>
-          <td class="p-3">
-            <div class="font-bold text-slate-800">${it.name}</div>
-            <div class="text-[11px] text-slate-500">${it.spec}</div>
-          </td>
-          <td class="p-3 text-slate-600">${it.category}</td>
-          <td class="p-3 text-right font-mono font-bold ${isOut ? 'text-rose-600' : isLow ? 'text-amber-600' : 'text-[#1b4372]'}">${it.currentStock} ${it.unit}</td>
-          <td class="p-3 text-right font-mono text-slate-500">${it.safeStock} ${it.unit}</td>
-          <td class="p-3 text-center">
-            ${isOut ? '<span class="px-2 py-0.5 bg-rose-100 text-rose-800 rounded text-[10px] font-bold">缺貨</span>' : isLow ? '<span class="px-2 py-0.5 bg-amber-100 text-amber-900 rounded text-[10px] font-bold">庫存偏低</span>' : '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px]">正常</span>'}
-          </td>
-          <td class="p-3 text-right">
-            <button onclick='openPickupModalById("${it.id}")' ${isOut ? 'disabled' : ''} class="px-3 py-1 bg-[#1b4372] hover:bg-[#122e4f] disabled:bg-slate-200 text-white font-bold rounded text-xs transition">
-              ${isOut ? '缺貨' : '領取'}
-            </button>
-          </td>
+      emptyBox.classList.add("hidden");
+      container.classList.remove("hidden");
+
+      let html = "";
+      gFilteredItems.forEach(item => {
+        const stock = Number(item.currentStock) || 0;
+        const safe = Number(item.safetyStock) || 0;
+        const isOutOfStock = stock <= 0;
+        const isLowStock = !isOutOfStock && stock <= safe;
+        const categoryLabel = gLang === "en" ? (CAT_TRANS[item.category] || item.category) : item.category;
+
+        let badgeHtml = "";
+        if (isOutOfStock) {
+          badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-200">缺貨 Out of Stock</span>`;
+        } else if (isLowStock) {
+          badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">庫存偏低 Low Stock</span>`;
+        } else {
+          badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">庫存充足 In Stock</span>`;
+        }
+
+        html += `
+          <div class="bg-white border border-[#e5e5e0] hover:border-[#1b4372]/40 rounded-sm p-3.5 sm:p-4 shadow-2xs transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isOutOfStock ? 'opacity-75 bg-slate-50/70' : ''}">
+            <div class="space-y-1 flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-mono text-[11px] font-bold text-[#1b4372] bg-[#1b4372]/10 px-1.5 py-0.2 rounded-xs">
+                  ${item.id}
+                </span>
+                <span class="text-[11px] text-slate-500 font-medium">
+                  ${categoryLabel}
+                </span>
+                ${badgeHtml}
+                ${item.location ? `
+                  <span class="text-[11px] text-slate-400 flex items-center gap-0.5">
+                    <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i>
+                    ${item.location}
+                  </span>
+                ` : ''}
+              </div>
+
+              <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                ${item.name}
+              </h3>
+
+              <div class="text-xs text-slate-500 flex items-center gap-3">
+                ${item.specification ? `<span>規格: <strong>${item.specification}</strong></span>` : ''}
+                <span>安全庫存: <strong class="font-mono">${safe}</strong> ${item.unit || ''}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+              <div class="text-left sm:text-right pr-2">
+                <div class="text-[10px] text-slate-400 font-medium">可用庫存</div>
+                <div class="text-xl font-bold font-mono ${isOutOfStock ? 'text-rose-600' : isLowStock ? 'text-amber-700' : 'text-slate-800'}">
+                  ${stock} <span class="text-xs font-normal text-slate-500">${item.unit || ''}</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  onclick="openItemQrModal('${item.id}')"
+                  class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm border border-slate-200 transition"
+                  title="產生本品項專屬置物架 QR Code 標籤"
+                >
+                  <i data-lucide="qr-code" class="w-4 h-4 text-slate-600"></i>
+                </button>
+
+                <button
+                  type="button"
+                  onclick="openPickupModal('${item.id}')"
+                  ${isOutOfStock ? 'disabled' : ''}
+                  class="px-4 py-2 font-bold rounded-sm text-xs shadow-xs flex items-center gap-1.5 transition active:scale-95 ${
+                    isOutOfStock 
+                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+                      : 'bg-[#1b4372] hover:bg-[#122e4f] text-white'
+                  }"
+                >
+                  <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+                  <span>${gLang === "en" ? "Pick up" : "領取"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
         `;
-        tbody.appendChild(tr);
       });
+
+      container.innerHTML = html;
+      lucide.createIcons();
     }
 
-    function openPickupModalById(id) {
-      const it = (gData.items || []).find(i => i.id === id);
-      if (!it) return;
-      activePickupItem = it;
-      document.getElementById("pickupItemBanner").innerHTML = `<strong>${it.name}</strong><br><span class="text-slate-500">${it.spec}</span><br>目前庫存: <strong class="text-[#1b4372]">${it.currentStock} ${it.unit}</strong>`;
-      document.getElementById("pickupQty").value = 1;
-      document.getElementById("pickupQty").max = it.currentStock;
+    /**
+     * Render recent logs
+     */
+    function renderRecentLogs(logs) {
+      const container = document.getElementById("recentLogsList");
+      if (!logs || logs.length === 0) {
+        container.innerHTML = '<p class="text-center py-3 text-slate-400 text-[11px]">暫無近期領用紀錄</p>';
+        return;
+      }
+
+      const pickupLogs = logs.filter(l => l.type === "領取" || l.type === "pickup").slice(0, 5);
+      if (pickupLogs.length === 0) {
+        container.innerHTML = '<p class="text-center py-3 text-slate-400 text-[11px]">暫無近期領用紀錄</p>';
+        return;
+      }
+
+      let html = "";
+      pickupLogs.forEach(l => {
+        const timeStr = l.timestamp ? l.timestamp.replace(/^\d{4}\//, "") : "";
+        html += `
+          <div class="py-2 flex items-center justify-between text-xs">
+            <div class="space-y-0.5">
+              <div class="font-bold text-slate-800">
+                ${l.itemName}
+                <span class="text-rose-600 font-mono font-bold ml-1">-${l.quantityChange}</span>
+              </div>
+              <div class="text-[11px] text-slate-400">
+                領取人: <strong class="text-slate-700">${l.operator || "未填"}</strong> · ${l.notes ? `備註: ${l.notes}` : "日常耗材領用"}
+              </div>
+            </div>
+            <div class="text-[10px] text-slate-400 font-mono text-right">
+              ${timeStr}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function handleSearch(val) {
+      gSearchQuery = val;
+      const clearBtn = document.getElementById("clearSearchBtn");
+      if (val.trim()) {
+        clearBtn.classList.remove("hidden");
+      } else {
+        clearBtn.classList.add("hidden");
+      }
+      applyFilterAndRender();
+    }
+
+    function clearSearch() {
+      gSearchQuery = "";
+      document.getElementById("searchInput").value = "";
+      document.getElementById("clearSearchBtn").classList.add("hidden");
+      applyFilterAndRender();
+    }
+
+    function setCategory(cat) {
+      gSelectedCategory = cat;
+      const buttons = document.querySelectorAll(".category-btn");
+      buttons.forEach(btn => {
+        if (btn.getAttribute("data-cat") === cat) {
+          btn.className = "category-btn px-2.5 py-1 rounded-full font-bold whitespace-nowrap transition bg-[#1b4372] text-white";
+        } else {
+          btn.className = "category-btn px-2.5 py-1 rounded-full font-bold whitespace-nowrap transition bg-slate-100 text-slate-600 hover:bg-slate-200";
+        }
+      });
+      applyFilterAndRender();
+    }
+
+    function toggleLang() {
+      gLang = gLang === "zh" ? "en" : "zh";
+      document.getElementById("langLabel").innerText = gLang === "zh" ? "EN" : "中文";
+      applyFilterAndRender();
+    }
+
+    function openPickupModal(itemId) {
+      const item = gAllItems.find(it => it.id === itemId);
+      if (!item) return;
+
+      gActivePickupItem = item;
+      const stock = Number(item.currentStock) || 0;
+      if (stock <= 0) {
+        alert("此品項目前已無庫存，無法領取！請通知實驗室管理員進行採購補貨。");
+        return;
+      }
+
+      const banner = document.getElementById("pickupItemBanner");
+      banner.innerHTML = `
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="font-mono text-[10px] font-bold text-[#1b4372] bg-white border border-slate-200 px-1 py-0.5 rounded">
+                ${item.id}
+              </span>
+              <span class="text-[11px] text-slate-500">${item.category}</span>
+            </div>
+            <div class="text-sm font-bold text-slate-900">${item.name}</div>
+            <div class="text-xs text-slate-500 mt-0.5">
+              ${item.specification ? `規格: ${item.specification} · ` : ''}
+              架位: <strong class="text-slate-700">${item.location || '一般耗材區'}</strong>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] text-slate-400 block">現有存量</span>
+            <span class="text-lg font-bold font-mono text-[#1b4372]">${stock} ${item.unit || ''}</span>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("modalAvailableStock").innerText = `${stock} ${item.unit || ''}`;
+      document.getElementById("pickupQtyInput").value = 1;
+      document.getElementById("pickupQtyInput").max = stock;
+      document.getElementById("qtyErrorNotice").classList.add("hidden");
+      document.getElementById("pickupNotesInput").value = "";
+
+      const savedPicker = localStorage.getItem("ebblab_last_picker_name");
+      if (savedPicker) {
+        const select = document.getElementById("pickerSelect");
+        let hasOption = false;
+        for (let i = 0; i < select.options.length; i++) {
+          if (select.options[i].value === savedPicker) {
+            select.selectedIndex = i;
+            hasOption = true;
+            break;
+          }
+        }
+        if (!hasOption) {
+          select.value = "__OTHER__";
+          document.getElementById("pickerCustomInput").classList.remove("hidden");
+          document.getElementById("pickerCustomInput").value = savedPicker;
+        }
+      }
+
       document.getElementById("pickupModal").classList.remove("hidden");
+      lucide.createIcons();
     }
 
     function closePickupModal() {
       document.getElementById("pickupModal").classList.add("hidden");
-      activePickupItem = null;
+      gActivePickupItem = null;
     }
 
-    function togglePickerCustom(val) {
-      const customInput = document.getElementById("pickupPickerCustom");
-      if (val === "OTHER") {
+    function adjustPickupQty(delta) {
+      const input = document.getElementById("pickupQtyInput");
+      let current = parseInt(input.value, 10) || 1;
+      current += delta;
+      if (current < 1) current = 1;
+      if (gActivePickupItem) {
+        const max = Number(gActivePickupItem.currentStock) || 1;
+        if (current > max) current = max;
+      }
+      input.value = current;
+      validatePickupQty();
+    }
+
+    function setPickupQty(qty) {
+      const input = document.getElementById("pickupQtyInput");
+      if (gActivePickupItem) {
+        const max = Number(gActivePickupItem.currentStock) || 1;
+        input.value = Math.min(qty, max);
+      } else {
+        input.value = qty;
+      }
+      validatePickupQty();
+    }
+
+    function setMaxPickupQty() {
+      if (gActivePickupItem) {
+        const max = Number(gActivePickupItem.currentStock) || 1;
+        document.getElementById("pickupQtyInput").value = max;
+      }
+      validatePickupQty();
+    }
+
+    function validatePickupQty() {
+      const input = document.getElementById("pickupQtyInput");
+      const err = document.getElementById("qtyErrorNotice");
+      const btn = document.getElementById("pickupSubmitBtn");
+      const qty = parseInt(input.value, 10);
+      const max = gActivePickupItem ? (Number(gActivePickupItem.currentStock) || 0) : 0;
+
+      if (isNaN(qty) || qty <= 0 || qty > max) {
+        err.classList.remove("hidden");
+        btn.disabled = true;
+        btn.classList.add("opacity-50", "cursor-not-allowed");
+      } else {
+        err.classList.add("hidden");
+        btn.disabled = false;
+        btn.classList.remove("opacity-50", "cursor-not-allowed");
+      }
+    }
+
+    function handlePickerSelectChange(val) {
+      const customInput = document.getElementById("pickerCustomInput");
+      if (val === "__OTHER__") {
         customInput.classList.remove("hidden");
         customInput.required = true;
+        customInput.focus();
       } else {
         customInput.classList.add("hidden");
         customInput.required = false;
       }
     }
 
-    function submitPickup(e) {
+    function handlePickupSubmit(e) {
       e.preventDefault();
-      if (!activePickupItem) return;
+      if (!gActivePickupItem) return;
 
-      const qty = parseInt(document.getElementById("pickupQty").value, 10);
-      const sel = document.getElementById("pickupPickerSelect").value;
-      const custom = document.getElementById("pickupPickerCustom").value.trim();
-      const picker = sel === "OTHER" ? custom : sel;
-      const notes = document.getElementById("pickupNotes").value.trim();
+      const qty = parseInt(document.getElementById("pickupQtyInput").value, 10);
+      const pickerSelect = document.getElementById("pickerSelect").value;
+      const customPicker = document.getElementById("pickerCustomInput").value.trim();
+      const pickerName = (pickerSelect === "__OTHER__" ? customPicker : pickerSelect).trim();
+      const notes = document.getElementById("pickupNotesInput").value.trim();
 
-      if (!picker) {
-        alert("請選擇或輸入領取人姓名！");
+      if (!pickerName) {
+        alert("請填寫或選取領用人姓名！");
         return;
       }
 
-      document.getElementById("pickupSubmitBtn").disabled = true;
-      document.getElementById("pickupSubmitBtn").innerText = "寫入中...";
+      const available = Number(gActivePickupItem.currentStock) || 0;
+      if (qty > available) {
+        alert("領用數量超過庫存存量！");
+        return;
+      }
+
+      localStorage.setItem("ebblab_last_picker_name", pickerName);
+
+      const submitBtn = document.getElementById("pickupSubmitBtn");
+      submitBtn.disabled = true;
+      document.getElementById("submitBtnText").innerText = "正在向 Google 試算表同步扣庫...";
 
       const payload = {
         action: "pickup",
-        itemId: activePickupItem.id,
+        itemId: gActivePickupItem.id,
+        itemName: gActivePickupItem.name,
         quantity: qty,
-        operator: picker,
-        isListedMember: sel !== "OTHER",
-        notes: notes
+        operator: pickerName,
+        userName: pickerName,
+        isListedMember: pickerSelect !== "__OTHER__",
+        notes: notes || "線上自助領用"
       };
 
       if (typeof google !== "undefined" && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler(function(res) {
-            document.getElementById("pickupSubmitBtn").disabled = false;
-            document.getElementById("pickupSubmitBtn").innerText = "確認領取";
-            if (res.success) {
-              alert(res.message);
-              closePickupModal();
-              loadData();
-            } else {
-              alert("領取失敗: " + res.error);
-            }
+            onPickupCompleted(res, qty, pickerName);
           })
           .withFailureHandler(function(err) {
-            document.getElementById("pickupSubmitBtn").disabled = false;
-            document.getElementById("pickupSubmitBtn").innerText = "確認領取";
-            alert("伺服器錯誤: " + err);
+            alert("領用失敗: " + err);
+            resetSubmitBtn();
           })
           .Consumable_pickup(payload);
-      }
-    }
-
-    function openLoginModal() {
-      document.getElementById("loginError").classList.add("hidden");
-      document.getElementById("adminPasswordInput").value = "";
-      document.getElementById("loginModal").classList.remove("hidden");
-    }
-
-    function closeLoginModal() {
-      document.getElementById("loginModal").classList.add("hidden");
-    }
-
-    function submitAdminLogin(e) {
-      e.preventDefault();
-      const pwd = document.getElementById("adminPasswordInput").value;
-      if (typeof google !== "undefined" && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            if (res.success) {
-              adminToken = res.token;
-              localStorage.setItem("ebblab_gas_token", res.token);
-              document.getElementById("adminBadge").classList.remove("hidden");
-              document.getElementById("adminLoginBtn").classList.add("hidden");
-              document.getElementById("adminPanel").classList.remove("hidden");
-              closeLoginModal();
-              alert("管理員登入成功！");
-            } else {
-              document.getElementById("loginError").innerText = res.error;
-              document.getElementById("loginError").classList.remove("hidden");
-            }
-          })
-          .Consumable_login(pwd);
       } else {
-        if (pwd === "ebbthings") {
-          adminToken = "authorized";
-          localStorage.setItem("ebblab_gas_token", "authorized");
-          document.getElementById("adminBadge").classList.remove("hidden");
-          document.getElementById("adminLoginBtn").classList.add("hidden");
-          document.getElementById("adminPanel").classList.remove("hidden");
-          closeLoginModal();
-          alert("管理員登入成功！");
-        } else {
-          document.getElementById("loginError").innerText = "密碼錯誤！";
-          document.getElementById("loginError").classList.remove("hidden");
+        let url = window.location.href.split("?")[0];
+        if (!url.endsWith("/exec")) {
+          url = "https://script.google.com/macros/s/AKfycby7IVEQjWzDsywYEfsn4kan7mBMN8vCgqTobZRGhmthLWcrJZUxlEO5_8i5uf8In6la/exec";
         }
+
+        fetch(url, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        })
+          .then(r => r.json())
+          .then(res => onPickupCompleted(res, qty, pickerName))
+          .catch(err => {
+            alert("無法連線至 Google Apps Script Webhook: " + err);
+            resetSubmitBtn();
+          });
       }
     }
 
-    function adminLogout() {
-      adminToken = "";
-      localStorage.removeItem("ebblab_gas_token");
-      document.getElementById("adminBadge").classList.add("hidden");
-      document.getElementById("adminLoginBtn").classList.remove("hidden");
-      document.getElementById("adminPanel").classList.add("hidden");
+    function onPickupCompleted(res, qty, pickerName) {
+      resetSubmitBtn();
+      if (res && res.success) {
+        const item = gActivePickupItem;
+        const newStock = res.remainingStock !== undefined ? res.remainingStock : ((Number(item.currentStock) || 0) - qty);
+        
+        item.currentStock = newStock;
+        closePickupModal();
+
+        alert(`✅ 領用登記成功！\n\n品項：${item.name}\n領取數量：${qty} ${item.unit || ''}\n領取人：${pickerName}\n剩餘庫存：${newStock} ${item.unit || ''}\n\n已即時同步寫入 Google 試算表異動紀錄。`);
+        
+        loadData(true);
+      } else {
+        alert("領用登記失敗：" + ((res && res.error) || "未知錯誤"));
+      }
     }
 
-    function exportLogsCSV() {
-      if (!gData.transactions || gData.transactions.length === 0) {
-        alert("尚無異動紀錄！");
-        return;
+    function resetSubmitBtn() {
+      const submitBtn = document.getElementById("pickupSubmitBtn");
+      submitBtn.disabled = false;
+      document.getElementById("submitBtnText").innerText = "確認登記領取";
+    }
+
+    function openItemQrModal(itemId) {
+      const item = gAllItems.find(it => it.id === itemId);
+      if (!item) return;
+
+      gActiveQrItem = item;
+      document.getElementById("qrItemId").innerText = item.id;
+      document.getElementById("qrItemName").innerText = item.name;
+      document.getElementById("qrItemSpec").innerText = item.specification ? item.specification : "標準規格";
+      document.getElementById("qrItemLoc").innerText = item.location || "耗材置放區";
+
+      let baseUrl = window.location.href.split("?")[0];
+      if (!baseUrl.endsWith("/exec")) {
+        baseUrl = "https://script.google.com/macros/s/AKfycby7IVEQjWzDsywYEfsn4kan7mBMN8vCgqTobZRGhmthLWcrJZUxlEO5_8i5uf8In6la/exec";
       }
-      const headers = ["時間", "耗材ID", "名稱", "類型", "數量變化", "前庫存", "後庫存", "人員", "備註"];
-      const rows = gData.transactions.map(t => [t.timestamp, t.consumableId, `"${t.consumableName}"`, t.type, t.changeQty, t.prevStock, t.afterStock, `"${t.operator}"`, `"${t.notes}"`]);
-      const csv = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "Consumables_History_" + new Date().toISOString().slice(0, 10) + ".csv";
-      a.click();
+      const itemUrl = baseUrl + "?item=" + encodeURIComponent(item.id);
+      gActiveQrItem.directUrl = itemUrl;
+
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(itemUrl)}&color=1b4372`;
+      document.getElementById("qrCodeImg").src = qrApiUrl;
+
+      document.getElementById("copyQrLinkText").innerText = "複製直連網址";
+      document.getElementById("itemQrModal").classList.remove("hidden");
+      lucide.createIcons();
+    }
+
+    function closeItemQrModal() {
+      document.getElementById("itemQrModal").classList.add("hidden");
+      gActiveQrItem = null;
+    }
+
+    function copyItemQrLink() {
+      if (!gActiveQrItem || !gActiveQrItem.directUrl) return;
+      navigator.clipboard.writeText(gActiveQrItem.directUrl).then(() => {
+        document.getElementById("copyQrLinkText").innerText = "已複製網址！";
+        setTimeout(() => {
+          document.getElementById("copyQrLinkText").innerText = "複製直連網址";
+        }, 2000);
+      });
+    }
+
+    function openQrScannerModal() {
+      document.getElementById("cameraScannerModal").classList.remove("hidden");
+      lucide.createIcons();
+
+      if (typeof Html5Qrcode !== "undefined") {
+        if (!gHtml5QrScanner) {
+          gHtml5QrScanner = new Html5Qrcode("qrReader");
+        }
+        gHtml5QrScanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 220, height: 220 } },
+          (decodedText) => {
+            onQrCodeScanned(decodedText);
+          },
+          (errorMessage) => {}
+        ).catch(err => {
+          document.getElementById("qrReader").innerHTML = `
+            <div class="p-4 text-center text-rose-300">
+              無法存取手機相機鏡頭 (${err})。<br>
+              請確認瀏覽器已允許相機權限，或直接在清單中搜尋耗材！
+            </div>
+          `;
+        });
+      } else {
+        alert("未支援條碼掃描組件，請手動在清單中選取品項！");
+      }
+    }
+
+    function closeQrScannerModal() {
+      if (gHtml5QrScanner) {
+        gHtml5QrScanner.stop().then(() => {
+          document.getElementById("cameraScannerModal").classList.add("hidden");
+        }).catch(() => {
+          document.getElementById("cameraScannerModal").classList.add("hidden");
+        });
+      } else {
+        document.getElementById("cameraScannerModal").classList.add("hidden");
+      }
+    }
+
+    function onQrCodeScanned(text) {
+      document.getElementById("scannerStatusText").innerText = "已成功掃描：" + text;
+      closeQrScannerModal();
+
+      let targetId = text.trim();
+      try {
+        if (text.includes("?")) {
+          const urlParams = new URLSearchParams(text.split("?")[1]);
+          targetId = urlParams.get("item") || urlParams.get("id") || targetId;
+        }
+      } catch (e) {}
+
+      const matched = gAllItems.find(it => it.id === targetId || it.name.includes(targetId));
+      if (matched) {
+        openPickupModal(matched.id);
+      } else {
+        alert(`掃描結果為：「${targetId}」，未在目前啟用之耗材清冊中找到相應品項！`);
+      }
     }
   </script>
 </body>

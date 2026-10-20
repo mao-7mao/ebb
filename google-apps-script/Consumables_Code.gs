@@ -30,7 +30,7 @@ const CONSUM_CONFIG = {
 // ============================================================================
 
 /**
- * 處理 GET 請求 (若有 Index.html 則渲染頁面；若帶 action=data 則回傳 JSON)
+ * 處理 GET 請求 (若帶 action=data 則回傳 JSON；否則渲染 Consumables_Pickup 或 Index 頁面並允許嵌入)
  */
 function doGet(e) {
   try {
@@ -43,18 +43,45 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 預設渲染 Index.html (若作為獨立 Apps Script Web App 使用)
-    return HtmlService.createTemplateFromFile("Index")
+    // 取得指定渲染頁面，預設為 Consumables_Pickup (亦相容 Index)
+    const reqPage = (e && e.parameter && e.parameter.page) ? String(e.parameter.page).trim() : "";
+    let template;
+
+    if (reqPage.toLowerCase() === "index") {
+      try {
+        template = HtmlService.createTemplateFromFile("Index");
+      } catch (errIdx) {
+        template = HtmlService.createTemplateFromFile("Consumables_Pickup");
+      }
+    } else {
+      try {
+        template = HtmlService.createTemplateFromFile("Consumables_Pickup");
+      } catch (errPick) {
+        try {
+          template = HtmlService.createTemplateFromFile("Index");
+        } catch (errIdx) {
+          throw new Error("找不到 HTML 模板 (Consumables_Pickup.html 或 Index.html)");
+        }
+      }
+    }
+
+    // 將 URL 查詢參數（如 ?item=CON-001 或 ?id=CON-001）傳入模板
+    template.initialItemId = (e && e.parameter && (e.parameter.item || e.parameter.id)) 
+      ? String(e.parameter.item || e.parameter.id).trim() 
+      : "";
+
+    return template
       .evaluate()
-      .setTitle("EBB Lab - Consumables")
+      .setTitle("EBB Lab - 實驗室耗材自助領用系統 (Consumables Pickup)")
       .addMetaTag("viewport", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   } catch (err) {
-    // 若找不到 Index.html 模板，則返回 JSON 狀態
+    // 若找不到 HTML 模板，則返回 JSON 狀態
     const data = Consumable_getData();
     return ContentService.createTextOutput(JSON.stringify({ 
       success: true, 
       system: "EBB Lab Consumables Backend",
+      note: "若需顯示網頁，請在 Apps Script 中新增 Consumables_Pickup.html 或 Index.html",
       ...data 
     })).setMimeType(ContentService.MimeType.JSON);
   }

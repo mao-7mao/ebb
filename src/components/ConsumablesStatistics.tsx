@@ -33,8 +33,19 @@ import {
   ListFilter,
   Tag,
   Info,
-  Globe
+  Globe,
+  QrCode,
+  ExternalLink,
+  Maximize2,
+  Minimize2,
+  Copy,
+  Check,
+  Printer,
+  Settings,
+  Smartphone,
+  Share2
 } from "lucide-react";
+import QRCodeLib from "qrcode";
 import { members as initialMembers, Member } from "../data/labData";
 import { 
   ConsumableItem, 
@@ -56,6 +67,8 @@ import {
   sendConsumablesAdminAction,
   getValidAdminToken,
   getConsumablesWebhookUrl,
+  getConsumablesScriptUrl,
+  saveConsumablesScriptUrl,
   CONSUMABLES_ADMIN_PASSWORD,
   ADMIN_GAS_TOKEN_KEY
 } from "../services/consumablesSyncService";
@@ -260,9 +273,131 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
   // --------------------------------------------------------------------------
   // 3. UI Navigation & Filters
   // --------------------------------------------------------------------------
-  const [currentTab, setCurrentTab] = useState<"catalog" | "history" | "low_stock" | "audit" | "manage">("catalog");
+  const [currentTab, setCurrentTab] = useState<"catalog" | "history" | "low_stock" | "audit" | "manage" | "embed_pickup">("catalog");
   const [selectedCategory, setSelectedCategory] = useState<string>("全部類別");
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // --------------------------------------------------------------------------
+  // 3.0 行動領用內嵌 (Google Apps Script Web App) 與 QR Code 生成狀態
+  // --------------------------------------------------------------------------
+  const [consumablesScriptUrl, setConsumablesScriptUrl] = useState<string>(() => {
+    return getConsumablesScriptUrl();
+  });
+  const [iframeKey, setIframeKey] = useState<number>(Date.now());
+  const [isIframeLoading, setIsIframeLoading] = useState<boolean>(true);
+  const [isEmbedFullscreen, setIsEmbedFullscreen] = useState<boolean>(false);
+
+  // Settings Modal (設定 GAS 部署網址)
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
+  const [customScriptUrlInput, setCustomScriptUrlInput] = useState<string>("");
+  const [isTestingUrl, setIsTestingUrl] = useState<boolean>(false);
+  const [testResultMsg, setTestResultMsg] = useState<{ success: boolean; text: string } | null>(null);
+
+  // QR Code Modal (全館領用碼 & 各品項專屬置物架標籤)
+  const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
+  const [qrModalTab, setQrModalTab] = useState<"general" | "item">("general");
+  const [selectedQrItemId, setSelectedQrItemId] = useState<string>("");
+  const [generalQrDataUrl, setGeneralQrDataUrl] = useState<string>("");
+  const [itemQrDataUrl, setItemQrDataUrl] = useState<string>("");
+  const [isCopiedQrUrl, setIsCopiedQrUrl] = useState<boolean>(false);
+
+  // Selected QR Item
+  const activeQrItem = useMemo(() => {
+    if (selectedQrItemId) {
+      const found = items.find(it => it.id === selectedQrItemId);
+      if (found) return found;
+    }
+    return items.length > 0 ? items[0] : null;
+  }, [items, selectedQrItemId]);
+
+  // Generate General QR Code
+  useEffect(() => {
+    if (!consumablesScriptUrl) return;
+    QRCodeLib.toDataURL(consumablesScriptUrl, {
+      width: 256,
+      margin: 2,
+      color: {
+        dark: "#1b4372",
+        light: "#ffffff",
+      },
+    })
+      .then(url => setGeneralQrDataUrl(url))
+      .catch(err => console.error("QR Code Gen Error:", err));
+  }, [consumablesScriptUrl]);
+
+  // Generate Item-specific Shelf QR Code
+  useEffect(() => {
+    if (!consumablesScriptUrl || !activeQrItem) {
+      setItemQrDataUrl("");
+      return;
+    }
+    const itemUrl = consumablesScriptUrl + (consumablesScriptUrl.includes("?") ? "&" : "?") + "item=" + encodeURIComponent(activeQrItem.id);
+    QRCodeLib.toDataURL(itemUrl, {
+      width: 256,
+      margin: 2,
+      color: {
+        dark: "#1b4372",
+        light: "#ffffff",
+      },
+    })
+      .then(url => setItemQrDataUrl(url))
+      .catch(err => console.error("Item QR Code Gen Error:", err));
+  }, [consumablesScriptUrl, activeQrItem]);
+
+  const openItemSpecificQrModal = (item: ConsumableItem) => {
+    setSelectedQrItemId(item.id);
+    setQrModalTab("item");
+    setIsQrModalOpen(true);
+  };
+
+  const handleCopyText = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setIsCopiedQrUrl(true);
+    setTimeout(() => setIsCopiedQrUrl(false), 2000);
+  };
+
+  const handleDownloadQrImage = (dataUrl: string, filename: string) => {
+    if (!dataUrl) return;
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleSaveCustomScriptUrl = () => {
+    const trimmed = customScriptUrlInput.trim();
+    if (!trimmed) {
+      showToast("請輸入有效的 Google Apps Script 網頁應用程式網址！", "error");
+      return;
+    }
+    saveConsumablesScriptUrl(trimmed);
+    setConsumablesScriptUrl(trimmed);
+    setIsIframeLoading(true);
+    setIframeKey(Date.now());
+    setIsSettingsModalOpen(false);
+    showToast("已更新耗材 Web App 網址並重新載入！", "success");
+  };
+
+  const handleTestCustomScriptUrl = async () => {
+    const trimmed = customScriptUrlInput.trim();
+    if (!trimmed) return;
+    setIsTestingUrl(true);
+    setTestResultMsg(null);
+    try {
+      const res = await fetchConsumablesFromCloud(trimmed);
+      if (res.success) {
+        setTestResultMsg({ success: true, text: `連線成功！讀取到 ${(res.items || []).length} 項耗材資料。` });
+      } else {
+        setTestResultMsg({ success: false, text: res.message || "連線測試失敗" });
+      }
+    } catch (e: any) {
+      setTestResultMsg({ success: false, text: `連線異常: ${e.message || e}` });
+    } finally {
+      setIsTestingUrl(false);
+    }
+  };
 
   // --------------------------------------------------------------------------
   // 3.1 耗材領用紀錄快速檢視與彈窗狀態
@@ -1122,8 +1257,19 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
           </p>
         </div>
 
-        {/* Action Buttons: Language Toggle, Sync, Admin, Back */}
+        {/* Action Buttons: Language Toggle, Mobile QR, Sync, Admin, Back */}
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {/* Mobile QR Code Button */}
+          <button
+            type="button"
+            onClick={() => setIsQrModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#f0f4f9] hover:bg-[#e2ebf7] border border-[#1b4372]/30 text-[#1b4372] rounded-sm text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+            title={lang === "en" ? "Generate Mobile Pickup QR Code & Shelf Labels" : "生成手機領用 QR Code 與置物架條碼標籤"}
+          >
+            <QrCode className="w-3.5 h-3.5 text-[#1b4372]" />
+            <span>{lang === "en" ? "Mobile QR" : "行動條碼"}</span>
+          </button>
+
           {/* One-Click Language Toggle Button */}
           <button
             type="button"
@@ -1309,6 +1455,19 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
 
           <button
             type="button"
+            onClick={() => setCurrentTab("embed_pickup")}
+            className={`px-3 py-2 text-xs font-bold border-b-2 transition whitespace-nowrap flex items-center gap-1.5 ${
+              currentTab === "embed_pickup"
+                ? "border-[#1b4372] text-[#1b4372] bg-white/60"
+                : "border-transparent text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Smartphone className="w-3.5 h-3.5 text-[#1b4372]" />
+            <span>{lang === "en" ? "Mobile Pickup & QR" : "行動領用與 QR Code"}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setCurrentTab("low_stock")}
             className={`px-3 py-2 text-xs font-bold border-b-2 transition whitespace-nowrap flex items-center gap-1.5 ${
               currentTab === "low_stock"
@@ -1371,33 +1530,46 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
           )}
         </div>
 
-        {/* Admin Quick Action Buttons */}
-        {isAdmin && (
-          <div className="flex items-center gap-2 pb-1">
-            <button
-              type="button"
-              onClick={openAddItemModal}
-              className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#1b4372] hover:bg-[#15345a] text-white rounded-sm text-xs font-bold transition shadow-2xs"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>{lang === "en" ? "New Item" : "新增耗材"}</span>
-            </button>
+        {/* Toolbar Quick Action Buttons */}
+        <div className="flex items-center gap-2 pb-1">
+          <button
+            type="button"
+            onClick={() => setIsQrModalOpen(true)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#f8f8f5] hover:bg-slate-200 text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+            title={lang === "en" ? "Generate Mobile QR Codes & Shelf Tags" : "產生手機領用 QR Code 與置物架條碼標籤"}
+          >
+            <QrCode className="w-3.5 h-3.5 text-[#1b4372]" />
+            <span>{lang === "en" ? "Mobile QR" : "行動條碼"}</span>
+          </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                if (items.length > 0) {
-                  setRestockItemId(items[0].id);
-                  setIsRestockModalOpen(true);
-                }
-              }}
-              className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-sm text-xs font-bold transition shadow-2xs"
-            >
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>{lang === "en" ? "Restock" : "補貨入庫"}</span>
-            </button>
-          </div>
-        )}
+          {/* Admin Quick Action Buttons */}
+          {isAdmin && (
+            <>
+              <button
+                type="button"
+                onClick={openAddItemModal}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#1b4372] hover:bg-[#15345a] text-white rounded-sm text-xs font-bold transition shadow-2xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{lang === "en" ? "New Item" : "新增耗材"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (items.length > 0) {
+                    setRestockItemId(items[0].id);
+                    setIsRestockModalOpen(true);
+                  }
+                }}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-sm text-xs font-bold transition shadow-2xs"
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>{lang === "en" ? "Restock" : "補貨入庫"}</span>
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* -------------------- TAB 1 & 2: CATALOG & LOW STOCK -------------------- */}
@@ -1632,6 +1804,17 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
 
                           {/* Action Buttons */}
                           <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
+                            {/* Item QR Code Tag Button */}
+                            <button
+                              type="button"
+                              onClick={() => openItemSpecificQrModal(item)}
+                              title={lang === "en" ? "Generate item shelf QR code label" : "生成此品項專屬置物架 QR Code 標籤"}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#f8f8f5] hover:bg-slate-200 border border-slate-300 text-slate-700 rounded-sm text-xs font-medium transition cursor-pointer active:scale-95 shadow-2xs"
+                            >
+                              <QrCode className="w-3.5 h-3.5 text-[#1b4372]" />
+                              <span>{lang === "en" ? "QR Tag" : "條碼標籤"}</span>
+                            </button>
+
                             {/* View History Button */}
                             <button
                               type="button"
@@ -1680,6 +1863,128 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------- TAB: EMBEDDED PICKUP WEB APP & QR CODE -------------------- */}
+      {currentTab === "embed_pickup" && (
+        <div className={`space-y-4 animate-in fade-in duration-200 ${
+          isEmbedFullscreen ? "fixed inset-0 z-50 bg-[#f4f1ea] p-4 lg:p-6 overflow-y-auto" : ""
+        }`}>
+          {/* Top Banner / Control Panel */}
+          <div className="bg-[#fdfdfc] border border-[#e5e5e0] rounded-sm p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="p-1.5 bg-[#1b4372] text-white rounded-sm">
+                  <Smartphone className="w-4 h-4" />
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-[#1b4372] font-serif tracking-tight">
+                  {lang === "en" ? "Consumables Mobile Pickup System" : "耗材行動自助領用系統 (Google Apps Script Web App)"}
+                </h3>
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  {lang === "en" ? "Cloud Connected" : "雲端系統連線中"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 font-sans">
+                {lang === "en" 
+                  ? "Live embedded Google Apps Script mobile web app. Students can scan QR codes in the lab to register consumables in real-time."
+                  : "Google Apps Script 雲端原生領用介面。支援相機掃碼、品項搜尋、即時防超領扣庫與自動記錄試算表。"}
+              </p>
+            </div>
+
+            {/* Action Controls */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* QR Code Share button */}
+              <button
+                type="button"
+                onClick={() => setIsQrModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f8f8f5] hover:bg-slate-200 text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                title="生成或檢視行動條碼"
+              >
+                <QrCode className="w-3.5 h-3.5 text-[#1b4372]" />
+                <span>{lang === "en" ? "Mobile QR" : "行動條碼"}</span>
+              </button>
+
+              {/* Refresh button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsIframeLoading(true);
+                  setIframeKey(Date.now());
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f8f8f5] hover:bg-slate-200 text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                title="重新整理雲端頁面"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-[#1b4372] ${isIframeLoading ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">{lang === "en" ? "Refresh" : "重新整理"}</span>
+              </button>
+
+              {/* Fullscreen button */}
+              <button
+                type="button"
+                onClick={() => setIsEmbedFullscreen(!isEmbedFullscreen)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f8f8f5] hover:bg-slate-200 text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                title={isEmbedFullscreen ? "離開全螢幕" : "全螢幕檢視"}
+              >
+                {isEmbedFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-[#1b4372]" /> : <Maximize2 className="w-3.5 h-3.5 text-[#1b4372]" />}
+                <span className="hidden sm:inline">{isEmbedFullscreen ? (lang === "en" ? "Exit" : "離開全螢幕") : (lang === "en" ? "Fullscreen" : "全螢幕")}</span>
+              </button>
+
+              {/* Settings button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomScriptUrlInput(consumablesScriptUrl);
+                  setTestResultMsg(null);
+                  setIsSettingsModalOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f8f8f5] hover:bg-slate-200 text-slate-700 border border-[#e5e5e0] rounded-sm text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                title="設定 Google Apps Script Web App 網址"
+              >
+                <Settings className="w-3.5 h-3.5 text-slate-600" />
+                <span className="hidden sm:inline">{lang === "en" ? "Settings" : "設定連結"}</span>
+              </button>
+
+              {/* Open in New Tab */}
+              <a
+                href={consumablesScriptUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold tracking-wide shadow-xs transition active:scale-95"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>{lang === "en" ? "Open in New Tab" : "在新分頁開啟"}</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Embedded iframe container */}
+          <div className={`relative w-full rounded-sm overflow-hidden border border-[#e5e5e0] bg-[#fdfdfc] shadow-sm flex flex-col ${
+            isEmbedFullscreen ? "h-[calc(100vh-140px)]" : "h-[760px] md:h-[840px]"
+          }`}>
+            {isIframeLoading && (
+              <div className="absolute inset-0 bg-[#fdfdfc]/90 z-20 flex flex-col items-center justify-center gap-3 backdrop-blur-xs">
+                <RefreshCw className="w-8 h-8 text-[#1b4372] animate-spin" />
+                <p className="text-sm font-bold text-[#1b4372] font-serif">
+                  {lang === "en" ? "Loading Consumables Pickup Web App..." : "載入耗材自助領用系統中..."}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {lang === "en" ? "Connecting to Google Apps Script cloud service..." : "正在連接 Google Apps Script 雲端伺服器..."}
+                </p>
+              </div>
+            )}
+
+            <iframe
+              key={iframeKey}
+              src={consumablesScriptUrl}
+              title="EBB Lab Consumables Pickup System"
+              className="w-full h-full border-0"
+              onLoad={() => setIsIframeLoading(false)}
+              allow="camera; microphone; clipboard-write;"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+            />
           </div>
         </div>
       )}
@@ -3218,6 +3523,321 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------------------------- */}
+      {/* MODAL: MOBILE PICKUP QR CODE & SHELF LABELS GENERATOR                   */}
+      {/* ---------------------------------------------------------------------- */}
+      {isQrModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white border border-[#e5e5e0] rounded-sm max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]">
+            {/* Modal Header */}
+            <div className="bg-[#1b4372] text-white p-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <QrCode className="w-5 h-5 text-amber-300" />
+                <div>
+                  <h3 className="text-sm font-bold font-serif tracking-wide">
+                    {lang === "en" ? "Consumables Mobile QR Code & Shelf Labels" : "行動領用 QR Code 與置物架標籤生成"}
+                  </h3>
+                  <p className="text-[11px] text-slate-300">
+                    {lang === "en" ? "Scan with phone camera for instant pickup" : "手機相機直接掃碼即可免登入立即登記領取"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQrModalOpen(false)}
+                className="text-white/80 hover:text-white p-1 text-lg font-bold"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Sub-tabs: General vs Item Specific */}
+            <div className="flex items-center border-b border-slate-200 bg-slate-50 text-xs shrink-0">
+              <button
+                type="button"
+                onClick={() => setQrModalTab("general")}
+                className={`flex-1 py-2.5 font-bold text-center border-b-2 transition ${
+                  qrModalTab === "general"
+                    ? "border-[#1b4372] text-[#1b4372] bg-white"
+                    : "border-transparent text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                {lang === "en" ? "General Lab Pickup QR" : "① 實驗室通用領用條碼"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setQrModalTab("item")}
+                className={`flex-1 py-2.5 font-bold text-center border-b-2 transition ${
+                  qrModalTab === "item"
+                    ? "border-[#1b4372] text-[#1b4372] bg-white"
+                    : "border-transparent text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                {lang === "en" ? "Item Shelf Tag QR" : "② 品項專屬置物架標籤"}
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs">
+              {qrModalTab === "general" ? (
+                /* Tab 1: General Lab Pickup QR */
+                <div className="space-y-4 text-center">
+                  <div className="border border-slate-200 bg-[#fbfbfa] p-4 rounded-sm flex flex-col items-center">
+                    <span className="text-[10px] uppercase font-bold text-[#8d734a] font-serif tracking-widest mb-1">
+                      EBB Lab · Consumables Self-Service Pickup
+                    </span>
+                    <h4 className="font-bold text-base text-slate-900 mb-1">
+                      實驗室耗材線上自助領用系統
+                    </h4>
+                    <p className="text-[11px] text-slate-500 max-w-sm mb-3">
+                      可將此條碼列印並張貼於實驗室公佈欄、耗材區入口或置物架旁，學生隨時可掃描開啟完整清單登記領用。
+                    </p>
+
+                    {/* QR Image */}
+                    <div className="w-52 h-52 bg-white p-2.5 border border-slate-300 rounded shadow-xs flex items-center justify-center">
+                      {generalQrDataUrl ? (
+                        <img src={generalQrDataUrl} alt="General Pickup QR Code" className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="text-slate-400 flex flex-col items-center gap-1">
+                          <RefreshCw className="w-6 h-6 animate-spin text-[#1b4372]" />
+                          <span className="text-[11px]">正在產生條碼...</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-3 text-[11px] text-slate-500 font-mono break-all px-2 py-1 bg-white border border-slate-200 rounded max-w-md">
+                      {consumablesScriptUrl}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(consumablesScriptUrl)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm font-bold transition active:scale-95 shadow-2xs"
+                    >
+                      {isCopiedQrUrl ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-600" />}
+                      <span>{isCopiedQrUrl ? "已複製網址！" : "複製直連網址"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadQrImage(generalQrDataUrl, "EBB_Lab_耗材通用領用_QR.png")}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm font-bold shadow-xs transition active:scale-95"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>下載 QR 圖片</span>
+                    </button>
+
+                    <a
+                      href={consumablesScriptUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-sm font-bold transition active:scale-95"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>在新分頁測試</span>
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                /* Tab 2: Item Specific Shelf Tag QR */
+                <div className="space-y-4">
+                  {/* Select Item */}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      選擇耗材品項 (Select Consumable Item):
+                    </label>
+                    <select
+                      value={activeQrItem?.id || ""}
+                      onChange={e => setSelectedQrItemId(e.target.value)}
+                      className="w-full p-2 bg-[#fcfcfc] border border-slate-300 rounded-sm text-xs font-medium focus:border-[#1b4372] focus:outline-none"
+                    >
+                      {items.map(it => (
+                        <option key={it.id} value={it.id}>
+                          [{it.id}] {it.name} ({it.category}) - 現存: {it.currentStock} {it.unit}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Physical Shelf Label Preview */}
+                  {activeQrItem && (
+                    <div className="border-2 border-dashed border-[#1b4372]/40 bg-[#fbfbfa] p-4 rounded-sm text-center flex flex-col items-center">
+                      <div className="text-[10px] uppercase font-bold text-[#8d734a] font-serif tracking-widest mb-0.5">
+                        EBB Lab · Consumable Shelf Tag
+                      </div>
+                      <h4 className="font-bold text-base text-slate-900">
+                        {activeQrItem.name}
+                      </h4>
+                      <div className="text-xs text-slate-500 font-mono mt-0.5">
+                        {activeQrItem.specification ? `規格: ${activeQrItem.specification} · ` : ""}
+                        位置: <strong className="text-slate-800">{activeQrItem.location || "耗材存放架"}</strong>
+                      </div>
+
+                      {/* QR Code */}
+                      <div className="my-3 w-48 h-48 bg-white p-2 border border-slate-200 rounded shadow-xs flex items-center justify-center">
+                        {itemQrDataUrl ? (
+                          <img src={itemQrDataUrl} alt={`${activeQrItem.name} QR Tag`} className="w-full h-full object-contain" />
+                        ) : (
+                          <RefreshCw className="w-6 h-6 animate-spin text-[#1b4372]" />
+                        )}
+                      </div>
+
+                      <div className="inline-flex items-center gap-2 bg-[#1b4372]/10 text-[#1b4372] px-2.5 py-1 rounded text-xs font-mono font-bold">
+                        <span>品項編號: {activeQrItem.id}</span>
+                        <span>·</span>
+                        <span>掃碼直接跳出此品項領用</span>
+                      </div>
+
+                      <p className="text-[11px] text-slate-400 mt-2 max-w-sm">
+                        手機相機掃描此條碼後，會自動開啟 Web App 並預先選定本品項，只需填寫數量與姓名即可一鍵完成領用！
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  {activeQrItem && (
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const itemUrl = consumablesScriptUrl + (consumablesScriptUrl.includes("?") ? "&" : "?") + "item=" + encodeURIComponent(activeQrItem.id);
+                          handleCopyText(itemUrl);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm font-bold transition active:scale-95 shadow-2xs"
+                      >
+                        {isCopiedQrUrl ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-600" />}
+                        <span>{isCopiedQrUrl ? "已複製專屬連結！" : "複製專屬連結"}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadQrImage(itemQrDataUrl, `EBB_Lab_${activeQrItem.id}_置物架標籤_QR.png`)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm font-bold shadow-xs transition active:scale-95"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>下載標籤圖片</span>
+                      </button>
+
+                      <a
+                        href={consumablesScriptUrl + (consumablesScriptUrl.includes("?") ? "&" : "?") + "item=" + encodeURIComponent(activeQrItem.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-sm font-bold transition active:scale-95"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>在新分頁測試此品項</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-50 border-t border-slate-200 p-3 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsQrModalOpen(false)}
+                className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-sm font-bold text-xs"
+              >
+                關閉視窗
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------------------------- */}
+      {/* MODAL: SETTINGS FOR GOOGLE APPS SCRIPT WEB APP URL                     */}
+      {/* ---------------------------------------------------------------------- */}
+      {isSettingsModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white border border-[#e5e5e0] rounded-sm max-w-md w-full shadow-2xl p-5 space-y-4 animate-in fade-in duration-150 text-xs">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Settings className="w-4 h-4 text-[#1b4372]" />
+                <h3 className="text-sm font-bold text-slate-900 font-serif">
+                  {lang === "en" ? "Configure Google Apps Script URL" : "設定 Google Apps Script Web App 網址"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-slate-600">
+              <p>
+                若您在 Google 試算表中重新部署了 <code>Consumables_Code.gs</code> 與 <code>Consumables_Pickup.html</code>，請在此貼入最新產生的「網頁應用程式網址 (Web App URL)」。
+              </p>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  網頁應用程式網址 (結尾需為 /exec):
+                </label>
+                <input
+                  type="url"
+                  value={customScriptUrlInput}
+                  onChange={e => setCustomScriptUrlInput(e.target.value)}
+                  placeholder="https://script.google.com/macros/s/AKfycby.../exec"
+                  className="w-full p-2 border border-slate-300 rounded-sm text-xs font-mono focus:border-[#1b4372] focus:outline-none"
+                />
+              </div>
+
+              {testResultMsg && (
+                <div className={`p-2.5 rounded text-xs border font-medium ${
+                  testResultMsg.success 
+                    ? "bg-emerald-50 text-emerald-800 border-emerald-300" 
+                    : "bg-rose-50 text-rose-800 border-rose-300"
+                }`}>
+                  {testResultMsg.text}
+                </div>
+              )}
+
+              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded text-[11px] text-amber-900">
+                <strong>💡 部署關鍵提示：</strong><br />
+                在 Apps Script 點擊「部署」→「網頁應用程式」時，「誰可以存取 (Who has access)」務必選擇<strong>「任何人 (Anyone)」</strong>，前端才能免登入直接嵌入與掃碼領取。
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={handleTestCustomScriptUrl}
+                disabled={isTestingUrl || !customScriptUrlInput.trim()}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm font-bold transition flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isTestingUrl && <RefreshCw className="w-3 h-3 animate-spin text-[#1b4372]" />}
+                <span>{isTestingUrl ? "測試連線中..." : "測試連線"}</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsModalOpen(false)}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm font-medium"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveCustomScriptUrl}
+                  className="px-4 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm font-bold shadow-xs transition"
+                >
+                  儲存並更新
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
