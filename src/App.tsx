@@ -566,7 +566,7 @@ export default function App() {
                 }`}
               >
                 <Boxes className="w-4 h-4" />
-                <span>Consumables Statistics</span>
+                <span>Consumables</span>
               </button>
 
               <button 
@@ -695,7 +695,7 @@ export default function App() {
                 }`}
               >
                 <Boxes className="w-4 h-4 text-[#1b4372]" /> 
-                <span>Consumables Statistics</span>
+                <span>Consumables</span>
               </button>
 
               <button 

@@ -29,7 +29,10 @@ import {
   HelpCircle,
   Save,
   ChevronDown,
-  Cloud
+  Cloud,
+  ListFilter,
+  Tag,
+  Info
 } from "lucide-react";
 import { members as initialMembers, Member } from "../data/labData";
 import { 
@@ -64,7 +67,10 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
   const [items, setItems] = useState<ConsumableItem[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_ITEMS);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 1) return parsed;
+      }
     } catch (e) {
       console.error(e);
     }
@@ -74,7 +80,10 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
   const [transactions, setTransactions] = useState<ConsumableTransaction[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_LOGS);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 1) return parsed;
+      }
     } catch (e) {
       console.error(e);
     }
@@ -191,6 +200,51 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
   const [currentTab, setCurrentTab] = useState<"catalog" | "history" | "low_stock" | "audit" | "manage">("catalog");
   const [selectedCategory, setSelectedCategory] = useState<string>("全部類別");
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // --------------------------------------------------------------------------
+  // 3.1 耗材領用紀錄快速檢視與彈窗狀態
+  // --------------------------------------------------------------------------
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState<ConsumableItem | null>(null);
+  const [isAllPickupsModalOpen, setIsAllPickupsModalOpen] = useState(false);
+  const [itemHistorySearch, setItemHistorySearch] = useState("");
+  const [allPickupsSearch, setAllPickupsSearch] = useState("");
+  const [allPickupsCategoryFilter, setAllPickupsCategoryFilter] = useState("全部類別");
+  const [historyScope, setHistoryScope] = useState<"pickup_only" | "all">("pickup_only");
+  const [historyTabTypeFilter, setHistoryTabTypeFilter] = useState<string>("全部類型");
+
+  // 取得每一項耗材最近一次「領取」紀錄 (包含上次領用人、上次領用時間、領用數量)
+  const lastPickupMap = useMemo(() => {
+    const map = new Map<string, ConsumableTransaction>();
+    const pickupTxs = transactions
+      .filter(t => t.type === "領取")
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+    for (const tx of pickupTxs) {
+      if (!map.has(tx.consumableId)) {
+        map.set(tx.consumableId, tx);
+      }
+    }
+    return map;
+  }, [transactions]);
+
+  // 取得每一項耗材領用累計統計 (次數、總數量)
+  const itemPickupStatsMap = useMemo(() => {
+    const map = new Map<string, { count: number; totalQty: number }>();
+    for (const tx of transactions) {
+      if (tx.type === "領取") {
+        const prev = map.get(tx.consumableId) || { count: 0, totalQty: 0 };
+        map.set(tx.consumableId, {
+          count: prev.count + 1,
+          totalQty: prev.totalQty + Math.abs(tx.changeQty)
+        });
+      }
+    }
+    return map;
+  }, [transactions]);
+
+  // 全實驗室累計領用總次數
+  const totalPickupCount = useMemo(() => {
+    return transactions.filter(t => t.type === "領取").length;
+  }, [transactions]);
 
   // Toast feedback
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
@@ -834,8 +888,70 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
     link.setAttribute("download", `EBB_Lab_Consumables_Log_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
     showToast("異動紀錄 CSV 匯出成功！", "success");
+  };
+
+  // 異動紀錄分頁篩選後的資料
+  const filteredHistoryTransactions = useMemo(() => {
+    if (historyTabTypeFilter === "全部類型") return transactions;
+    return transactions.filter(t => t.type === historyTabTypeFilter);
+  }, [transactions, historyTabTypeFilter]);
+
+  // 單一品項異動紀錄匯出 CSV
+  const handleExportItemCSV = (item: ConsumableItem) => {
+    const itemTxs = transactions.filter(t => t.consumableId === item.id);
+    const headers = ["異動時間", "耗材ID", "耗材名稱", "異動類型", "數量變化", "前庫存", "後庫存", "領取/經手人員", "是否名單內", "備註說明"];
+    const rows = itemTxs.map(t => [
+      t.timestamp,
+      t.consumableId,
+      `"${t.consumableName.replace(/"/g, '""')}"`,
+      t.type,
+      t.changeQty,
+      t.prevStock,
+      t.afterStock,
+      `"${t.operator.replace(/"/g, '""')}"`,
+      t.isListedMember,
+      `"${(t.notes || "").replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `耗材領用歷程_${item.id}_${item.name.slice(0, 15)}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(`【${item.name}】歷史領用紀錄 CSV 匯出成功！`, "success");
+  };
+
+  // 全實驗室所有領用紀錄匯出 CSV
+  const handleExportAllPickupsCSV = () => {
+    const pickupTxs = transactions.filter(t => t.type === "領取");
+    const headers = ["領用時間", "耗材ID", "耗材名稱", "領用數量", "前庫存", "後庫存", "領用人員", "是否名單內", "實驗備註/用途"];
+    const rows = pickupTxs.map(t => [
+      t.timestamp,
+      t.consumableId,
+      `"${t.consumableName.replace(/"/g, '""')}"`,
+      Math.abs(t.changeQty),
+      t.prevStock,
+      t.afterStock,
+      `"${t.operator.replace(/"/g, '""')}"`,
+      t.isListedMember,
+      `"${(t.notes || "").replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `EBB_Lab_全部耗材領用登記總表_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("全實驗室耗材領用紀錄 CSV 匯出成功！", "success");
   };
 
   return (
@@ -895,7 +1011,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
             <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-300 px-3 py-1.5 rounded-sm">
               <ShieldCheck className="w-4 h-4 text-emerald-700" />
               <div className="text-left text-xs">
-                <span className="text-emerald-900 font-bold block">耗材管理員已解鎖</span>
+                <span className="text-emerald-900 font-bold block">耗材管理已解鎖</span>
                 <span className="text-emerald-700 text-[10px] font-mono">Token Active (2h)</span>
               </div>
               <button
@@ -992,11 +1108,20 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
           </div>
         </div>
 
-        <div className="p-3.5 bg-white border border-[#e5e5e0] rounded-sm shadow-2xs space-y-1">
-          <span className="text-[11px] text-slate-500 font-medium block">本月累計領用</span>
+        <div 
+          onClick={() => setIsAllPickupsModalOpen(true)}
+          className="p-3.5 bg-white hover:bg-slate-50 border border-[#e5e5e0] hover:border-[#1b4372]/40 rounded-sm shadow-2xs space-y-1 cursor-pointer transition group"
+          title="點擊查看實驗室全部耗材領用登記明細"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-slate-500 font-medium block group-hover:text-[#1b4372] transition">
+              本月累計領用
+            </span>
+            <History className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1b4372] transition" />
+          </div>
           <div className="flex items-baseline justify-between">
             <span className="text-2xl font-bold font-mono text-emerald-700">{stats.monthlyPickupCount}</span>
-            <span className="text-[11px] text-slate-400">次登記</span>
+            <span className="text-[11px] text-slate-400 group-hover:text-[#1b4372] transition">次登記 ↗</span>
           </div>
         </div>
 
@@ -1145,21 +1270,37 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               )}
             </div>
 
-            {/* Category Selector */}
-            <div className="flex items-center gap-1.5 overflow-x-auto">
-              <span className="text-xs text-slate-400 shrink-0 flex items-center gap-1">
-                <Filter className="w-3 h-3" />
-                <span>類別:</span>
-              </span>
-              <select
-                value={selectedCategory}
-                onChange={e => setSelectedCategory(e.target.value)}
-                className="bg-[#fcfcfc] border border-slate-200 rounded-sm px-2 py-1 text-xs text-slate-700 font-medium focus:border-[#1b4372] focus:outline-none"
+            {/* Category Selector & View All Pickups Button */}
+            <div className="flex items-center gap-2 overflow-x-auto flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-slate-400 shrink-0 flex items-center gap-1">
+                  <Filter className="w-3 h-3" />
+                  <span>類別:</span>
+                </span>
+                <select
+                  value={selectedCategory}
+                  onChange={e => setSelectedCategory(e.target.value)}
+                  className="bg-[#fcfcfc] border border-slate-200 rounded-sm px-2 py-1 text-xs text-slate-700 font-medium focus:border-[#1b4372] focus:outline-none"
+                >
+                  {CONSUMABLE_CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* View All Pickups Button */}
+              <button
+                type="button"
+                onClick={() => setIsAllPickupsModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f0f4f9] hover:bg-[#e2ebf7] border border-[#1b4372]/30 text-[#1b4372] rounded-sm text-xs font-bold transition shadow-2xs whitespace-nowrap cursor-pointer active:scale-95"
+                title="點擊彈窗檢視全實驗室所有領用登記紀錄明細"
               >
-                {CONSUMABLE_CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+                <History className="w-3.5 h-3.5 text-[#1b4372]" />
+                <span>查看全部領用紀錄</span>
+                <span className="px-1.5 py-0.2 bg-[#1b4372] text-white text-[10px] rounded-full font-mono">
+                  {totalPickupCount}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -1169,19 +1310,25 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               <table className="w-full text-left text-xs">
                 <thead className="bg-[#f8f8f5] text-slate-700 font-bold border-b border-[#e5e5e0] select-none">
                   <tr>
-                    <th className="p-3 w-24">編號</th>
+                    <th className="p-3 w-20">編號</th>
                     <th className="p-3">耗材名稱與型號規格</th>
-                    <th className="p-3 w-32">分類</th>
+                    <th className="p-3 w-28">分類</th>
                     <th className="p-3 text-right w-24">目前庫存</th>
-                    <th className="p-3 text-right w-24">安全庫存</th>
-                    <th className="p-3 w-28 text-center">庫存狀態</th>
-                    <th className="p-3 text-right w-36">操作</th>
+                    <th className="p-3 text-right w-20">安全庫存</th>
+                    <th className="p-3 w-24 text-center">庫存狀態</th>
+                    <th className="p-3 w-48">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-slate-500" />
+                        <span>上次領用人 / 時間</span>
+                      </span>
+                    </th>
+                    <th className="p-3 text-right w-44">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredItems.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-slate-400 text-xs">
+                      <td colSpan={8} className="p-8 text-center text-slate-400 text-xs">
                         查無符合篩選條件的耗材品項。請嘗試清除搜尋字詞或切換類別！
                       </td>
                     </tr>
@@ -1190,6 +1337,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                       const isLowStock = item.currentStock <= item.safeStock;
                       const isOutOfStock = item.currentStock <= 0;
                       const isInactive = item.status === "inactive";
+                      const lastPickup = lastPickupMap.get(item.id);
 
                       return (
                         <tr 
@@ -1268,8 +1416,58 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                             )}
                           </td>
 
+                          {/* Last Pickup Info (上次領用人與時間) */}
+                          <td className="p-3">
+                            {lastPickup ? (
+                              <div 
+                                onClick={() => {
+                                  setSelectedHistoryItem(item);
+                                  setHistoryScope("pickup_only");
+                                  setItemHistorySearch("");
+                                }}
+                                className="group cursor-pointer p-1.5 -m-1 rounded hover:bg-slate-100 transition"
+                                title="點擊查看該品項所有歷史領用紀錄"
+                              >
+                                <div className="font-semibold text-slate-800 text-xs flex items-center gap-1.5">
+                                  <User className="w-3.5 h-3.5 text-[#1b4372] shrink-0" />
+                                  <span className="truncate group-hover:text-[#1b4372] transition font-medium">
+                                    {lastPickup.operator}
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-slate-500 flex items-center gap-1 font-mono mt-0.5">
+                                  <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                                  <span>{lastPickup.timestamp}</span>
+                                </div>
+                                <div className="text-[10px] text-slate-400 truncate max-w-[170px] mt-0.5">
+                                  領取 {Math.abs(lastPickup.changeQty)} {item.unit}
+                                  {lastPickup.notes ? ` · ${lastPickup.notes}` : ""}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-slate-400 text-xs italic flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-slate-300" />
+                                <span>尚無領用紀錄</span>
+                              </div>
+                            )}
+                          </td>
+
                           {/* Action Buttons */}
-                          <td className="p-3 text-right space-x-1.5">
+                          <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
+                            {/* View History Button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedHistoryItem(item);
+                                setHistoryScope("pickup_only");
+                                setItemHistorySearch("");
+                              }}
+                              title="查看此品項的所有歷史領用紀錄"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 rounded-sm text-xs font-medium transition cursor-pointer active:scale-95 shadow-2xs"
+                            >
+                              <History className="w-3.5 h-3.5 text-slate-500" />
+                              <span>領用紀錄</span>
+                            </button>
+
                             {/* General Pickup Button */}
                             <button
                               type="button"
@@ -1290,7 +1488,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                                 type="button"
                                 onClick={() => openAdjustModal(item)}
                                 title="修正庫存"
-                                className="px-2 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-sm text-xs transition"
+                                className="px-2 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-sm text-xs transition cursor-pointer"
                               >
                                 校正
                               </button>
@@ -1310,18 +1508,49 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
       {/* -------------------- TAB 3: TRANSACTION LOGS -------------------- */}
       {currentTab === "history" && (
         <div className="space-y-4">
-          <div className="p-3 bg-white border border-[#e5e5e0] rounded-sm flex items-center justify-between gap-3">
-            <div className="text-xs text-slate-600">
-              共 <strong>{transactions.length}</strong> 筆異動紀錄（包含領取、入庫、盤點平帳與校正紀錄）
+          <div className="p-3 bg-white border border-[#e5e5e0] rounded-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs text-slate-500 font-medium shrink-0 flex items-center gap-1">
+                <ListFilter className="w-3.5 h-3.5 text-slate-400" />
+                <span>篩選類型:</span>
+              </span>
+              {[
+                { label: "全部異動", val: "全部類型", count: transactions.length },
+                { label: "僅看領取紀錄", val: "領取", count: totalPickupCount },
+                { label: "補貨入庫", val: "補貨入庫", count: transactions.filter(t => t.type === "補貨入庫").length },
+                { label: "盤點調整", val: "盤點調整", count: transactions.filter(t => t.type === "盤點調整").length },
+                { label: "手動修正", val: "手動修正", count: transactions.filter(t => t.type === "手動修正").length }
+              ].map(opt => (
+                <button
+                  key={opt.val}
+                  type="button"
+                  onClick={() => setHistoryTabTypeFilter(opt.val)}
+                  className={`px-2.5 py-1 rounded-sm text-xs font-medium transition cursor-pointer flex items-center gap-1 ${
+                    historyTabTypeFilter === opt.val
+                      ? "bg-[#1b4372] text-white font-bold shadow-2xs"
+                      : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                  }`}
+                >
+                  <span>{opt.label}</span>
+                  <span className={`px-1 rounded-full text-[10px] font-mono ${
+                    historyTabTypeFilter === opt.val ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"
+                  }`}>
+                    {opt.count}
+                  </span>
+                </button>
+              ))}
             </div>
-            <button
-              type="button"
-              onClick={handleExportCSV}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs"
-            >
-              <Download className="w-3.5 h-3.5 text-[#1b4372]" />
-              <span>匯出 CSV 檔</span>
-            </button>
+
+            <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5 text-[#1b4372]" />
+                <span>匯出 CSV 檔</span>
+              </button>
+            </div>
           </div>
 
           <div className="bg-white border border-[#e5e5e0] rounded-sm overflow-hidden shadow-2xs">
@@ -1339,14 +1568,14 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {transactions.length === 0 ? (
+                  {filteredHistoryTransactions.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-slate-400 text-xs">
-                        尚無任何耗材異動紀錄。
+                        目前分類篩選下尚無相關紀錄。
                       </td>
                     </tr>
                   ) : (
-                    transactions.map(tx => (
+                    filteredHistoryTransactions.map(tx => (
                       <tr key={tx.id} className="hover:bg-slate-50/70 transition">
                         <td className="p-3 text-slate-500 font-mono">
                           {tx.timestamp}
@@ -1658,6 +1887,561 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
       )}
 
       {/* ---------------------------------------------------------------------- */}
+      {/* MODAL 0.1: ITEM PICKUP HISTORY MODAL (特定耗材領用紀錄歷程彈窗)          */}
+      {/* ---------------------------------------------------------------------- */}
+      {selectedHistoryItem && (() => {
+        const itemAllTxs = transactions.filter(t => t.consumableId === selectedHistoryItem.id);
+        const itemPickups = itemAllTxs.filter(t => t.type === "領取");
+        const lastPickup = lastPickupMap.get(selectedHistoryItem.id);
+        const itemPickupStats = itemPickupStatsMap.get(selectedHistoryItem.id) || { count: 0, totalQty: 0 };
+        const displayedItemTxs = (historyScope === "pickup_only" ? itemPickups : itemAllTxs)
+          .filter(t => {
+            if (!itemHistorySearch.trim()) return true;
+            const q = itemHistorySearch.toLowerCase();
+            return (
+              t.operator.toLowerCase().includes(q) ||
+              (t.notes || "").toLowerCase().includes(q) ||
+              t.timestamp.includes(q)
+            );
+          })
+          .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+        const isLow = selectedHistoryItem.currentStock <= selectedHistoryItem.safeStock;
+        const isOut = selectedHistoryItem.currentStock <= 0;
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-white border border-[#e5e5e0] rounded-sm max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl animate-in fade-in duration-150">
+              {/* Header */}
+              <div className="p-5 border-b border-slate-200 flex items-start justify-between gap-3 bg-[#fbfbfa]">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold text-[#8d734a] tracking-widest uppercase font-serif italic">
+                      Usage History & Logs
+                    </span>
+                    <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-mono text-[10px]">
+                      {selectedHistoryItem.id}
+                    </span>
+                    <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 text-[10px]">
+                      {selectedHistoryItem.category}
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 font-serif flex items-center gap-2">
+                    <History className="w-5 h-5 text-[#1b4372]" />
+                    <span>{selectedHistoryItem.name}</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    型號規格：{selectedHistoryItem.spec}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedHistoryItem(null)}
+                  className="text-slate-400 hover:text-slate-600 p-1.5 rounded-sm hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Key Metrics Summary Cards */}
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50/60 border-b border-slate-200 text-xs">
+                {/* 1. Current Stock */}
+                <div className="p-3 bg-white border border-slate-200 rounded-sm">
+                  <span className="text-slate-500 block text-[11px] mb-1">目前在席庫存</span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className={`text-xl font-bold font-mono ${
+                      isOut ? "text-rose-600" : isLow ? "text-amber-600" : "text-[#1b4372]"
+                    }`}>
+                      {selectedHistoryItem.currentStock}
+                    </span>
+                    <span className="text-slate-500">{selectedHistoryItem.unit}</span>
+                  </div>
+                  <div className="mt-1">
+                    {isOut ? (
+                      <span className="px-1.5 py-0.2 bg-rose-100 text-rose-800 rounded text-[10px] font-bold">已無庫存</span>
+                    ) : isLow ? (
+                      <span className="px-1.5 py-0.2 bg-amber-100 text-amber-900 rounded text-[10px] font-bold">庫存偏低需補貨</span>
+                    ) : (
+                      <span className="px-1.5 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[10px]">安全充裕</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. Last Pickup */}
+                <div className="p-3 bg-white border border-slate-200 rounded-sm">
+                  <span className="text-slate-500 block text-[11px] mb-1">上次領用紀錄</span>
+                  {lastPickup ? (
+                    <div>
+                      <div className="font-bold text-slate-800 flex items-center gap-1">
+                        <User className="w-3.5 h-3.5 text-[#1b4372]" />
+                        <span>{lastPickup.operator}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-mono mt-0.5 flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        <span>{lastPickup.timestamp}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">
+                        領取 {Math.abs(lastPickup.changeQty)} {selectedHistoryItem.unit}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-slate-400 italic text-[11px] mt-1">尚無任何領用紀錄</div>
+                  )}
+                </div>
+
+                {/* 3. Total Pickups */}
+                <div className="p-3 bg-white border border-slate-200 rounded-sm">
+                  <span className="text-slate-500 block text-[11px] mb-1">累計領用統計</span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-xl font-bold font-mono text-slate-800">
+                      {itemPickupStats.count}
+                    </span>
+                    <span className="text-slate-500">次登記</span>
+                  </div>
+                  <div className="text-[11px] text-slate-600 mt-0.5">
+                    共領取 <strong className="text-slate-900 font-mono">{itemPickupStats.totalQty}</strong> {selectedHistoryItem.unit}
+                  </div>
+                </div>
+              </div>
+
+              {/* Toolbar: Scope Filter & Search & CSV */}
+              <div className="p-3 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs bg-white">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setHistoryScope("pickup_only")}
+                    className={`px-3 py-1.5 rounded-sm font-medium transition cursor-pointer ${
+                      historyScope === "pickup_only"
+                        ? "bg-[#1b4372] text-white font-bold shadow-2xs"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    僅看領用紀錄 ({itemPickups.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryScope("all")}
+                    className={`px-3 py-1.5 rounded-sm font-medium transition cursor-pointer ${
+                      historyScope === "all"
+                        ? "bg-[#1b4372] text-white font-bold shadow-2xs"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    全部異動明細 ({itemAllTxs.length})
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1 sm:w-52">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="搜尋領用人姓名或用途備註..."
+                      value={itemHistorySearch}
+                      onChange={e => setItemHistorySearch(e.target.value)}
+                      className="w-full pl-8 pr-7 py-1 text-xs bg-slate-50 border border-slate-200 rounded-sm focus:border-[#1b4372] focus:outline-none"
+                    />
+                    {itemHistorySearch && (
+                      <button
+                        type="button"
+                        onClick={() => setItemHistorySearch("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleExportItemCSV(selectedHistoryItem)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-sm text-xs font-medium transition cursor-pointer whitespace-nowrap shadow-2xs"
+                    title="匯出此品項專屬紀錄 CSV"
+                  >
+                    <Download className="w-3 h-3 text-[#1b4372]" />
+                    <span>匯出</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Transactions List */}
+              <div className="flex-1 overflow-y-auto p-4 max-h-[50vh]">
+                {displayedItemTxs.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 space-y-2">
+                    <History className="w-8 h-8 mx-auto text-slate-300" />
+                    <p className="text-xs">
+                      {itemHistorySearch ? "查無符合搜尋條件的紀錄。" : "此耗材品項目前尚無相關登記紀錄。"}
+                    </p>
+                    {!isOut && selectedHistoryItem.status === "active" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const item = selectedHistoryItem;
+                          setSelectedHistoryItem(null);
+                          openPickupModal(item);
+                        }}
+                        className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-2xs cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>立即登記領取此耗材</span>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="border border-slate-200 rounded-sm overflow-hidden">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-[#f8f8f5] text-slate-700 font-bold border-b border-slate-200">
+                        <tr>
+                          <th className="p-2.5 w-36">領用/異動時間</th>
+                          <th className="p-2.5 w-24">類型</th>
+                          <th className="p-2.5 text-right w-20">數量變化</th>
+                          <th className="p-2.5 text-right w-24">前 ➔ 後庫存</th>
+                          <th className="p-2.5 w-32">領取 / 經手人</th>
+                          <th className="p-2.5">實驗用途 / 備註</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {displayedItemTxs.map(tx => (
+                          <tr key={tx.id} className="hover:bg-slate-50 transition">
+                            <td className="p-2.5 font-mono text-slate-600 text-[11px]">
+                              {tx.timestamp}
+                            </td>
+                            <td className="p-2.5">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                tx.type === "領取"
+                                  ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                  : tx.type === "補貨入庫"
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                  : tx.type === "盤點調整"
+                                  ? "bg-purple-50 text-purple-700 border border-purple-200"
+                                  : "bg-amber-50 text-amber-700 border border-amber-200"
+                              }`}>
+                                {tx.type}
+                              </span>
+                            </td>
+                            <td className="p-2.5 text-right font-mono font-bold">
+                              <span className={tx.changeQty < 0 ? "text-rose-600" : "text-emerald-600"}>
+                                {tx.changeQty > 0 ? `+${tx.changeQty}` : tx.changeQty} {selectedHistoryItem.unit}
+                              </span>
+                            </td>
+                            <td className="p-2.5 text-right font-mono text-slate-500 text-[11px]">
+                              {tx.prevStock} ➔ <span className="font-bold text-slate-800">{tx.afterStock}</span>
+                            </td>
+                            <td className="p-2.5">
+                              <div className="font-medium text-slate-800">{tx.operator}</div>
+                              {tx.isListedMember === "否" && (
+                                <span className="text-[10px] text-amber-600 font-mono">(非名單外訪客)</span>
+                              )}
+                            </td>
+                            <td className="p-2.5 text-slate-600 text-[11px]">
+                              {tx.notes || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-slate-200 bg-[#fbfbfa] flex items-center justify-between gap-3 text-xs">
+                <div>
+                  {!isOut && selectedHistoryItem.status === "active" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const item = selectedHistoryItem;
+                        setSelectedHistoryItem(null);
+                        openPickupModal(item);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>領取此耗材登記</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedHistoryItem(null);
+                      setIsAllPickupsModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-sm font-medium transition cursor-pointer"
+                  >
+                    查看全實驗室總表
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedHistoryItem(null)}
+                    className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-sm font-bold transition cursor-pointer"
+                  >
+                    關閉
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ---------------------------------------------------------------------- */}
+      {/* MODAL 0.2: ALL PICKUPS MODAL (全實驗室耗材領用紀錄總覽彈窗)              */}
+      {/* ---------------------------------------------------------------------- */}
+      {isAllPickupsModalOpen && (() => {
+        const allPickups = transactions
+          .filter(t => t.type === "領取")
+          .filter(t => {
+            if (allPickupsCategoryFilter !== "全部類別") {
+              const it = items.find(i => i.id === t.consumableId);
+              if (it && it.category !== allPickupsCategoryFilter) return false;
+            }
+            if (allPickupsSearch.trim()) {
+              const q = allPickupsSearch.toLowerCase();
+              return (
+                t.consumableName.toLowerCase().includes(q) ||
+                t.consumableId.toLowerCase().includes(q) ||
+                t.operator.toLowerCase().includes(q) ||
+                (t.notes || "").toLowerCase().includes(q) ||
+                t.timestamp.includes(q)
+              );
+            }
+            return true;
+          })
+          .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+        const uniquePickedItemsCount = new Set(transactions.filter(t => t.type === "領取").map(t => t.consumableId)).size;
+        const totalQtySum = transactions
+          .filter(t => t.type === "領取")
+          .reduce((sum, t) => sum + Math.abs(t.changeQty), 0);
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-white border border-[#e5e5e0] rounded-sm max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl animate-in fade-in duration-150">
+              {/* Header */}
+              <div className="p-5 border-b border-slate-200 flex items-start justify-between gap-3 bg-[#fbfbfa]">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold text-[#8d734a] tracking-widest uppercase font-serif italic">
+                      Laboratory Consumables Registry
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-[#1b4372]/10 text-[#1b4372] font-mono text-[10px] font-bold">
+                      All Pickups Overview
+                    </span>
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 font-serif flex items-center gap-2">
+                    <History className="w-6 h-6 text-[#1b4372]" />
+                    <span>實驗室全部耗材領用紀錄</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    即時統整全實驗室成員、專題生與訪客之所有線上耗材領用登記歷史明細
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAllPickupsModalOpen(false)}
+                  className="text-slate-400 hover:text-slate-600 p-1.5 rounded-sm hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Overview Metrics Cards */}
+              <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50/70 border-b border-slate-200 text-xs">
+                <div className="p-3 bg-white border border-slate-200 rounded-sm">
+                  <span className="text-slate-500 block text-[11px] mb-0.5">累計領取登記</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold font-mono text-[#1b4372]">{totalPickupCount}</span>
+                    <span className="text-slate-500 text-[11px]">筆紀錄</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white border border-slate-200 rounded-sm">
+                  <span className="text-slate-500 block text-[11px] mb-0.5">本月累計領用</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold font-mono text-emerald-700">{stats.monthlyPickupCount}</span>
+                    <span className="text-slate-500 text-[11px]">次登記</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white border border-slate-200 rounded-sm">
+                  <span className="text-slate-500 block text-[11px] mb-0.5">曾領用品項涵蓋</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold font-mono text-slate-800">{uniquePickedItemsCount}</span>
+                    <span className="text-slate-500 text-[11px]">種耗材</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white border border-slate-200 rounded-sm">
+                  <span className="text-slate-500 block text-[11px] mb-0.5">累計消耗總件數</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold font-mono text-slate-800">{totalQtySum}</span>
+                    <span className="text-slate-500 text-[11px]">單位/包/盒</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Toolbar: Search & Category Filter & CSV */}
+              <div className="p-3 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs bg-white">
+                <div className="relative flex-1">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="搜尋耗材品名、型號、編號、領用人姓名或實驗用途..."
+                    value={allPickupsSearch}
+                    onChange={e => setAllPickupsSearch(e.target.value)}
+                    className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-sm focus:border-[#1b4372] focus:outline-none"
+                  />
+                  {allPickupsSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setAllPickupsSearch("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Filter className="w-3 h-3" />
+                      <span>類別:</span>
+                    </span>
+                    <select
+                      value={allPickupsCategoryFilter}
+                      onChange={e => setAllPickupsCategoryFilter(e.target.value)}
+                      className="bg-slate-50 border border-slate-200 rounded-sm px-2 py-1 text-xs text-slate-700 font-medium focus:border-[#1b4372] focus:outline-none"
+                    >
+                      {CONSUMABLE_CATEGORIES.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleExportAllPickupsCSV}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-sm text-xs font-bold transition shadow-2xs cursor-pointer whitespace-nowrap"
+                  >
+                    <Download className="w-3.5 h-3.5 text-[#1b4372]" />
+                    <span>匯出總表 CSV</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Transactions Table */}
+              <div className="flex-1 overflow-y-auto p-4 max-h-[52vh]">
+                {allPickups.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 space-y-2">
+                    <History className="w-8 h-8 mx-auto text-slate-300" />
+                    <p className="text-xs">查無符合搜尋或類別篩選條件的領用紀錄。</p>
+                  </div>
+                ) : (
+                  <div className="border border-slate-200 rounded-sm overflow-hidden">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-[#f8f8f5] text-slate-700 font-bold border-b border-slate-200 sticky top-0">
+                        <tr>
+                          <th className="p-2.5 w-36">領用時間</th>
+                          <th className="p-2.5">耗材品名與規格</th>
+                          <th className="p-2.5 text-right w-24">領取數量</th>
+                          <th className="p-2.5 text-right w-24">前 ➔ 後庫存</th>
+                          <th className="p-2.5 w-36">領用人員</th>
+                          <th className="p-2.5">實驗備註 / 用途說明</th>
+                          <th className="p-2.5 w-20 text-center">品項歷程</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {allPickups.map(tx => {
+                          const matchedItem = items.find(i => i.id === tx.consumableId);
+                          return (
+                            <tr key={tx.id} className="hover:bg-slate-50/80 transition">
+                              <td className="p-2.5 font-mono text-slate-600 text-[11px] whitespace-nowrap">
+                                {tx.timestamp}
+                              </td>
+                              <td className="p-2.5">
+                                <div className="font-bold text-slate-900">{tx.consumableName}</div>
+                                {matchedItem && (
+                                  <div className="text-[11px] text-slate-500 mt-0.5">
+                                    {matchedItem.spec} · <span className="text-slate-400 font-mono">{matchedItem.id}</span>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="p-2.5 text-right font-mono font-bold text-rose-600">
+                                {tx.changeQty} {matchedItem?.unit || "單位"}
+                              </td>
+                              <td className="p-2.5 text-right font-mono text-slate-500 text-[11px]">
+                                {tx.prevStock} ➔ <span className="font-bold text-slate-800">{tx.afterStock}</span>
+                              </td>
+                              <td className="p-2.5">
+                                <div className="font-semibold text-slate-800 flex items-center gap-1">
+                                  <User className="w-3.5 h-3.5 text-[#1b4372] shrink-0" />
+                                  <span>{tx.operator}</span>
+                                </div>
+                                {tx.isListedMember === "否" && (
+                                  <span className="text-[10px] text-amber-600 font-mono">(非名單外訪客)</span>
+                                )}
+                              </td>
+                              <td className="p-2.5 text-slate-600 text-[11px]">
+                                {tx.notes || "-"}
+                              </td>
+                              <td className="p-2.5 text-center">
+                                {matchedItem && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setIsAllPickupsModalOpen(false);
+                                      setSelectedHistoryItem(matchedItem);
+                                      setHistoryScope("pickup_only");
+                                      setItemHistorySearch("");
+                                    }}
+                                    className="p-1 hover:bg-slate-200 text-slate-500 hover:text-[#1b4372] rounded text-[11px] font-medium transition cursor-pointer"
+                                    title="查看此品項個別歷程"
+                                  >
+                                    歷程 ↗
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-slate-200 bg-[#fbfbfa] flex items-center justify-between gap-3 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAllPickupsModalOpen(false);
+                    setHistoryTabTypeFilter("領取");
+                    setCurrentTab("history");
+                  }}
+                  className="text-[#1b4372] hover:underline font-medium cursor-pointer"
+                >
+                  前往異動紀錄專頁檢視完整大表 ➔
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsAllPickupsModalOpen(false)}
+                  className="px-5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-sm font-bold transition cursor-pointer"
+                >
+                  關閉
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ---------------------------------------------------------------------- */}
       {/* MODAL 1: PICKUP REGISTRATION MODAL (一般使用者領取登記)                 */}
       {/* ---------------------------------------------------------------------- */}
       {selectedPickupItem && (
@@ -1863,7 +2647,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                   Administrator Portal
                 </span>
                 <h3 className="text-base font-bold text-slate-900 font-serif">
-                  耗材管理員驗證
+                  耗材管理驗證
                 </h3>
               </div>
               <button
@@ -1877,7 +2661,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
 
             <form onSubmit={handleAdminLogin} className="space-y-3 text-xs">
               <p className="text-slate-600">
-                請輸入耗材管理員專屬密碼，驗證通過後即可進行新增品項、補貨入庫、手動校正與定期盤點作業。
+                請輸入耗材管理專屬密碼，驗證通過後即可進行新增品項、補貨入庫、手動校正與定期盤點作業。
               </p>
 
               <div>
@@ -2139,7 +2923,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                   type="text"
                   value={formData.spec}
                   onChange={e => setFormData({ ...formData, spec: e.target.value })}
-                  placeholder="如: 500支/包、已滅菌、麻面防滑"
+                  placeholder="如: 500支/包"
                   className="w-full p-2 border border-slate-300 rounded-sm text-xs"
                 />
               </div>
@@ -2177,7 +2961,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                   type="text"
                   value={formData.notes}
                   onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="如: 分子生物專用、放置於 B 櫃"
+                  placeholder="如: 需定期補貨、採購廠牌、使用注意事項"
                   className="w-full p-2 border border-slate-200 rounded-sm text-xs"
                 />
               </div>
