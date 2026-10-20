@@ -42,7 +42,7 @@ const GREEN_SHADES: Record<GreenShade, GreenShadeColors> = {
     backLeftBg: "bg-[#1b4372]",
     primaryBg: "bg-[#1b4372]",
     accentText: "text-[#ebdcb9]",
-    primaryHex: "#4d79ab"
+    primaryHex: "#1b4372"
   },
   jade: {
     name: "普魯士深藍 (Prussian Blue)",
@@ -58,7 +58,7 @@ const GREEN_SHADES: Record<GreenShade, GreenShadeColors> = {
     backLeftBg: "bg-[#18365c]",
     primaryBg: "bg-[#18365c]",
     accentText: "text-[#e3d1ae]",
-    primaryHex: "#418ae9"
+    primaryHex: "#18365c"
   }
 };
 

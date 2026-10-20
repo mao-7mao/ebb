@@ -175,6 +175,9 @@ export default function ProcurementFormModal({
     setItems(prev => prev.map((item, idx) => {
       if (idx !== activeItemIndex) return item;
 
+      const normCur = (historicalItem.currency === "NTD" ? "TWD" : (historicalItem.currency || "TWD")) as CurrencyCode;
+      const isHistoricalOver3000 = (historicalItem.lastUnitPrice || 0) >= 3000;
+
       return {
         ...item,
         itemName: historicalItem.itemName,
@@ -182,6 +185,7 @@ export default function ProcurementFormModal({
         vendorName: historicalItem.vendorName || item.vendorName,
         estimatedUnitPrice: historicalItem.lastUnitPrice || item.estimatedUnitPrice,
         unit: historicalItem.category === "chemical" ? "瓶" : historicalItem.category === "equipment" ? "台" : "盒",
+        currency: normCur,
         casNumber: historicalItem.casNumber || item.casNumber,
         purity: historicalItem.purity || item.purity,
         packageSize: historicalItem.packageSize || item.packageSize,
@@ -189,16 +193,16 @@ export default function ProcurementFormModal({
         brand: historicalItem.brand || item.brand,
         specModel: historicalItem.specModel || item.specModel,
         eqModelNumber: historicalItem.specModel || item.eqModelNumber,
-        quotes: [
+        quotes: isHistoricalOver3000 ? [
           {
             id: `q_${Date.now()}`,
             vendorName: historicalItem.vendorName || DEFAULT_VENDORS[0],
             unitPrice: historicalItem.lastUnitPrice || 0,
-            currency: historicalItem.currency || "NTD",
+            currency: normCur,
             note: "歷史採購價格參考",
             isRecommended: true
           }
-        ]
+        ] : []
       };
     }));
 
@@ -234,11 +238,12 @@ export default function ProcurementFormModal({
 
   // Vendor Quotes handlers for active item
   const handleAddQuote = () => {
+    if (!currentItem) return;
     const newQuote: VendorQuote = {
       id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       vendorName: "",
       unitPrice: currentItem.estimatedUnitPrice || 0,
-      currency: "NTD",
+      currency: "TWD",
       note: "",
       isRecommended: (!currentItem.quotes || currentItem.quotes.length === 0)
     };
@@ -246,6 +251,7 @@ export default function ProcurementFormModal({
   };
 
   const handleUpdateQuote = (quoteId: string, field: keyof VendorQuote, value: any) => {
+    if (!currentItem) return;
     const updated = (currentItem.quotes || []).map(q => {
       if (field === "isRecommended" && value === true) {
         return q.id === quoteId ? { ...q, isRecommended: true } : { ...q, isRecommended: false };
@@ -265,6 +271,7 @@ export default function ProcurementFormModal({
   };
 
   const handleRemoveQuote = (quoteId: string) => {
+    if (!currentItem) return;
     const updated = (currentItem.quotes || []).filter(q => q.id !== quoteId);
     handleUpdateActiveItem("quotes", updated);
     if (updated.length === 0 && !isOver3000) {
@@ -274,30 +281,30 @@ export default function ProcurementFormModal({
 
   // Calculated Grand Total in TWD equivalent
   const grandTotal = items.reduce((sum, item) => {
-    const lineTotal = item.quantity * item.estimatedUnitPrice;
+    const lineTotal = (item.quantity || 1) * (item.estimatedUnitPrice || 0);
     const twdEstimate = convertToTwdEstimate(lineTotal, item.currency || "TWD");
     return sum + twdEstimate;
   }, 0);
 
   // Check 3,000 TWD threshold: item subtotal, item unit price, or requisition grand total
-  const activeItemSubtotalTwd = convertToTwdEstimate(
-    currentItem.quantity * currentItem.estimatedUnitPrice,
+  const activeItemSubtotalTwd = currentItem ? convertToTwdEstimate(
+    (currentItem.quantity || 1) * (currentItem.estimatedUnitPrice || 0),
     currentItem.currency || "TWD"
-  );
-  const activeItemUnitTwd = convertToTwdEstimate(
-    currentItem.estimatedUnitPrice,
+  ) : 0;
+  const activeItemUnitTwd = currentItem ? convertToTwdEstimate(
+    currentItem.estimatedUnitPrice || 0,
     currentItem.currency || "TWD"
-  );
+  ) : 0;
   const isItemOver3000 = activeItemSubtotalTwd >= 3000 || activeItemUnitTwd >= 3000;
   const isRequisitionOver3000 = grandTotal >= 3000 || items.some(it => 
-    convertToTwdEstimate(it.estimatedUnitPrice, it.currency || "TWD") >= 3000 ||
-    convertToTwdEstimate(it.quantity * it.estimatedUnitPrice, it.currency || "TWD") >= 3000
+    convertToTwdEstimate(it.estimatedUnitPrice || 0, it.currency || "TWD") >= 3000 ||
+    convertToTwdEstimate((it.quantity || 1) * (it.estimatedUnitPrice || 0), it.currency || "TWD") >= 3000
   );
   const isOver3000 = isItemOver3000 || isRequisitionOver3000;
 
   // Auto-appear quotes when exceeding 3000: if quotes is empty, create a clean blank quote ready to fill
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !currentItem || !currentItem.id) return;
     if (isOver3000) {
       if (!autoInitializedQuotesRef.current[currentItem.id]) {
         autoInitializedQuotesRef.current[currentItem.id] = true;
@@ -306,7 +313,7 @@ export default function ProcurementFormModal({
             id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
             vendorName: "",
             unitPrice: currentItem.estimatedUnitPrice || 0,
-            currency: "NTD",
+            currency: "TWD",
             note: "",
             isRecommended: true
           };
@@ -317,7 +324,7 @@ export default function ProcurementFormModal({
       // If price dropped below 3000, allow re-initialization if it exceeds 3000 again later
       autoInitializedQuotesRef.current[currentItem.id] = false;
     }
-  }, [isOver3000, currentItem.id, currentItem.estimatedUnitPrice, currentItem.quantity, isOpen]);
+  }, [isOver3000, currentItem?.id, currentItem?.estimatedUnitPrice, currentItem?.quantity, isOpen]);
 
   const hasUserQuotes = Boolean(currentItem.quotes && currentItem.quotes.length > 0);
   const shouldShowQuotes = isOver3000 || manualShowQuotes || hasUserQuotes;
@@ -468,7 +475,7 @@ export default function ProcurementFormModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
       <div className="bg-white border border-[#e5e5e0] rounded-sm shadow-2xl max-w-4xl w-full my-auto flex flex-col max-h-[92vh]">
         {/* Modal Header */}
         <div className="px-4 py-3 sm:px-6 sm:py-4 bg-[#f8f8f5] border-b border-[#e5e5e0] flex items-center justify-between shrink-0">
@@ -1065,7 +1072,7 @@ export default function ProcurementFormModal({
                   <div className="flex items-center gap-2">
                     <div className="flex items-stretch w-full rounded-sm border border-[#e5e5e0] bg-white focus-within:border-[#1b4372] focus-within:ring-1 focus-within:ring-[#1b4372] shadow-2xs overflow-hidden">
                       <span className="inline-flex items-center justify-center px-3 bg-slate-100/80 border-r border-[#e5e5e0] text-xs font-bold font-mono text-slate-600 select-none shrink-0 tracking-wider">
-                        {CURRENCY_CONFIG[currentItem.currency || "TWD"].symbol}
+                        {(CURRENCY_CONFIG[currentItem?.currency || "TWD"] || CURRENCY_CONFIG.TWD).symbol}
                       </span>
                       <input
                         type="number"
@@ -1084,13 +1091,13 @@ export default function ProcurementFormModal({
                   </div>
 
                   {/* Realtime conversion hint if foreign currency */}
-                  {(currentItem.currency === "CNY" || currentItem.currency === "USD") && (
+                  {((currentItem.currency || "TWD") === "CNY" || (currentItem.currency || "TWD") === "USD") && (
                     <div className="text-[11px] text-amber-800 bg-amber-50 px-2 py-1 rounded border border-amber-200 font-mono flex items-center justify-between">
                       <span>
                         換算參考：約合 NT$ {convertToTwdEstimate(currentItem.estimatedUnitPrice, currentItem.currency).toLocaleString()} / {currentItem.unit}
                       </span>
                       <span className="text-[10px] text-slate-500">
-                        (匯率: {CURRENCY_CONFIG[currentItem.currency].exchangeRateToTwd})
+                        (匯率: {(CURRENCY_CONFIG[currentItem.currency || "TWD"] || CURRENCY_CONFIG.TWD).exchangeRateToTwd})
                       </span>
                     </div>
                   )}
@@ -1135,7 +1142,7 @@ export default function ProcurementFormModal({
                         </h4>
                         {isOver3000 && (
                           <span className="text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-1">
-                            ⚡ {lang === "zh" ? "超過 NT$ 3,000 " : "Auto-enabled (> NT$3,000)"}
+                            ⚡ {lang === "zh" ? "超過 NT$ 3,000 自動開啟" : "Auto-enabled (> NT$3,000)"}
                           </span>
                         )}
                       </div>
@@ -1191,7 +1198,7 @@ export default function ProcurementFormModal({
                               type="text"
                               value={q.vendorName}
                               onChange={(e) => handleUpdateQuote(q.id, "vendorName", e.target.value)}
-                              placeholder="廠商名稱 "
+                              placeholder="廠商名稱 (如: Sigma / TCI / 景明)"
                               className="w-full border border-slate-200 rounded-sm p-1.5 text-xs font-medium"
                             />
                           </div>
@@ -1293,10 +1300,15 @@ export default function ProcurementFormModal({
                   </div>
                   <p className="text-[11px] text-amber-800 leading-relaxed">
                     {lang === "zh"
-                      ? "依實驗室採購規定：單價或總額達 3,000 元以上，需事先詢價多家廠商（建議檢附 2~3 家報價比價）。"
+                      ? "依實驗室採購規定：單價或總額達 3,000 元以上，需事先詢價多家廠商（建議檢附 2~3 家報價比價）。由 Admin 完成初審確認後，系統將一併呈送教授審核核定。"
                       : "Items with unit or total price reaching 3,000 TWD require 2-3 vendor price comparisons. Admin will review before forwarding to PI for final approval."}
                   </p>
-
+                  <div className="bg-white/80 p-2.5 rounded border border-amber-200 text-[11px] text-slate-700 space-y-1">
+                    <div className="font-semibold text-slate-900 flex items-center gap-1">
+                      <span>審核流程：</span>
+                      <span className="font-mono text-amber-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過（回覆抄送助理與請購人）</span>
+                    </div>
+                  </div>
                 </div>
               );
             } else {
@@ -1313,10 +1325,15 @@ export default function ProcurementFormModal({
                   </div>
                   <p className="text-[11px] text-emerald-800 leading-relaxed">
                     {lang === "zh"
-                      ? "總額未滿 3,000 元之小額請購，可由單一廠商直接採購，免附多家廠商比價。"
+                      ? "總額未滿 3,000 元之小額請購，可由單一廠商直接採購，免附多家廠商比價。Admin 初審確認後，一樣會發送通知信呈送教授審核簽可。"
                       : "Requisitions under 3,000 TWD allow single-vendor purchase without comparison quotes. Admin will forward to PI for review and approval."}
                   </p>
-
+                  <div className="bg-white/80 p-2.5 rounded border border-emerald-200 text-[11px] text-slate-700 space-y-1">
+                    <div className="font-semibold text-slate-900 flex items-center gap-1">
+                      <span>審核流程：</span>
+                      <span className="font-mono text-emerald-900">請購人提交 ➔ Admin 初審 ➔ 發送教授審核 ➔ 教授核定通過（回覆抄送助理與請購人）</span>
+                    </div>
+                  </div>
                 </div>
               );
             }

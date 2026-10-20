@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>EBB Lab - Lab Consumables Statistics (實驗室耗材統計與領用)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+TC:wght@400;600;700&display=swap');
+    body {
+      background-color: #f4f1ea;
+      color: #1a1a1a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .font-serif-eb {
+      font-family: 'Cinzel', 'Noto Serif TC', serif;
+    }
+  </style>
+</head>
+<body class="p-3 sm:p-6 min-h-screen">
+
+  <div class="max-w-6xl mx-auto space-y-4">
+    <!-- Header -->
+    <header class="bg-[#fbfbfa] border border-[#e5e5e0] p-5 rounded-sm flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
+      <div>
+        <div class="text-[10px] font-bold text-[#8d734a] tracking-widest uppercase font-serif-eb italic">
+          EBB Lab · Consumables & Stocktake Management
+        </div>
+        <h1 class="text-xl sm:text-2xl font-bold text-slate-900 font-serif-eb flex items-center gap-2 mt-0.5">
+          <span>Lab Consumables Statistics</span>
+        </h1>
+        <p class="text-xs text-slate-500 mt-1">
+          實驗室耗材種類與數量統計 · 自助領取登記 · 低庫存預警與定期盤點
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="adminLoginBtn" onclick="openLoginModal()" class="px-3.5 py-1.5 bg-white border border-[#e5e5e0] hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-sm shadow-2xs transition">
+          管理員登入
+        </button>
+        <div id="adminBadge" class="hidden flex items-center gap-2 bg-emerald-50 border border-emerald-300 px-3 py-1 rounded-sm text-xs">
+          <span class="text-emerald-900 font-bold">管理員已驗證</span>
+          <button onclick="adminLogout()" class="text-emerald-700 hover:underline font-bold text-[11px]">登出</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Stats Bar -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="p-3.5 bg-white border border-[#e5e5e0] rounded-sm shadow-2xs">
+        <span class="text-[11px] text-slate-400 block">啟用耗材</span>
+        <div class="text-2xl font-bold font-mono text-[#1b4372]" id="statActive">--</div>
+      </div>
+      <div class="p-3.5 bg-white border border-[#e5e5e0] rounded-sm shadow-2xs">
+        <span class="text-[11px] text-slate-400 block">總庫存量</span>
+        <div class="text-2xl font-bold font-mono text-slate-800" id="statTotalStock">--</div>
+      </div>
+      <div class="p-3.5 bg-white border border-[#e5e5e0] rounded-sm shadow-2xs">
+        <span class="text-[11px] text-slate-400 block">庫存偏低</span>
+        <div class="text-2xl font-bold font-mono text-rose-600" id="statLowStock">--</div>
+      </div>
+      <div class="p-3.5 bg-white border border-[#e5e5e0] rounded-sm shadow-2xs">
+        <span class="text-[11px] text-slate-400 block">距上次盤點</span>
+        <div class="text-2xl font-bold font-mono text-[#8d734a]" id="statDaysAudit">-- 天</div>
+      </div>
+    </div>
+
+    <!-- Alert Banner (if audit overdue) -->
+    <div id="auditAlertBanner" class="hidden p-3 bg-amber-50 border-l-4 border-amber-500 rounded-r-sm text-xs text-amber-900">
+      <strong>定期盤點提醒：</strong> 距上次完成盤點已超過 30 天，建議管理員盡快排定實盤核對以確保庫存準確！
+    </div>
+
+    <!-- Toolbar: Search & Filter -->
+    <div class="bg-white border border-[#e5e5e0] p-3 rounded-sm flex flex-col sm:flex-row gap-3 justify-between items-center">
+      <input type="text" id="searchInput" oninput="renderTable()" placeholder="搜尋耗材名稱、規格或編號..." class="w-full sm:w-80 p-2 text-xs border border-slate-200 rounded-sm focus:border-[#1b4372] focus:outline-none">
+      
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <select id="categoryFilter" onchange="renderTable()" class="p-2 text-xs border border-slate-200 rounded-sm w-full sm:w-auto">
+          <option value="ALL">全部類別</option>
+          <option value="離心管與樣品瓶">離心管與樣品瓶</option>
+          <option value="滴管吸頭與針筒">滴管吸頭與針筒</option>
+          <option value="手套與防護用品">手套與防護用品</option>
+          <option value="濾膜與透析耗材">濾膜與透析耗材</option>
+          <option value="擦拭與清潔耗材">擦拭與清潔耗材</option>
+          <option value="培養與玻璃塑膠">培養與玻璃塑膠</option>
+          <option value="封口標籤與滅菌">封口標籤與滅菌</option>
+          <option value="其他耗材">其他耗材</option>
+        </select>
+
+        <button onclick="loadData()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-sm whitespace-nowrap">
+          重新整理
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingBox" class="py-12 text-center text-slate-500 text-xs">
+      <div class="inline-block animate-spin rounded-full h-6 w-6 border-2 border-[#1b4372] border-t-transparent mb-2"></div>
+      <p>正在載入最新耗材與庫存資料...</p>
+    </div>
+
+    <!-- Consumables Table -->
+    <div id="tableContainer" class="hidden bg-white border border-[#e5e5e0] rounded-sm overflow-x-auto shadow-2xs">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-[#f8f8f5] text-slate-700 font-bold border-b border-[#e5e5e0]">
+          <tr>
+            <th class="p-3 w-20">編號</th>
+            <th class="p-3">名稱與規格</th>
+            <th class="p-3 w-32">類別</th>
+            <th class="p-3 text-right w-24">目前庫存</th>
+            <th class="p-3 text-right w-24">安全庫存</th>
+            <th class="p-3 text-center w-24">狀態</th>
+            <th class="p-3 text-right w-28">操作</th>
+          </tr>
+        </thead>
+        <tbody id="itemsTbody" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+
+    <!-- Admin Operations Toolbar (Visible when logged in) -->
+    <div id="adminPanel" class="hidden bg-white border border-[#e5e5e0] p-4 rounded-sm space-y-3">
+      <div class="font-bold text-sm text-slate-900 border-b border-slate-100 pb-2">
+        管理員進階功能
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="openAddItemModal()" class="px-3 py-1.5 bg-[#1b4372] hover:bg-[#15345a] text-white text-xs font-bold rounded-sm">
+          + 新增耗材品項
+        </button>
+        <button onclick="openRestockModal()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-sm">
+          補貨入庫
+        </button>
+        <button onclick="startAudit()" class="px-3 py-1.5 bg-[#8d734a] hover:bg-[#78613e] text-white text-xs font-bold rounded-sm">
+          發起定期盤點
+        </button>
+        <button onclick="exportLogsCSV()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-sm">
+          匯出異動紀錄 CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Pickup (領取登記) -->
+  <div id="pickupModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white max-w-md w-full p-5 rounded-sm space-y-3 shadow-xl text-xs">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-sm text-slate-900 font-serif-eb">耗材自助領取登記</h3>
+        <button onclick="closePickupModal()" class="text-slate-400 hover:text-slate-600 text-base">&times;</button>
+      </div>
+      <div id="pickupItemBanner" class="p-2.5 bg-slate-50 border rounded text-slate-700"></div>
+      <form onsubmit="submitPickup(event)" class="space-y-3">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">領取數量 *</label>
+          <input type="number" id="pickupQty" min="1" required class="w-full p-2 border rounded font-mono font-bold">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">領取人姓名 *</label>
+          <select id="pickupPickerSelect" onchange="togglePickerCustom(this.value)" class="w-full p-2 border rounded">
+            <option value="">-- 請選擇實驗室成員 --</option>
+            <option value="林郁芳 (Fanny)">林郁芳 (Fanny)</option>
+            <option value="陳采翎 (Kalin)">陳采翎 (Kalin)</option>
+            <option value="游家御 (Kevin)">游家御 (Kevin)</option>
+            <option value="唐瑜陽 (Eko)">唐瑜陽 (Eko)</option>
+            <option value="陳泯熏 (Tina)">陳泯熏 (Tina)</option>
+            <option value="花翊軒 (Steven)">花翊軒 (Steven)</option>
+            <option value="陳采蘋 (Nina)">陳采蘋 (Nina)</option>
+            <option value="Alpha">Alpha Rowena</option>
+            <option value="Sonali">Sonali Mazumdar</option>
+            <option value="Safira">Safira Prameshwari</option>
+            <option value="OTHER">其他 (手動輸入姓名)</option>
+          </select>
+          <input type="text" id="pickupPickerCustom" placeholder="請輸入姓名" class="hidden w-full p-2 border rounded mt-1.5">
+        </div>
+        <div>
+          <label class="block text-slate-600 mb-1">用途備註 (選填)</label>
+          <input type="text" id="pickupNotes" placeholder="如: HPLC 樣品處理" class="w-full p-2 border rounded">
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t">
+          <button type="button" onclick="closePickupModal()" class="px-3 py-1.5 bg-slate-100 rounded">取消</button>
+          <button type="submit" id="pickupSubmitBtn" class="px-4 py-1.5 bg-[#1b4372] text-white font-bold rounded">確認領取</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Admin Login -->
+  <div id="loginModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white max-w-sm w-full p-5 rounded-sm space-y-3 shadow-xl text-xs">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-sm text-slate-900 font-serif-eb">管理員登入</h3>
+        <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-600 text-base">&times;</button>
+      </div>
+      <form onsubmit="submitAdminLogin(event)" class="space-y-3">
+        <input type="password" id="adminPasswordInput" placeholder="請輸入管理員密碼" class="w-full p-2 border rounded">
+        <div id="loginError" class="text-rose-600 hidden"></div>
+        <div class="flex justify-end gap-2 pt-2 border-t">
+          <button type="button" onclick="closeLoginModal()" class="px-3 py-1.5 bg-slate-100 rounded">取消</button>
+          <button type="submit" class="px-4 py-1.5 bg-[#1b4372] text-white font-bold rounded">登入</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Client-side Logic -->
+  <script>
+    let gData = { items: [], transactions: [], audits: [] };
+    let adminToken = localStorage.getItem("ebblab_gas_token") || "";
+    let activePickupItem = null;
+
+    window.onload = function() {
+      loadData();
+      if (adminToken) {
+        document.getElementById("adminBadge").classList.remove("hidden");
+        document.getElementById("adminLoginBtn").classList.add("hidden");
+        document.getElementById("adminPanel").classList.remove("hidden");
+      }
+    };
+
+    function loadData() {
+      document.getElementById("loadingBox").classList.remove("hidden");
+      document.getElementById("tableContainer").classList.add("hidden");
+
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            onDataLoaded(res);
+          })
+          .withFailureHandler(function(err) {
+            alert("載入失敗: " + err);
+            document.getElementById("loadingBox").classList.add("hidden");
+          })
+          .Consumable_getData();
+      } else {
+        // Fallback fetch from same origin or mock
+        fetch("?action=data")
+          .then(r => r.json())
+          .then(res => onDataLoaded(res))
+          .catch(e => {
+            console.warn("GAS Web App Fetch not available, running standalone mode");
+            document.getElementById("loadingBox").classList.add("hidden");
+          });
+      }
+    }
+
+    function onDataLoaded(res) {
+      document.getElementById("loadingBox").classList.add("hidden");
+      document.getElementById("tableContainer").classList.remove("hidden");
+      gData = res;
+
+      document.getElementById("statActive").innerText = res.items.filter(i => i.status === "active").length;
+      document.getElementById("statTotalStock").innerText = res.items.reduce((s, i) => s + i.currentStock, 0);
+      document.getElementById("statLowStock").innerText = res.items.filter(i => i.status === "active" && i.currentStock <= i.safeStock).length;
+      document.getElementById("statDaysAudit").innerText = (res.daysSinceLastAudit !== null ? res.daysSinceLastAudit : "-") + " 天";
+
+      if (res.isAuditOverdue) {
+        document.getElementById("auditAlertBanner").classList.remove("hidden");
+      } else {
+        document.getElementById("auditAlertBanner").classList.add("hidden");
+      }
+
+      renderTable();
+    }
+
+    function renderTable() {
+      const q = document.getElementById("searchInput").value.trim().toLowerCase();
+      const cat = document.getElementById("categoryFilter").value;
+      const tbody = document.getElementById("itemsTbody");
+      tbody.innerHTML = "";
+
+      const filtered = (gData.items || []).filter(item => {
+        if (cat !== "ALL" && item.category !== cat) return false;
+        if (q && !item.name.toLowerCase().includes(q) && !item.spec.toLowerCase().includes(q) && !item.id.toLowerCase().includes(q)) return false;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400">查無耗材資料</td></tr>';
+        return;
+      }
+
+      filtered.forEach(it => {
+        const isLow = it.currentStock <= it.safeStock;
+        const isOut = it.currentStock <= 0;
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = `
+          <td class="p-3 font-mono font-bold text-slate-500">${it.id}</td>
+          <td class="p-3">
+            <div class="font-bold text-slate-800">${it.name}</div>
+            <div class="text-[11px] text-slate-500">${it.spec}</div>
+          </td>
+          <td class="p-3 text-slate-600">${it.category}</td>
+          <td class="p-3 text-right font-mono font-bold ${isOut ? 'text-rose-600' : isLow ? 'text-amber-600' : 'text-[#1b4372]'}">${it.currentStock} ${it.unit}</td>
+          <td class="p-3 text-right font-mono text-slate-500">${it.safeStock} ${it.unit}</td>
+          <td class="p-3 text-center">
+            ${isOut ? '<span class="px-2 py-0.5 bg-rose-100 text-rose-800 rounded text-[10px] font-bold">缺貨</span>' : isLow ? '<span class="px-2 py-0.5 bg-amber-100 text-amber-900 rounded text-[10px] font-bold">庫存偏低</span>' : '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px]">正常</span>'}
+          </td>
+          <td class="p-3 text-right">
+            <button onclick='openPickupModalById("${it.id}")' ${isOut ? 'disabled' : ''} class="px-3 py-1 bg-[#1b4372] hover:bg-[#122e4f] disabled:bg-slate-200 text-white font-bold rounded text-xs transition">
+              ${isOut ? '缺貨' : '領取'}
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openPickupModalById(id) {
+      const it = (gData.items || []).find(i => i.id === id);
+      if (!it) return;
+      activePickupItem = it;
+      document.getElementById("pickupItemBanner").innerHTML = `<strong>${it.name}</strong><br><span class="text-slate-500">${it.spec}</span><br>目前庫存: <strong class="text-[#1b4372]">${it.currentStock} ${it.unit}</strong>`;
+      document.getElementById("pickupQty").value = 1;
+      document.getElementById("pickupQty").max = it.currentStock;
+      document.getElementById("pickupModal").classList.remove("hidden");
+    }
+
+    function closePickupModal() {
+      document.getElementById("pickupModal").classList.add("hidden");
+      activePickupItem = null;
+    }
+
+    function togglePickerCustom(val) {
+      const customInput = document.getElementById("pickupPickerCustom");
+      if (val === "OTHER") {
+        customInput.classList.remove("hidden");
+        customInput.required = true;
+      } else {
+        customInput.classList.add("hidden");
+        customInput.required = false;
+      }
+    }
+
+    function submitPickup(e) {
+      e.preventDefault();
+      if (!activePickupItem) return;
+
+      const qty = parseInt(document.getElementById("pickupQty").value, 10);
+      const sel = document.getElementById("pickupPickerSelect").value;
+      const custom = document.getElementById("pickupPickerCustom").value.trim();
+      const picker = sel === "OTHER" ? custom : sel;
+      const notes = document.getElementById("pickupNotes").value.trim();
+
+      if (!picker) {
+        alert("請選擇或輸入領取人姓名！");
+        return;
+      }
+
+      document.getElementById("pickupSubmitBtn").disabled = true;
+      document.getElementById("pickupSubmitBtn").innerText = "寫入中...";
+
+      const payload = {
+        action: "pickup",
+        itemId: activePickupItem.id,
+        quantity: qty,
+        operator: picker,
+        isListedMember: sel !== "OTHER",
+        notes: notes
+      };
+
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            document.getElementById("pickupSubmitBtn").disabled = false;
+            document.getElementById("pickupSubmitBtn").innerText = "確認領取";
+            if (res.success) {
+              alert(res.message);
+              closePickupModal();
+              loadData();
+            } else {
+              alert("領取失敗: " + res.error);
+            }
+          })
+          .withFailureHandler(function(err) {
+            document.getElementById("pickupSubmitBtn").disabled = false;
+            document.getElementById("pickupSubmitBtn").innerText = "確認領取";
+            alert("伺服器錯誤: " + err);
+          })
+          .Consumable_pickup(payload);
+      }
+    }
+
+    function openLoginModal() {
+      document.getElementById("loginError").classList.add("hidden");
+      document.getElementById("adminPasswordInput").value = "";
+      document.getElementById("loginModal").classList.remove("hidden");
+    }
+
+    function closeLoginModal() {
+      document.getElementById("loginModal").classList.add("hidden");
+    }
+
+    function submitAdminLogin(e) {
+      e.preventDefault();
+      const pwd = document.getElementById("adminPasswordInput").value;
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res.success) {
+              adminToken = res.token;
+              localStorage.setItem("ebblab_gas_token", res.token);
+              document.getElementById("adminBadge").classList.remove("hidden");
+              document.getElementById("adminLoginBtn").classList.add("hidden");
+              document.getElementById("adminPanel").classList.remove("hidden");
+              closeLoginModal();
+              alert("管理員登入成功！");
+            } else {
+              document.getElementById("loginError").innerText = res.error;
+              document.getElementById("loginError").classList.remove("hidden");
+            }
+          })
+          .Consumable_login(pwd);
+      } else {
+        if (pwd === "ebbthings") {
+          adminToken = "authorized";
+          localStorage.setItem("ebblab_gas_token", "authorized");
+          document.getElementById("adminBadge").classList.remove("hidden");
+          document.getElementById("adminLoginBtn").classList.add("hidden");
+          document.getElementById("adminPanel").classList.remove("hidden");
+          closeLoginModal();
+          alert("管理員登入成功！");
+        } else {
+          document.getElementById("loginError").innerText = "密碼錯誤！";
+          document.getElementById("loginError").classList.remove("hidden");
+        }
+      }
+    }
+
+    function adminLogout() {
+      adminToken = "";
+      localStorage.removeItem("ebblab_gas_token");
+      document.getElementById("adminBadge").classList.add("hidden");
+      document.getElementById("adminLoginBtn").classList.remove("hidden");
+      document.getElementById("adminPanel").classList.add("hidden");
+    }
+
+    function exportLogsCSV() {
+      if (!gData.transactions || gData.transactions.length === 0) {
+        alert("尚無異動紀錄！");
+        return;
+      }
+      const headers = ["時間", "耗材ID", "名稱", "類型", "數量變化", "前庫存", "後庫存", "人員", "備註"];
+      const rows = gData.transactions.map(t => [t.timestamp, t.consumableId, `"${t.consumableName}"`, t.type, t.changeQty, t.prevStock, t.afterStock, `"${t.operator}"`, `"${t.notes}"`]);
+      const csv = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Consumables_History_" + new Date().toISOString().slice(0, 10) + ".csv";
+      a.click();
+    }
+  </script>
+</body>
+</html>

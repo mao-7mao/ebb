@@ -44,7 +44,7 @@ export const EXTERNAL_LINKS = {
   instrumentReservationScriptUrl: "https://script.google.com/macros/s/AKfycbwA4Z3wVMCMni_Uf0sMI4PsGXIETXuvZdf9_e_se-c5cY0T9PFXYH1ppphJgnhcAvRcHQ/exec",
   
   // Data Studio 儀器管理後台
-  instrumentManagementScriptUrl: "https://script.google.com/macros/s/AKfycbxFXy0bwNEpAdTfEkny19rGYwUSJ5qTVUr-hj5WQ2YPTdfuL-NrFcIWRvh9r8TXFsJW/exec",
+  instrumentManagementScriptUrl: "https://script.google.com/macros/s/AKfycbxhrZqSV--E45-frXDS0Ull4DUEFlB80vB0dE7162ELPUs283ZXhalkwwwANyc4NwkM/exec",
 
   // ==========================================================================
   // 4. 化學品與耗材清冊 (Chemical & Reagent Inventory)
@@ -104,6 +104,13 @@ export const EXTERNAL_LINKS = {
       description: "實驗室氣體鋼瓶存量與位置 / Lab Gas Cylinders Stock & Location",
       badgeColor: "bg-slate-100 text-slate-800 border-slate-300"
     }
-  ] as CabinetConfig[]
+  ] as CabinetConfig[],
+
+  // ==========================================================================
+  // 5. 實驗室耗材統計與領用盤點系統 (Consumables Inventory & Audit System)
+  // Google Apps Script Webhook 網址 (部署為網頁應用程式後的 URL，以 /exec 結尾)
+  // ==========================================================================
+  consumablesWebhookUrl: ((typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_CONSUMABLES_GAS_WEBHOOK_URL) as string) || "https://script.google.com/macros/s/AKfycbxiRnlSE_msma9A-_VqgLYe-W4gyFlp2Th6lvMLe14E2VKDDoXseFkAFESStJif6VE0/exec",
+  consumablesScriptUrl: "https://script.google.com/macros/s/AKfycbxiRnlSE_msma9A-_VqgLYe-W4gyFlp2Th6lvMLe14E2VKDDoXseFkAFESStJif6VE0/exec"
 };
 

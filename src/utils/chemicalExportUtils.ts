@@ -110,7 +110,7 @@ export function generateOrderChemicalTxt(req: ProcurementItem): string {
   const statusLabel = 
     req.status === "approved" ? "審核通過 · 待採購 (Approved)" :
     req.status === "purchased" ? "已採購完成 (Purchased)" :
-    req.status === "pending_assistant" ? "待admin初審中" :
+    req.status === "pending_assistant" ? "待助理初審中" :
     req.status === "pending_professor" ? "待教授終審中" :
     req.status === "rejected" ? "已退回" : req.status;
 

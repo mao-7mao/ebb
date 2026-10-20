@@ -25,7 +25,7 @@ export interface ProgressEntry {
   updated_at?: string;
 }
 
-export type ExternalRoleType = "在職生" | "在職專班生" | "在職碩士生" | "在職博士生" | "校友" | "專案admin" | "專題生" | "短期訪客" | "外部合作者";
+export type ExternalRoleType = "在職生" | "在職專班生" | "在職碩士生" | "在職博士生" | "校友" | "專案助理" | "專題生" | "短期訪客" | "外部合作者";
 
 export interface ExternalMember {
   id: string;

@@ -1224,10 +1224,17 @@ export default function ProcurementSystem() {
               );
             })
           ) : (
-            <div className="p-6 text-center text-slate-400 bg-[#fdfdfc]">
-              <AlertCircle className="w-6 h-6 text-slate-300 mx-auto mb-1.5" />
+            <div className="p-6 text-center text-slate-400 bg-[#fdfdfc] flex flex-col items-center justify-center gap-2">
+              <AlertCircle className="w-6 h-6 text-slate-300 mx-auto mb-1" />
               <p className="text-xs font-medium">查無符合條件的請購單</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">請調整篩選條件或點擊上方「+ 填寫請購」</p>
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-xs cursor-pointer mt-1"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>+ 填寫新請購單</span>
+              </button>
             </div>
           )}
         </div>
@@ -1395,7 +1402,14 @@ export default function ProcurementSystem() {
                   <td colSpan={isAdmin ? 9 : 8} className="p-8 text-center text-slate-400 bg-[#fdfdfc]">
                     <AlertCircle className="w-7 h-7 text-slate-300 mx-auto mb-1.5" />
                     <p className="text-xs font-medium">查無符合條件的請購單</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">請調整篩選條件或點擊上方「+ 填寫新請購單」</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1b4372] hover:bg-[#122e4f] text-white rounded-sm text-xs font-bold transition shadow-xs cursor-pointer mt-2"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>+ 填寫新請購單</span>
+                    </button>
                   </td>
                 </tr>
               )}

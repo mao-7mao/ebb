@@ -9,6 +9,7 @@ import BusinessCardGenerator from "./components/BusinessCardGenerator";
 import LabDataGenerator from "./components/LabDataGenerator";
 import InstrumentReservation from "./components/InstrumentReservation";
 import ChemicalInventory from "./components/ChemicalInventory";
+import ConsumablesStatistics from "./components/ConsumablesStatistics";
 import ProcurementSystem from "./components/procurement/ProcurementSystem";
 import FontSizeAdjuster from "./components/FontSizeAdjuster";
 import AuthModal, { checkIsAuthenticated, setAuthenticatedState } from "./components/AuthModal";
@@ -49,7 +50,8 @@ import {
   HardDrive,
   ShoppingCart,
   TrendingUp,
-  ClipboardList
+  ClipboardList,
+  Boxes
 } from "lucide-react";
 import MemberDutiesOverview from "./components/members/MemberDutiesOverview";
 
@@ -58,6 +60,7 @@ export type NavPage =
   | "members" 
   | "instruments" 
   | "chemicals" 
+  | "consumables"
   | "procurement" 
   | "card-generator" 
   | "schedule" 
@@ -72,7 +75,7 @@ export default function App() {
     if (hash === "progress" || hash === "instruments-manage") {
       return "studio";
     }
-    const validPages: NavPage[] = ["home", "members", "instruments", "chemicals", "procurement", "card-generator", "schedule", "archive", "studio", "contact"];
+    const validPages: NavPage[] = ["home", "members", "instruments", "chemicals", "consumables", "procurement", "card-generator", "schedule", "archive", "studio", "contact"];
     return validPages.includes(hash as NavPage) ? (hash as NavPage) : "home";
   });
 
@@ -245,7 +248,7 @@ export default function App() {
         setMembersSubTab("duties");
         return;
       }
-      const validPages: NavPage[] = ["home", "members", "instruments", "chemicals", "procurement", "card-generator", "schedule", "archive", "studio", "contact"];
+      const validPages: NavPage[] = ["home", "members", "instruments", "chemicals", "consumables", "procurement", "card-generator", "schedule", "archive", "studio", "contact"];
       if (validPages.includes(hash as NavPage)) {
         setCurrentPage(hash as NavPage);
       }
@@ -345,7 +348,7 @@ export default function App() {
     if (role.includes("博") || role.toLowerCase().includes("ph.d")) return "Ph.D. Students";
     if (role.includes("碩") || role.toLowerCase().includes("master")) return "Master's Students";
     if (role.includes("交換") || role.toLowerCase().includes("exchange")) return "Exchange Students";
-    if (role.includes("admin") || role.toLowerCase().includes("assistant")) return "Research Assistants";
+    if (role.includes("助理") || role.toLowerCase().includes("assistant")) return "Research Assistants";
     if (role.includes("專題") || role.includes("大學") || role.toLowerCase().includes("undergrad")) return "Undergraduates";
     if (role.includes("教") || role.includes("主持") || role.toLowerCase().includes("pi") || role.toLowerCase().includes("professor")) return "Principal Investigator";
     if (role.includes("後") || role.toLowerCase().includes("postdoc")) return "Postdocs";
@@ -557,6 +560,16 @@ export default function App() {
               </button>
 
               <button 
+                onClick={() => { navigateTo("consumables"); setIsMobileMenuOpen(false); }}
+                className={`flex items-center gap-3 p-3 rounded-sm text-sm font-semibold transition ${
+                  currentPage === "consumables" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
+                }`}
+              >
+                <Boxes className="w-4 h-4" />
+                <span>Consumables Statistics</span>
+              </button>
+
+              <button 
                 onClick={() => { navigateTo("procurement"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-3 p-3 rounded-sm text-sm font-semibold transition ${
                   currentPage === "procurement" ? "bg-[#1b4372] text-white" : "bg-[#f8f8f5] text-slate-700 hover:bg-[#eae6dc]"
@@ -673,6 +686,16 @@ export default function App() {
               >
                 <FlaskConical className="w-4 h-4 text-[#1b4372]" /> 
                 <span>Chemical Inventory</span>
+              </button>
+
+              <button 
+                onClick={() => navigateTo("consumables")}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-semibold transition-all ${
+                  currentPage === "consumables" ? "text-[#1b4372] bg-[#f4f1ea] border border-[#e5e5e0]" : "text-slate-600 hover:text-slate-900 hover:bg-[#fafafa]"
+                }`}
+              >
+                <Boxes className="w-4 h-4 text-[#1b4372]" /> 
+                <span>Consumables Statistics</span>
               </button>
 
               <button 
@@ -1469,6 +1492,13 @@ export default function App() {
         {currentPage === "chemicals" && (
           <div className="py-12 px-6 lg:px-16 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
             <ChemicalInventory onBackToHome={() => navigateTo("home")} />
+          </div>
+        )}
+
+        {/* ================= PAGE: CONSUMABLES STATISTICS ================= */}
+        {currentPage === "consumables" && (
+          <div className="py-6 sm:py-8 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-4 animate-in fade-in duration-200">
+            <ConsumablesStatistics onBackToHome={() => navigateTo("home")} />
           </div>
         )}
 

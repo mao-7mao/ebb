@@ -52,7 +52,7 @@ export default function ProcurementOfficialRequisition({
   // Primary requisition info
   const primaryReq = items[0];
   const applicant = primaryReq.applicantName || "";
-  const assistantReviewer = primaryReq.assistantReview?.reviewerName || "admin";
+  const assistantReviewer = primaryReq.assistantReview?.reviewerName || "助理";
   const professorReviewer = primaryReq.professorReview?.reviewerName || "教授";
 
   // Requisition Date formatted as YYYY.MM.DD (matches screenshot: 2025.08.06)
