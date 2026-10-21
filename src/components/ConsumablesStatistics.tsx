@@ -1126,6 +1126,46 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
   }, [items, transactions]);
 
   // Export CSV
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
+
+const downloadCsvFile = (filename: string, csv: string) => {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+};
+
+const handleCloudExport = async (types: Array<"items" | "audits" | "logs">) => {
+  setIsExportingCsv(true);
+  try {
+    const done: string[] = [];
+    for (const type of types) {
+      const res: any = await sendConsumablesAdminAction("export_csv", { type });
+      if (!res || !res.success || !res.csv) {
+        throw new Error(res?.error || res?.message || "匯出失敗");
+      }
+      downloadCsvFile(res.filename, res.csv);
+      done.push(`${res.filename}（${res.count} 筆）`);
+      if (types.length > 1) await new Promise(r => setTimeout(r, 500)); // 避免瀏覽器擋多檔下載
+    }
+    showToast(
+      lang === "en" ? `Exported ${done.length} CSV file(s)` : `已匯出 ${done.length} 個 CSV：${done.join("、")}`,
+      "success"
+    );
+  } catch (e: any) {
+    showToast(
+      lang === "en" ? `Export failed: ${e.message || e}` : `匯出失敗：${e.message || e}`,
+      "error"
+    );
+  } finally {
+    setIsExportingCsv(false);
+  }
+};
   const handleExportCSV = () => {
     const headers = ["異動時間", "耗材ID", "耗材名稱", "異動類型", "數量變化", "前庫存", "後庫存", "領取/操作人員", "是否名單內", "備註說明"];
     const rows = transactions.map(t => [
@@ -1880,11 +1920,11 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                   <Smartphone className="w-4 h-4" />
                 </span>
                 <h3 className="text-base sm:text-lg font-bold text-[#1b4372] font-serif tracking-tight">
-                  {lang === "en" ? "Consumables Mobile Pickup System" : "耗材行動自助領用系統 (Google Apps Script Web App)"}
+                 {lang === "en" ? "Mobile Pickup Page (Embedded)" : "手機領用頁面（嵌入檢視）"}
                 </h3>
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  {lang === "en" ? "Cloud Connected" : "雲端系統連線中"}
+                  {lang === "en" ? "Embedded" : "嵌入中"}
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-sans">
@@ -1983,12 +2023,38 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               className="w-full h-full border-0"
               onLoad={() => setIsIframeLoading(false)}
               allow="camera; microphone; clipboard-write;"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+ sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
             />
           </div>
         </div>
       )}
-
+{isAdmin && (
+  <div className="bg-[#fbf7ee] border border-[#e6d9b8] rounded-sm p-3 space-y-2">
+    <div className="flex items-center gap-1.5 text-xs font-bold text-[#6b5530]">
+      <Download className="w-3.5 h-3.5" />
+      <span>{lang === "en" ? "Admin CSV Export (Google Sheet)" : "管理員資料匯出 (CSV，來自 Google 試算表)"}</span>
+    </div>
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <button type="button" disabled={isExportingCsv} onClick={() => handleCloudExport(["items"])}
+        className="px-2 py-2 bg-white hover:bg-slate-50 border border-[#e6d9b8] text-slate-700 text-xs font-bold rounded-sm disabled:opacity-50 cursor-pointer">
+        {lang === "en" ? "Inventory" : "庫存"}
+      </button>
+      <button type="button" disabled={isExportingCsv} onClick={() => handleCloudExport(["audits"])}
+        className="px-2 py-2 bg-white hover:bg-slate-50 border border-[#e6d9b8] text-slate-700 text-xs font-bold rounded-sm disabled:opacity-50 cursor-pointer">
+        {lang === "en" ? "Stocktake Records" : "盤點紀錄"}
+      </button>
+      <button type="button" disabled={isExportingCsv} onClick={() => handleCloudExport(["logs"])}
+        className="px-2 py-2 bg-white hover:bg-slate-50 border border-[#e6d9b8] text-slate-700 text-xs font-bold rounded-sm disabled:opacity-50 cursor-pointer">
+        {lang === "en" ? "Pickup Logs" : "領用紀錄"}
+      </button>
+      <button type="button" disabled={isExportingCsv} onClick={() => handleCloudExport(["items", "audits", "logs"])}
+        className="px-2 py-2 bg-[#1b4372] hover:bg-[#122e4f] text-white text-xs font-bold rounded-sm disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer">
+        {isExportingCsv ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+        <span>{lang === "en" ? "Export All" : "一鍵全部匯出"}</span>
+      </button>
+    </div>
+  </div>
+)}
       {/* -------------------- TAB 3: TRANSACTION LOGS -------------------- */}
       {currentTab === "history" && (
         <div className="space-y-4">
@@ -2091,7 +2157,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                         <td className="p-3">
                           <div className="font-medium text-slate-800">{tx.operator}</div>
                           {tx.isListedMember === "否" && (
-                            <span className="text-[10px] text-amber-600 font-mono">(非名單外訪客)</span>
+       <span className="text-[10px] text-amber-600 font-mono">(名單外訪客)</span>
                           )}
                         </td>
                         <td className="p-3 text-slate-500 text-xs">
@@ -2613,7 +2679,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                             <td className="p-2.5">
                               <div className="font-medium text-slate-800">{tx.operator}</div>
                               {tx.isListedMember === "否" && (
-                                <span className="text-[10px] text-amber-600 font-mono">(非名單外訪客)</span>
+<span className="text-[10px] text-amber-600 font-mono">(名單外訪客)</span>
                               )}
                             </td>
                             <td className="p-2.5 text-slate-600 text-[11px]">
@@ -2866,7 +2932,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                                   <span>{tx.operator}</span>
                                 </div>
                                 {tx.isListedMember === "否" && (
-                                  <span className="text-[10px] text-amber-600 font-mono">(非名單外訪客)</span>
+                                  <span className="text-[10px] text-amber-600 font-mono">(名單外訪客)</span>
                                 )}
                               </td>
                               <td className="p-2.5 text-slate-600 text-[11px]">
@@ -3026,7 +3092,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder={lang === "en" ? "Search or select member name..." : "搜尋或輸入學生姓名..."}
+                        placeholder={lang === "en" ? "Search or select member name..." : "搜尋或輸入姓名..."}
                         value={memberSearchTerm}
                         onChange={e => {
                           setMemberSearchTerm(e.target.value);
@@ -3101,13 +3167,13 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
               {/* Notes */}
               <div>
                 <label className="block font-medium text-slate-600 mb-1">
-                  {lang === "en" ? "Purpose / Experiment Notes (Optional):" : "用途 / 實驗名稱備註 (選填):"}
+                  {lang === "en" ? "Purpose / Experiment Notes (Optional):" : "實驗用途或備註 (選填):"}
                 </label>
                 <input
                   type="text"
                   value={pickupNotes}
                   onChange={e => setPickupNotes(e.target.value)}
-                  placeholder={lang === "en" ? "e.g., Cell culture, PCR assay, western blot..." : "例如：分生實驗、細胞培養、PCR檢驗..."}
+                  placeholder={lang === "en" ? "e.g., Cell culture, PCR assay, western blot..." : ""}
                   className="w-full p-2 border border-slate-200 rounded-sm text-xs focus:border-[#1b4372] focus:outline-none"
                 />
               </div>
@@ -3778,7 +3844,7 @@ export default function ConsumablesStatistics({ onBackToHome }: { onBackToHome?:
 
             <div className="space-y-3 text-slate-600">
               <p>
-                若您在 Google 試算表中重新部署了 <code>Consumables_Code.gs</code> 與 <code>Consumables_Pickup.html</code>，請在此貼入最新產生的「網頁應用程式網址 (Web App URL)」。
+              若您在 Google 試算表中重新部署了 <code>Code.gs</code> 與 <code>Index.html</code>，請在此貼入最新產生的「網頁應用程式網址 (Web App URL)」。
               </p>
 
               <div>
