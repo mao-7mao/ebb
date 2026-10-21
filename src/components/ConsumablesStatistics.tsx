@@ -3660,7 +3660,7 @@ const handleCloudExport = async (types: Array<"items" | "audits" | "logs">) => {
                       實驗室耗材線上自助領用系統
                     </h4>
                     <p className="text-[11px] text-slate-500 max-w-sm mb-3">
-                      可將此條碼列印並張貼於實驗室公佈欄、耗材區入口或置物架旁，學生隨時可掃描開啟完整清單登記領用。
+                      
                     </p>
 
                     {/* QR Image */}
