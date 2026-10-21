@@ -958,6 +958,7 @@ export default function ProcurementFormModal({
                         <option value="防護用品">防護用品 (PPE / Gloves)</option>
                         <option value="辦公文具">辦公文具 (Stationery)</option>
                         <option value="清潔耗品">清潔耗品 (Cleaning)</option>
+                        <option value="其他">其他 (Other)</option>
                       </select>
                     </div>
                   </div>
